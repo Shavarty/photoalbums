@@ -172,7 +172,7 @@ export const TEMPLATE_GRID: SpreadTemplate = {
 };
 
 // Template 4: Asymmetric - vertical strip + mixed layout
-// With equal gaps between photos and on edges
+// With equal gaps (2%) and perfect alignment
 export const TEMPLATE_ASYMMETRIC: SpreadTemplate = {
   id: "asymmetric",
   name: "Асимметричный",
@@ -190,18 +190,18 @@ export const TEMPLATE_ASYMMETRIC: SpreadTemplate = {
       {
         id: "left-2",
         aspectRatio: 5 / 4, // slightly horizontal
-        width: 0.529,
-        height: 0.423,
-        x: 0.451,
+        width: 0.522,
+        height: 0.418,
+        x: 0.45,
         y: 0.02,
       },
       {
         id: "left-3",
         aspectRatio: 1, // square
-        width: 0.529,
-        height: 0.529,
-        x: 0.451,
-        y: 0.463,
+        width: 0.522,
+        height: 0.522,
+        x: 0.45,
+        y: 0.458,
       },
     ],
   },
