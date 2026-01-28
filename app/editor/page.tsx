@@ -90,6 +90,7 @@ export default function EditorPage() {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (file) {
         const url = URL.createObjectURL(file);
+        console.log('Opening crop modal - aspectRatio:', slot.aspectRatio, 'slot:', slot.id);
         setCropModal({
           imageUrl: url,
           spreadId,

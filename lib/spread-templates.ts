@@ -22,11 +22,11 @@ export interface SpreadTemplate {
   rightPage: PageLayout;
 }
 
-// Template 1: Classic - 1 photo left, 3 vertical photos right
+// Template 1: Classic - 1 photo left, 3 horizontal photos right
 export const TEMPLATE_CLASSIC: SpreadTemplate = {
   id: "classic",
   name: "Классический",
-  description: "1 фото слева, 3 вертикальных справа",
+  description: "1 фото слева, 3 горизонтальных справа",
   leftPage: {
     slots: [
       {
@@ -43,7 +43,7 @@ export const TEMPLATE_CLASSIC: SpreadTemplate = {
     slots: [
       {
         id: "right-1",
-        aspectRatio: 3 / 4, // vertical
+        aspectRatio: 1 / 0.33, // horizontal (≈3:1)
         width: 1,
         height: 0.33,
         x: 0,
@@ -51,7 +51,7 @@ export const TEMPLATE_CLASSIC: SpreadTemplate = {
       },
       {
         id: "right-2",
-        aspectRatio: 3 / 4, // vertical
+        aspectRatio: 1 / 0.33, // horizontal (≈3:1)
         width: 1,
         height: 0.33,
         x: 0,
@@ -59,7 +59,7 @@ export const TEMPLATE_CLASSIC: SpreadTemplate = {
       },
       {
         id: "right-3",
-        aspectRatio: 3 / 4, // vertical
+        aspectRatio: 1 / 0.34, // horizontal (≈3:1)
         width: 1,
         height: 0.34,
         x: 0,
@@ -86,7 +86,7 @@ export const TEMPLATE_6PHOTOS: SpreadTemplate = {
       },
       {
         id: "left-2",
-        aspectRatio: 5 / 4, // small horizontal
+        aspectRatio: 1, // small square
         width: 0.3,
         height: 0.3,
         x: 0.7,
@@ -98,7 +98,7 @@ export const TEMPLATE_6PHOTOS: SpreadTemplate = {
     slots: [
       {
         id: "right-1",
-        aspectRatio: 3 / 4, // vertical
+        aspectRatio: 1, // square
         width: 0.48,
         height: 0.48,
         x: 0,
@@ -106,7 +106,7 @@ export const TEMPLATE_6PHOTOS: SpreadTemplate = {
       },
       {
         id: "right-2",
-        aspectRatio: 4 / 3, // horizontal
+        aspectRatio: 1 / 0.32, // horizontal (≈3.1:1)
         width: 1,
         height: 0.32,
         x: 0,
@@ -114,7 +114,7 @@ export const TEMPLATE_6PHOTOS: SpreadTemplate = {
       },
       {
         id: "right-3",
-        aspectRatio: 3 / 4, // vertical
+        aspectRatio: 0.48 / 0.2, // horizontal (2.4:1)
         width: 0.48,
         height: 0.2,
         x: 0.52,
@@ -133,7 +133,7 @@ export const TEMPLATE_GRID: SpreadTemplate = {
     slots: [
       {
         id: "left-1",
-        aspectRatio: 1,
+        aspectRatio: 1 / 0.5, // horizontal (2:1)
         width: 1,
         height: 0.5,
         x: 0,
@@ -141,7 +141,7 @@ export const TEMPLATE_GRID: SpreadTemplate = {
       },
       {
         id: "left-2",
-        aspectRatio: 1,
+        aspectRatio: 1 / 0.5, // horizontal (2:1)
         width: 1,
         height: 0.5,
         x: 0,
@@ -153,7 +153,7 @@ export const TEMPLATE_GRID: SpreadTemplate = {
     slots: [
       {
         id: "right-1",
-        aspectRatio: 1,
+        aspectRatio: 1 / 0.5, // horizontal (2:1)
         width: 1,
         height: 0.5,
         x: 0,
@@ -161,7 +161,7 @@ export const TEMPLATE_GRID: SpreadTemplate = {
       },
       {
         id: "right-2",
-        aspectRatio: 1,
+        aspectRatio: 1 / 0.5, // horizontal (2:1)
         width: 1,
         height: 0.5,
         x: 0,

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import Cropper from "react-easy-crop";
 import { Area } from "react-easy-crop";
 
@@ -84,10 +84,19 @@ export default function ImageCropModal({
   onComplete,
   onCancel,
 }: ImageCropModalProps) {
+  console.log('ImageCropModal rendered with aspectRatio:', aspectRatio);
+
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+
+  // Reset crop and zoom when image changes
+  useEffect(() => {
+    setCrop({ x: 0, y: 0 });
+    setZoom(1);
+    setCroppedAreaPixels(null);
+  }, [imageUrl, aspectRatio]);
 
   const onCropComplete = useCallback(
     (croppedArea: Area, croppedAreaPixels: Area) => {
@@ -99,6 +108,7 @@ export default function ImageCropModal({
   const handleSave = async () => {
     if (!croppedAreaPixels) return;
 
+    console.log('Saving crop with aspectRatio:', aspectRatio, 'crop area:', croppedAreaPixels);
     setIsProcessing(true);
     try {
       const croppedImageUrl = await createCroppedImage(
@@ -129,6 +139,7 @@ export default function ImageCropModal({
         {/* Crop Area */}
         <div className="relative flex-1 bg-gray-900" style={{ minHeight: "400px" }}>
           <Cropper
+            key={`${imageUrl}-${aspectRatio}`}
             image={imageUrl}
             crop={crop}
             zoom={zoom}
