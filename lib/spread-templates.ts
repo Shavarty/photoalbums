@@ -369,7 +369,7 @@ export const TEMPLATE_ASYMMETRIC: SpreadTemplate = {
       },
     ],
   },
-  // WITHOUT gaps (edge-to-edge)
+  // WITHOUT gaps (edge-to-edge, perfect visual alignment)
   leftPageNoGaps: {
     slots: [
       {
@@ -382,19 +382,19 @@ export const TEMPLATE_ASYMMETRIC: SpreadTemplate = {
       },
       {
         id: "left-2",
-        aspectRatio: 5 / 4,
+        aspectRatio: 5 / 4, // slightly adjusted for alignment
         width: 0.572,
-        height: 0.458,
+        height: 0.44,
         x: 0.428,
         y: 0,
       },
       {
         id: "left-3",
-        aspectRatio: 1,
-        width: 0.542,
-        height: 0.542,
+        aspectRatio: 1, // slightly adjusted for alignment
+        width: 0.572,
+        height: 0.56,
         x: 0.428,
-        y: 0.458,
+        y: 0.44,
       },
     ],
   },
