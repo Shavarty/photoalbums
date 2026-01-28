@@ -15,6 +15,7 @@ interface ImageCropModalProps {
 const createCroppedImage = async (
   imageSrc: string,
   crop: Area,
+  aspectRatio: number,
   targetDPI: number = 300
 ): Promise<string> => {
   const image = await loadImage(imageSrc);
@@ -102,7 +103,8 @@ export default function ImageCropModal({
     try {
       const croppedImageUrl = await createCroppedImage(
         imageUrl,
-        croppedAreaPixels
+        croppedAreaPixels,
+        aspectRatio
       );
       onComplete(croppedImageUrl);
     } catch (error) {
