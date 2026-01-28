@@ -180,27 +180,27 @@ export const TEMPLATE_ASYMMETRIC: SpreadTemplate = {
     slots: [
       {
         id: "left-1",
-        aspectRatio: 9 / 21, // narrow vertical strip
-        width: 0.5,
+        aspectRatio: 9 / 21, // narrow vertical strip (0.428)
+        width: 0.428,
         height: 1.0,
         x: 0,
         y: 0,
       },
       {
         id: "left-2",
-        aspectRatio: 5 / 4, // slightly horizontal
-        width: 0.5,
-        height: 0.44,
-        x: 0.5,
+        aspectRatio: 5 / 4, // slightly horizontal (1.25)
+        width: 0.572,
+        height: 0.445,
+        x: 0.428,
         y: 0,
       },
       {
         id: "left-3",
         aspectRatio: 1, // square
-        width: 0.5,
-        height: 0.56,
-        x: 0.5,
-        y: 0.44,
+        width: 0.555,
+        height: 0.555,
+        x: 0.428,
+        y: 0.445,
       },
     ],
   },
@@ -208,27 +208,27 @@ export const TEMPLATE_ASYMMETRIC: SpreadTemplate = {
     slots: [
       {
         id: "right-1",
-        aspectRatio: 16 / 9, // wide horizontal
+        aspectRatio: 16 / 9, // wide horizontal (1.778)
         width: 1.0,
-        height: 0.56,
+        height: 0.5625,
         x: 0,
         y: 0,
       },
       {
         id: "right-2",
         aspectRatio: 1, // square
-        width: 0.44,
-        height: 0.44,
+        width: 0.4375,
+        height: 0.4375,
         x: 0,
-        y: 0.56,
+        y: 0.5625,
       },
       {
         id: "right-3",
-        aspectRatio: 4 / 3, // horizontal
-        width: 0.56,
-        height: 0.44,
-        x: 0.44,
-        y: 0.56,
+        aspectRatio: 4 / 3, // horizontal (1.333)
+        width: 0.5625,
+        height: 0.4375,
+        x: 0.4375,
+        y: 0.5625,
       },
     ],
   },

@@ -83,21 +83,45 @@ const generatePageWithSlots = async (
     if (!photo?.url) continue;
 
     try {
-      // Calculate position and size in mm
-      const x = slot.x * PAGE_SIZE;
-      const y = slot.y * PAGE_SIZE;
-      const width = slot.width * PAGE_SIZE;
-      const height = slot.height * PAGE_SIZE;
+      // Calculate slot position and size in mm
+      const slotX = slot.x * PAGE_SIZE;
+      const slotY = slot.y * PAGE_SIZE;
+      const slotWidth = slot.width * PAGE_SIZE;
+      const slotHeight = slot.height * PAGE_SIZE;
 
-      // Add photo
-      pdf.addImage(photo.url, "JPEG", x, y, width, height, undefined, "FAST");
+      // Photo already has correct aspect ratio from crop
+      // Calculate dimensions to fit within slot while preserving aspect ratio
+      const photoAspect = slot.aspectRatio;
+      const slotAspect = slotWidth / slotHeight;
+
+      let photoWidth: number;
+      let photoHeight: number;
+      let photoX: number;
+      let photoY: number;
+
+      if (photoAspect > slotAspect) {
+        // Photo is wider than slot - fit to width
+        photoWidth = slotWidth;
+        photoHeight = slotWidth / photoAspect;
+        photoX = slotX;
+        photoY = slotY + (slotHeight - photoHeight) / 2; // center vertically
+      } else {
+        // Photo is taller than slot - fit to height
+        photoHeight = slotHeight;
+        photoWidth = slotHeight * photoAspect;
+        photoX = slotX + (slotWidth - photoWidth) / 2; // center horizontally
+        photoY = slotY;
+      }
+
+      // Add photo with preserved aspect ratio
+      pdf.addImage(photo.url, "JPEG", photoX, photoY, photoWidth, photoHeight, undefined, "FAST");
 
       // Add caption if exists
       if (photo.caption) {
         const captionHeight = 10;
-        const captionY = y + height - captionHeight;
-        const captionImage = renderTextToCanvas(photo.caption, Math.floor(width * 18), 100);
-        pdf.addImage(captionImage, "PNG", x + 2, captionY, width - 4, captionHeight, undefined, "FAST");
+        const captionY = slotY + slotHeight - captionHeight;
+        const captionImage = renderTextToCanvas(photo.caption, Math.floor(slotWidth * 18), 100);
+        pdf.addImage(captionImage, "PNG", slotX + 2, captionY, slotWidth - 4, captionHeight, undefined, "FAST");
       }
     } catch (error) {
       console.error("Error adding photo to PDF:", error);

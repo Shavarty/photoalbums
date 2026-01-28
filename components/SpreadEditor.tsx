@@ -50,11 +50,11 @@ export default function SpreadEditor({
                   </>
                 ) : (
                   <span className="text-gray-400 text-xs text-center px-2">
-                    {slot.aspectRatio === 1
-                      ? "Квадрат"
+                    {Math.abs(slot.aspectRatio - 1) < 0.05
+                      ? "1:1"
                       : slot.aspectRatio > 1
-                      ? `Горизонт ${slot.aspectRatio.toFixed(2)}`
-                      : `Верт ${slot.aspectRatio.toFixed(2)}`}
+                      ? `${Math.round(slot.aspectRatio * 10) / 10}:1`
+                      : `1:${Math.round((1 / slot.aspectRatio) * 10) / 10}`}
                   </span>
                 )}
               </div>
