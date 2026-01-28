@@ -1,6 +1,6 @@
 import { jsPDF } from "jspdf";
 import { Album, Spread, Photo } from "./types";
-import { SPREAD_TEMPLATES, PhotoSlot, applyGaps } from "./spread-templates";
+import { SPREAD_TEMPLATES, PhotoSlot, getPageSlots } from "./spread-templates";
 
 // Print specs from typography
 const PAGE_SIZE = 206; // mm
@@ -73,13 +73,12 @@ const renderTextToCanvas = (
 const generatePageWithSlots = async (
   pdf: jsPDF,
   photos: Photo[],
-  slots: PhotoSlot[],
-  withGaps: boolean
+  slots: PhotoSlot[]
 ): Promise<void> => {
   // Add each photo according to slot position
   for (let i = 0; i < slots.length; i++) {
     const photo = photos[i];
-    const slot = applyGaps(slots[i], withGaps);
+    const slot = slots[i];
 
     if (!photo?.url) continue;
 
@@ -191,11 +190,13 @@ export async function generateAlbumPDF(album: Album): Promise<Blob> {
       isFirstPage = false;
     }
 
-    await generatePageWithSlots(pdf, spread.leftPhotos, template.leftPage.slots, album.withGaps);
+    const leftSlots = getPageSlots(template, 'left', album.withGaps);
+    await generatePageWithSlots(pdf, spread.leftPhotos, leftSlots);
 
     // RIGHT PAGE
     pdf.addPage([PAGE_SIZE, PAGE_SIZE], "portrait");
-    await generatePageWithSlots(pdf, spread.rightPhotos, template.rightPage.slots, album.withGaps);
+    const rightSlots = getPageSlots(template, 'right', album.withGaps);
+    await generatePageWithSlots(pdf, spread.rightPhotos, rightSlots);
   }
 
   return pdf.output("blob");

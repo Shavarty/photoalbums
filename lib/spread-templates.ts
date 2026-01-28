@@ -20,23 +20,25 @@ export interface SpreadTemplate {
   description: string;
   leftPage: PageLayout;
   rightPage: PageLayout;
+  leftPageNoGaps?: PageLayout; // Optional: layout without gaps
+  rightPageNoGaps?: PageLayout; // Optional: layout without gaps
 }
 
 // Template 1: Classic - 1 photo left, 3 horizontal photos right
-// Defined WITHOUT gaps (edge-to-edge), gaps added by applyGaps() if needed
 export const TEMPLATE_CLASSIC: SpreadTemplate = {
   id: "classic",
   name: "Классический",
   description: "1 фото слева, 3 горизонтальных справа",
+  // WITH gaps (2% everywhere)
   leftPage: {
     slots: [
       {
         id: "left-1",
-        aspectRatio: 1, // square
-        width: 1.0,
-        height: 1.0,
-        x: 0,
-        y: 0,
+        aspectRatio: 1,
+        width: 0.96,
+        height: 0.96,
+        x: 0.02,
+        y: 0.02,
       },
     ],
   },
@@ -44,7 +46,48 @@ export const TEMPLATE_CLASSIC: SpreadTemplate = {
     slots: [
       {
         id: "right-1",
-        aspectRatio: 1 / 0.333, // horizontal (3:1)
+        aspectRatio: 1 / 0.31,
+        width: 0.96,
+        height: 0.30,
+        x: 0.02,
+        y: 0.02,
+      },
+      {
+        id: "right-2",
+        aspectRatio: 1 / 0.31,
+        width: 0.96,
+        height: 0.31,
+        x: 0.02,
+        y: 0.34,
+      },
+      {
+        id: "right-3",
+        aspectRatio: 1 / 0.31,
+        width: 0.96,
+        height: 0.31,
+        x: 0.02,
+        y: 0.67,
+      },
+    ],
+  },
+  // WITHOUT gaps (edge-to-edge)
+  leftPageNoGaps: {
+    slots: [
+      {
+        id: "left-1",
+        aspectRatio: 1,
+        width: 1.0,
+        height: 1.0,
+        x: 0,
+        y: 0,
+      },
+    ],
+  },
+  rightPageNoGaps: {
+    slots: [
+      {
+        id: "right-1",
+        aspectRatio: 1 / 0.333,
         width: 1.0,
         height: 0.333,
         x: 0,
@@ -52,7 +95,7 @@ export const TEMPLATE_CLASSIC: SpreadTemplate = {
       },
       {
         id: "right-2",
-        aspectRatio: 1 / 0.333, // horizontal (3:1)
+        aspectRatio: 1 / 0.333,
         width: 1.0,
         height: 0.333,
         x: 0,
@@ -60,7 +103,7 @@ export const TEMPLATE_CLASSIC: SpreadTemplate = {
       },
       {
         id: "right-3",
-        aspectRatio: 1 / 0.334, // horizontal (3:1)
+        aspectRatio: 1 / 0.334,
         width: 1.0,
         height: 0.334,
         x: 0,
@@ -71,26 +114,26 @@ export const TEMPLATE_CLASSIC: SpreadTemplate = {
 };
 
 // Template 2: 6 Photos Mix
-// Defined WITHOUT gaps (edge-to-edge), gaps added by applyGaps() if needed
 export const TEMPLATE_6PHOTOS: SpreadTemplate = {
   id: "6photos",
   name: "6 фото микс",
   description: "Разнообразная раскладка 6 фотографий",
+  // WITH gaps (2% everywhere)
   leftPage: {
     slots: [
       {
         id: "left-1",
-        aspectRatio: 1, // square - large
-        width: 0.70,
-        height: 0.70,
-        x: 0,
-        y: 0,
+        aspectRatio: 1,
+        width: 0.66,
+        height: 0.66,
+        x: 0.02,
+        y: 0.02,
       },
       {
         id: "left-2",
-        aspectRatio: 1, // small square
-        width: 0.30,
-        height: 0.30,
+        aspectRatio: 1,
+        width: 0.28,
+        height: 0.28,
         x: 0.70,
         y: 0.70,
       },
@@ -100,7 +143,56 @@ export const TEMPLATE_6PHOTOS: SpreadTemplate = {
     slots: [
       {
         id: "right-1",
-        aspectRatio: 1, // square
+        aspectRatio: 1,
+        width: 0.46,
+        height: 0.46,
+        x: 0.02,
+        y: 0.02,
+      },
+      {
+        id: "right-2",
+        aspectRatio: 1 / 0.30,
+        width: 0.96,
+        height: 0.30,
+        x: 0.02,
+        y: 0.68,
+      },
+      {
+        id: "right-3",
+        aspectRatio: 0.46 / 0.18,
+        width: 0.46,
+        height: 0.18,
+        x: 0.52,
+        y: 0.02,
+      },
+    ],
+  },
+  // WITHOUT gaps (edge-to-edge)
+  leftPageNoGaps: {
+    slots: [
+      {
+        id: "left-1",
+        aspectRatio: 1,
+        width: 0.70,
+        height: 0.70,
+        x: 0,
+        y: 0,
+      },
+      {
+        id: "left-2",
+        aspectRatio: 1,
+        width: 0.30,
+        height: 0.30,
+        x: 0.70,
+        y: 0.70,
+      },
+    ],
+  },
+  rightPageNoGaps: {
+    slots: [
+      {
+        id: "right-1",
+        aspectRatio: 1,
         width: 0.48,
         height: 0.48,
         x: 0,
@@ -108,7 +200,7 @@ export const TEMPLATE_6PHOTOS: SpreadTemplate = {
       },
       {
         id: "right-2",
-        aspectRatio: 1 / 0.32, // horizontal (3.1:1)
+        aspectRatio: 1 / 0.32,
         width: 1.0,
         height: 0.32,
         x: 0,
@@ -116,7 +208,7 @@ export const TEMPLATE_6PHOTOS: SpreadTemplate = {
       },
       {
         id: "right-3",
-        aspectRatio: 0.52 / 0.20, // horizontal (2.6:1)
+        aspectRatio: 0.52 / 0.20,
         width: 0.52,
         height: 0.20,
         x: 0.48,
@@ -127,28 +219,28 @@ export const TEMPLATE_6PHOTOS: SpreadTemplate = {
 };
 
 // Template 3: Simple Grid
-// Defined WITHOUT gaps (edge-to-edge), gaps added by applyGaps() if needed
 export const TEMPLATE_GRID: SpreadTemplate = {
   id: "grid",
   name: "Сетка",
   description: "По 2 фото на каждой странице",
+  // WITH gaps (2% everywhere)
   leftPage: {
     slots: [
       {
         id: "left-1",
-        aspectRatio: 2, // horizontal (2:1)
-        width: 1.0,
-        height: 0.5,
-        x: 0,
-        y: 0,
+        aspectRatio: 1 / 0.47,
+        width: 0.96,
+        height: 0.47,
+        x: 0.02,
+        y: 0.02,
       },
       {
         id: "left-2",
-        aspectRatio: 2, // horizontal (2:1)
-        width: 1.0,
-        height: 0.5,
-        x: 0,
-        y: 0.5,
+        aspectRatio: 1 / 0.47,
+        width: 0.96,
+        height: 0.47,
+        x: 0.02,
+        y: 0.51,
       },
     ],
   },
@@ -156,7 +248,48 @@ export const TEMPLATE_GRID: SpreadTemplate = {
     slots: [
       {
         id: "right-1",
-        aspectRatio: 2, // horizontal (2:1)
+        aspectRatio: 1 / 0.47,
+        width: 0.96,
+        height: 0.47,
+        x: 0.02,
+        y: 0.02,
+      },
+      {
+        id: "right-2",
+        aspectRatio: 1 / 0.47,
+        width: 0.96,
+        height: 0.47,
+        x: 0.02,
+        y: 0.51,
+      },
+    ],
+  },
+  // WITHOUT gaps (edge-to-edge)
+  leftPageNoGaps: {
+    slots: [
+      {
+        id: "left-1",
+        aspectRatio: 2,
+        width: 1.0,
+        height: 0.5,
+        x: 0,
+        y: 0,
+      },
+      {
+        id: "left-2",
+        aspectRatio: 2,
+        width: 1.0,
+        height: 0.5,
+        x: 0,
+        y: 0.5,
+      },
+    ],
+  },
+  rightPageNoGaps: {
+    slots: [
+      {
+        id: "right-1",
+        aspectRatio: 2,
         width: 1.0,
         height: 0.5,
         x: 0,
@@ -164,7 +297,7 @@ export const TEMPLATE_GRID: SpreadTemplate = {
       },
       {
         id: "right-2",
-        aspectRatio: 2, // horizontal (2:1)
+        aspectRatio: 2,
         width: 1.0,
         height: 0.5,
         x: 0,
@@ -175,35 +308,35 @@ export const TEMPLATE_GRID: SpreadTemplate = {
 };
 
 // Template 4: Asymmetric - vertical strip + mixed layout
-// Defined WITHOUT gaps (edge-to-edge), gaps added by applyGaps() if needed
 export const TEMPLATE_ASYMMETRIC: SpreadTemplate = {
   id: "asymmetric",
   name: "Асимметричный",
   description: "Вертикальная полоса слева, микс справа",
+  // WITH gaps (2% everywhere)
   leftPage: {
     slots: [
       {
         id: "left-1",
-        aspectRatio: 9 / 21, // narrow vertical strip
-        width: 0.428,
-        height: 1.0,
-        x: 0,
-        y: 0,
+        aspectRatio: 9 / 21,
+        width: 0.411,
+        height: 0.96,
+        x: 0.02,
+        y: 0.02,
       },
       {
         id: "left-2",
-        aspectRatio: 5 / 4, // slightly horizontal
-        width: 0.572,
-        height: 0.458,
-        x: 0.428,
-        y: 0,
+        aspectRatio: 5 / 4,
+        width: 0.529,
+        height: 0.418,
+        x: 0.451,
+        y: 0.02,
       },
       {
         id: "left-3",
-        aspectRatio: 1, // square
-        width: 0.542,
-        height: 0.542,
-        x: 0.428,
+        aspectRatio: 1,
+        width: 0.529,
+        height: 0.522,
+        x: 0.451,
         y: 0.458,
       },
     ],
@@ -212,7 +345,64 @@ export const TEMPLATE_ASYMMETRIC: SpreadTemplate = {
     slots: [
       {
         id: "right-1",
-        aspectRatio: 16 / 9, // wide horizontal
+        aspectRatio: 16 / 9,
+        width: 0.96,
+        height: 0.54,
+        x: 0.02,
+        y: 0.02,
+      },
+      {
+        id: "right-2",
+        aspectRatio: 1,
+        width: 0.4,
+        height: 0.4,
+        x: 0.02,
+        y: 0.58,
+      },
+      {
+        id: "right-3",
+        aspectRatio: 4 / 3,
+        width: 0.54,
+        height: 0.4,
+        x: 0.44,
+        y: 0.58,
+      },
+    ],
+  },
+  // WITHOUT gaps (edge-to-edge)
+  leftPageNoGaps: {
+    slots: [
+      {
+        id: "left-1",
+        aspectRatio: 9 / 21,
+        width: 0.428,
+        height: 1.0,
+        x: 0,
+        y: 0,
+      },
+      {
+        id: "left-2",
+        aspectRatio: 5 / 4,
+        width: 0.572,
+        height: 0.458,
+        x: 0.428,
+        y: 0,
+      },
+      {
+        id: "left-3",
+        aspectRatio: 1,
+        width: 0.542,
+        height: 0.542,
+        x: 0.428,
+        y: 0.458,
+      },
+    ],
+  },
+  rightPageNoGaps: {
+    slots: [
+      {
+        id: "right-1",
+        aspectRatio: 16 / 9,
         width: 1.0,
         height: 0.5625,
         x: 0,
@@ -220,7 +410,7 @@ export const TEMPLATE_ASYMMETRIC: SpreadTemplate = {
       },
       {
         id: "right-2",
-        aspectRatio: 1, // square
+        aspectRatio: 1,
         width: 0.4375,
         height: 0.4375,
         x: 0,
@@ -228,7 +418,7 @@ export const TEMPLATE_ASYMMETRIC: SpreadTemplate = {
       },
       {
         id: "right-3",
-        aspectRatio: 4 / 3, // horizontal
+        aspectRatio: 4 / 3,
         width: 0.5625,
         height: 0.4375,
         x: 0.4375,
@@ -245,24 +435,16 @@ export const SPREAD_TEMPLATES = [
   TEMPLATE_ASYMMETRIC,
 ];
 
-// Utility to add gaps to slot coordinates
-// All templates are now designed WITHOUT gaps (slots edge-to-edge)
-// This function ADDS 2% gaps everywhere when withGaps=true
-export function applyGaps(slot: PhotoSlot, withGaps: boolean): PhotoSlot {
-  if (!withGaps) {
-    // Return as-is (no gaps)
-    return slot;
+// Get appropriate page layout based on gaps setting
+export function getPageSlots(template: SpreadTemplate, side: 'left' | 'right', withGaps: boolean): PhotoSlot[] {
+  if (withGaps) {
+    return side === 'left' ? template.leftPage.slots : template.rightPage.slots;
+  } else {
+    const noGapsPage = side === 'left' ? template.leftPageNoGaps : template.rightPageNoGaps;
+    if (noGapsPage) {
+      return noGapsPage.slots;
+    }
+    // Fallback to default if no-gaps version not defined
+    return side === 'left' ? template.leftPage.slots : template.rightPage.slots;
   }
-
-  // Add gaps: shrink slots to 96% working area and add 2% edges
-  const GAP = 0.02;
-  const WORKING_AREA = 0.96; // 1.0 - 2*GAP
-
-  return {
-    ...slot,
-    x: slot.x * WORKING_AREA + GAP,
-    y: slot.y * WORKING_AREA + GAP,
-    width: slot.width * WORKING_AREA,
-    height: slot.height * WORKING_AREA,
-  };
 }
