@@ -2,9 +2,11 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Album, Page, Photo, LayoutType, LAYOUT_CONFIG } from "@/lib/types";
+import { Album, Spread, Photo } from "@/lib/types";
+import { SPREAD_TEMPLATES } from "@/lib/spread-templates";
 import { generateAlbumPDF, downloadPDF } from "@/lib/pdf-generator";
 import ImageCropModal from "@/components/ImageCropModal";
+import SpreadEditor from "@/components/SpreadEditor";
 
 export default function EditorPage() {
   const [album, setAlbum] = useState<Album>({
@@ -14,32 +16,175 @@ export default function EditorPage() {
       frontImage: null,
       backImage: null,
     },
-    pages: [],
+    spreads: [],
     createdAt: new Date(),
     updatedAt: new Date(),
   });
 
-  const [selectedPageId, setSelectedPageId] = useState<string | null>(null);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
 
   // Crop modal state
   const [cropModal, setCropModal] = useState<{
     imageUrl: string;
-    pageId: string;
+    spreadId: string;
+    side: "left" | "right";
     photoIndex: number;
     aspectRatio: number;
   } | null>(null);
 
-  // Generate and download PDF
+  // Add new spread
+  const addSpread = (templateId: string) => {
+    const template = SPREAD_TEMPLATES.find((t) => t.id === templateId);
+    if (!template) return;
+
+    const createEmptyPhotos = (count: number): Photo[] =>
+      Array(count)
+        .fill(null)
+        .map(() => ({
+          id: crypto.randomUUID(),
+          file: null,
+          url: "",
+          caption: "",
+        }));
+
+    const newSpread: Spread = {
+      id: crypto.randomUUID(),
+      templateId,
+      leftPhotos: createEmptyPhotos(template.leftPage.slots.length),
+      rightPhotos: createEmptyPhotos(template.rightPage.slots.length),
+    };
+
+    setAlbum((prev) => ({
+      ...prev,
+      spreads: [...prev.spreads, newSpread],
+      updatedAt: new Date(),
+    }));
+  };
+
+  // Delete spread
+  const deleteSpread = (spreadId: string) => {
+    setAlbum((prev) => ({
+      ...prev,
+      spreads: prev.spreads.filter((s) => s.id !== spreadId),
+      updatedAt: new Date(),
+    }));
+  };
+
+  // Handle photo click - open file picker
+  const handlePhotoClick = (spreadId: string, side: "left" | "right", photoIndex: number) => {
+    const spread = album.spreads.find((s) => s.id === spreadId);
+    if (!spread) return;
+
+    const template = SPREAD_TEMPLATES.find((t) => t.id === spread.templateId);
+    if (!template) return;
+
+    const slot =
+      side === "left"
+        ? template.leftPage.slots[photoIndex]
+        : template.rightPage.slots[photoIndex];
+
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/*";
+    input.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (file) {
+        const url = URL.createObjectURL(file);
+        setCropModal({
+          imageUrl: url,
+          spreadId,
+          side,
+          photoIndex,
+          aspectRatio: slot.aspectRatio,
+        });
+      }
+    };
+    input.click();
+  };
+
+  // Complete photo upload after crop
+  const completePhotoUpload = (croppedImageUrl: string) => {
+    if (!cropModal) return;
+
+    const { spreadId, side, photoIndex } = cropModal;
+
+    setAlbum((prev) => ({
+      ...prev,
+      spreads: prev.spreads.map((spread) =>
+        spread.id === spreadId
+          ? {
+              ...spread,
+              [side === "left" ? "leftPhotos" : "rightPhotos"]: (
+                side === "left" ? spread.leftPhotos : spread.rightPhotos
+              ).map((photo, idx) =>
+                idx === photoIndex
+                  ? { ...photo, url: croppedImageUrl, file: null }
+                  : photo
+              ),
+            }
+          : spread
+      ),
+      updatedAt: new Date(),
+    }));
+
+    setCropModal(null);
+  };
+
+  // Handle caption change
+  const handleCaptionChange = (
+    spreadId: string,
+    side: "left" | "right",
+    photoIndex: number,
+    caption: string
+  ) => {
+    setAlbum((prev) => ({
+      ...prev,
+      spreads: prev.spreads.map((spread) =>
+        spread.id === spreadId
+          ? {
+              ...spread,
+              [side === "left" ? "leftPhotos" : "rightPhotos"]: (
+                side === "left" ? spread.leftPhotos : spread.rightPhotos
+              ).map((photo, idx) =>
+                idx === photoIndex ? { ...photo, caption } : photo
+              ),
+            }
+          : spread
+      ),
+      updatedAt: new Date(),
+    }));
+  };
+
+  // Generate PDF (convert spreads to old Page format for compatibility)
   const handleGeneratePDF = async () => {
-    if (album.pages.length === 0) {
-      alert("Добавьте хотя бы одну страницу с фото!");
+    if (album.spreads.length === 0) {
+      alert("Добавьте хотя бы один разворот!");
       return;
     }
 
     setIsGeneratingPDF(true);
     try {
-      const pdfBlob = await generateAlbumPDF(album);
+      // Convert spreads to pages for PDF generation
+      const pages = album.spreads.flatMap((spread) => {
+        const template = SPREAD_TEMPLATES.find((t) => t.id === spread.templateId);
+        if (!template) return [];
+
+        return [
+          {
+            id: `${spread.id}-left`,
+            layout: "single" as const,
+            photos: spread.leftPhotos,
+          },
+          {
+            id: `${spread.id}-right`,
+            layout: "single" as const,
+            photos: spread.rightPhotos,
+          },
+        ];
+      });
+
+      const pdfAlbum = { ...album, pages };
+      const pdfBlob = await generateAlbumPDF(pdfAlbum as any);
       const filename = `${album.title.replace(/[^a-zA-Zа-яА-Я0-9]/g, "_")}_${Date.now()}.pdf`;
       downloadPDF(pdfBlob, filename);
       alert("PDF успешно создан и скачан!");
@@ -51,75 +196,13 @@ export default function EditorPage() {
     }
   };
 
-  // Add new page
-  const addPage = (layout: LayoutType = "single") => {
-    const newPage: Page = {
-      id: crypto.randomUUID(),
-      layout,
-      photos: Array(LAYOUT_CONFIG[layout].slots).fill(null).map(() => ({
-        id: crypto.randomUUID(),
-        file: null,
-        url: "",
-        caption: "",
-      })),
-    };
-    setAlbum((prev) => ({
-      ...prev,
-      pages: [...prev.pages, newPage],
-      updatedAt: new Date(),
-    }));
-  };
-
-  // Start photo upload - open crop modal
-  const startPhotoUpload = (pageId: string, photoIndex: number, file: File, layout: LayoutType) => {
-    const url = URL.createObjectURL(file);
-    // Determine aspect ratio based on layout
-    const aspectRatio = layout === "spread" ? 2 : 1; // 2:1 for spread, square for others
-    setCropModal({ imageUrl: url, pageId, photoIndex, aspectRatio });
-  };
-
-  // Complete photo upload after crop
-  const completePhotoUpload = (croppedImageUrl: string) => {
-    if (!cropModal) return;
-
-    const { pageId, photoIndex } = cropModal;
-    setAlbum((prev) => ({
-      ...prev,
-      pages: prev.pages.map((page) =>
-        page.id === pageId
-          ? {
-              ...page,
-              photos: page.photos.map((photo, idx) =>
-                idx === photoIndex ? { ...photo, file: null, url: croppedImageUrl } : photo
-              ),
-            }
-          : page
-      ),
-      updatedAt: new Date(),
-    }));
-
-    setCropModal(null);
-  };
-
-  // Delete page
-  const deletePage = (pageId: string) => {
-    setAlbum((prev) => ({
-      ...prev,
-      pages: prev.pages.filter((page) => page.id !== pageId),
-      updatedAt: new Date(),
-    }));
-  };
-
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <header className="bg-white border-b border-gray-200 px-6 py-4">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <div className="flex items-center gap-4">
-            <Link
-              href="/"
-              className="text-gray-600 hover:text-gray-900 transition"
-            >
+            <Link href="/" className="text-gray-600 hover:text-gray-900 transition">
               ← Назад
             </Link>
             <input
@@ -150,163 +233,88 @@ export default function EditorPage() {
       </header>
 
       <div className="max-w-7xl mx-auto py-8 px-6 grid lg:grid-cols-4 gap-8">
-        {/* Sidebar - Page List */}
+        {/* Sidebar - Templates */}
         <div className="lg:col-span-1">
           <div className="bg-white rounded-xl shadow-sm p-4 sticky top-8">
-            <h3 className="font-semibold mb-4">Страницы ({album.pages.length})</h3>
+            <h3 className="font-semibold mb-4">
+              Развороты ({album.spreads.length})
+            </h3>
 
-            {/* Add page buttons */}
+            {/* Add spread buttons */}
             <div className="space-y-2 mb-4">
-              <button
-                onClick={() => addPage("single")}
-                className="w-full px-4 py-2 bg-brand-gray hover:bg-gray-200 rounded-lg text-sm transition"
-              >
-                + 1 фото
-              </button>
-              <button
-                onClick={() => addPage("quad")}
-                className="w-full px-4 py-2 bg-brand-gray hover:bg-gray-200 rounded-lg text-sm transition"
-              >
-                + 4 фото
-              </button>
-              <button
-                onClick={() => addPage("spread")}
-                className="w-full px-4 py-2 bg-brand-gray hover:bg-gray-200 rounded-lg text-sm transition"
-              >
-                + Разворот
-              </button>
+              {SPREAD_TEMPLATES.map((template) => (
+                <button
+                  key={template.id}
+                  onClick={() => addSpread(template.id)}
+                  className="w-full px-4 py-3 bg-brand-gray hover:bg-gray-200 rounded-lg text-sm transition text-left"
+                >
+                  <div className="font-medium">{template.name}</div>
+                  <div className="text-xs text-gray-600">
+                    {template.description}
+                  </div>
+                </button>
+              ))}
             </div>
 
-            {/* Page thumbnails */}
+            {/* Spread list */}
             <div className="space-y-2 max-h-96 overflow-y-auto">
-              {album.pages.map((page, index) => (
-                <div
-                  key={page.id}
-                  onClick={() => setSelectedPageId(page.id)}
-                  className={`p-3 rounded-lg border-2 cursor-pointer transition ${
-                    selectedPageId === page.id
-                      ? "border-brand-orange bg-orange-50"
-                      : "border-gray-200 hover:border-gray-300"
-                  }`}
-                >
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-sm font-medium">
-                      Стр. {index + 1}
-                    </span>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        deletePage(page.id);
-                      }}
-                      className="text-red-500 hover:text-red-700 text-xs"
-                    >
-                      Удалить
-                    </button>
+              {album.spreads.map((spread, index) => {
+                const template = SPREAD_TEMPLATES.find(
+                  (t) => t.id === spread.templateId
+                );
+                return (
+                  <div
+                    key={spread.id}
+                    className="p-3 rounded-lg border-2 border-gray-200 hover:border-gray-300 transition"
+                  >
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-sm font-medium">
+                        Разворот {index + 1}
+                      </span>
+                      <button
+                        onClick={() => deleteSpread(spread.id)}
+                        className="text-red-500 hover:text-red-700 text-xs"
+                      >
+                        Удалить
+                      </button>
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      {template?.name}
+                    </div>
                   </div>
-                  <div className="text-xs text-gray-500">
-                    {LAYOUT_CONFIG[page.layout].name}
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </div>
 
         {/* Main Editor Area */}
         <div className="lg:col-span-3">
-          {album.pages.length === 0 ? (
+          {album.spreads.length === 0 ? (
             <div className="bg-white rounded-xl shadow-sm p-12 text-center">
               <p className="text-gray-500 mb-4">
-                Альбом пустой. Добавьте первую страницу!
+                Альбом пустой. Добавьте первый разворот!
               </p>
               <button
-                onClick={() => addPage("single")}
+                onClick={() => addSpread("classic")}
                 className="btn-gradient px-8 py-3 text-white font-semibold"
               >
-                Добавить страницу
+                Добавить разворот
               </button>
             </div>
           ) : (
             <div className="space-y-6">
-              {album.pages.map((page, pageIndex) => (
-                <div
-                  key={page.id}
-                  className="bg-white rounded-xl shadow-sm p-6"
-                >
-                  <div className="flex justify-between items-center mb-4">
-                    <h3 className="font-semibold">
-                      Страница {pageIndex + 1} -{" "}
-                      {LAYOUT_CONFIG[page.layout].name}
-                    </h3>
-                  </div>
-
-                  {/* Photo slots */}
-                  <div
-                    className={`grid gap-4 ${
-                      page.layout === "quad" ? "grid-cols-2" : "grid-cols-1"
-                    }`}
-                  >
-                    {page.photos.map((photo, photoIndex) => (
-                      <div key={photo.id} className="space-y-2">
-                        <div
-                          className="relative aspect-square bg-gray-100 rounded-lg overflow-hidden border-2 border-dashed border-gray-300 hover:border-brand-orange transition cursor-pointer"
-                          onClick={() => {
-                            const input = document.createElement("input");
-                            input.type = "file";
-                            input.accept = "image/*";
-                            input.onchange = (e) => {
-                              const file = (e.target as HTMLInputElement)
-                                .files?.[0];
-                              if (file) {
-                                startPhotoUpload(page.id, photoIndex, file, page.layout);
-                              }
-                            };
-                            input.click();
-                          }}
-                        >
-                          {photo.url ? (
-                            <img
-                              src={photo.url}
-                              alt=""
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center">
-                              <span className="text-gray-400">
-                                Загрузить фото
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                        {photo.url && (
-                          <input
-                            type="text"
-                            placeholder="Добавить подпись..."
-                            value={photo.caption || ""}
-                            onChange={(e) => {
-                              setAlbum((prev) => ({
-                                ...prev,
-                                pages: prev.pages.map((p) =>
-                                  p.id === page.id
-                                    ? {
-                                        ...p,
-                                        photos: p.photos.map((ph, idx) =>
-                                          idx === photoIndex
-                                            ? { ...ph, caption: e.target.value }
-                                            : ph
-                                        ),
-                                      }
-                                    : p
-                                ),
-                              }));
-                            }}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-orange"
-                          />
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
+              {album.spreads.map((spread) => (
+                <SpreadEditor
+                  key={spread.id}
+                  spread={spread}
+                  onPhotoClick={(side, idx) =>
+                    handlePhotoClick(spread.id, side, idx)
+                  }
+                  onCaptionChange={(side, idx, caption) =>
+                    handleCaptionChange(spread.id, side, idx, caption)
+                  }
+                />
               ))}
             </div>
           )}
