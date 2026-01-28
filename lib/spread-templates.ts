@@ -246,52 +246,25 @@ export const SPREAD_TEMPLATES = [
   TEMPLATE_ASYMMETRIC,
 ];
 
-// Utility to apply/remove edge gaps from slot coordinates
-// All templates are designed WITH 2% gaps everywhere
-// This function removes ONLY edge gaps (page borders), keeping gaps BETWEEN photos
+// Utility to apply/remove gaps from slot coordinates
+// All templates are designed WITH 2% gaps everywhere (edges + between photos)
+// This function removes ALL gaps when withGaps=false
 export function applyGaps(slot: PhotoSlot, withGaps: boolean): PhotoSlot {
   if (withGaps) {
     // Return as-is (templates already have gaps)
     return slot;
   }
 
-  // Remove ONLY edge gaps (2% from page borders)
-  // Keep gaps between photos intact
+  // Remove ALL gaps: scale from 96% working area (0.02 to 0.98) to full 100% (0 to 1.0)
+  // This removes both edge gaps AND gaps between photos
   const GAP = 0.02;
-  const TOLERANCE = 0.001;
-
-  let newX = slot.x;
-  let newY = slot.y;
-  let newWidth = slot.width;
-  let newHeight = slot.height;
-
-  // Check if slot touches left edge
-  if (Math.abs(slot.x - GAP) < TOLERANCE) {
-    newX = 0;
-    newWidth = slot.width + GAP;
-  }
-
-  // Check if slot touches right edge
-  if (Math.abs(slot.x + slot.width - (1 - GAP)) < TOLERANCE) {
-    newWidth = 1 - newX;
-  }
-
-  // Check if slot touches top edge
-  if (Math.abs(slot.y - GAP) < TOLERANCE) {
-    newY = 0;
-    newHeight = slot.height + GAP;
-  }
-
-  // Check if slot touches bottom edge
-  if (Math.abs(slot.y + slot.height - (1 - GAP)) < TOLERANCE) {
-    newHeight = 1 - newY;
-  }
+  const WORKING_AREA = 0.96; // 1.0 - 2*GAP
 
   return {
     ...slot,
-    x: newX,
-    y: newY,
-    width: newWidth,
-    height: newHeight,
+    x: (slot.x - GAP) / WORKING_AREA,
+    y: (slot.y - GAP) / WORKING_AREA,
+    width: slot.width / WORKING_AREA,
+    height: slot.height / WORKING_AREA,
   };
 }
