@@ -50,11 +50,27 @@ export default function SpreadEditor({
                   </>
                 ) : (
                   <span className="text-gray-400 text-xs text-center px-2">
-                    {Math.abs(slot.aspectRatio - 1) < 0.05
-                      ? "1:1"
-                      : slot.aspectRatio > 1
-                      ? `${Math.round(slot.aspectRatio * 10) / 10}:1`
-                      : `1:${Math.round((1 / slot.aspectRatio) * 10) / 10}`}
+                    {(() => {
+                      const ratio = slot.aspectRatio;
+                      // Common aspect ratios in WxH format
+                      if (Math.abs(ratio - 1) < 0.05) return "1x1";
+                      if (Math.abs(ratio - 16/9) < 0.05) return "16x9";
+                      if (Math.abs(ratio - 4/3) < 0.05) return "4x3";
+                      if (Math.abs(ratio - 5/4) < 0.05) return "5x4";
+                      if (Math.abs(ratio - 3/2) < 0.05) return "3x2";
+                      if (Math.abs(ratio - 21/9) < 0.05) return "21x9";
+                      if (Math.abs(ratio - 9/21) < 0.05) return "9x21";
+                      if (Math.abs(ratio - 3/4) < 0.05) return "3x4";
+                      if (Math.abs(ratio - 2/3) < 0.05) return "2x3";
+                      // Fallback to calculated ratio
+                      if (ratio > 1) {
+                        const h = Math.round(10 / ratio);
+                        return `10x${h}`;
+                      } else {
+                        const w = Math.round(10 * ratio);
+                        return `${w}x10`;
+                      }
+                    })()}
                   </span>
                 )}
               </div>
