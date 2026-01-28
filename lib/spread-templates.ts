@@ -171,8 +171,72 @@ export const TEMPLATE_GRID: SpreadTemplate = {
   },
 };
 
+// Template 4: Asymmetric - vertical strip + mixed layout
+export const TEMPLATE_ASYMMETRIC: SpreadTemplate = {
+  id: "asymmetric",
+  name: "Асимметричный",
+  description: "Вертикальная полоса слева, микс справа",
+  leftPage: {
+    slots: [
+      {
+        id: "left-1",
+        aspectRatio: 9 / 21, // narrow vertical strip
+        width: 0.5,
+        height: 1.0,
+        x: 0,
+        y: 0,
+      },
+      {
+        id: "left-2",
+        aspectRatio: 5 / 4, // slightly horizontal
+        width: 0.5,
+        height: 0.44,
+        x: 0.5,
+        y: 0,
+      },
+      {
+        id: "left-3",
+        aspectRatio: 1, // square
+        width: 0.5,
+        height: 0.56,
+        x: 0.5,
+        y: 0.44,
+      },
+    ],
+  },
+  rightPage: {
+    slots: [
+      {
+        id: "right-1",
+        aspectRatio: 16 / 9, // wide horizontal
+        width: 1.0,
+        height: 0.56,
+        x: 0,
+        y: 0,
+      },
+      {
+        id: "right-2",
+        aspectRatio: 1, // square
+        width: 0.44,
+        height: 0.44,
+        x: 0,
+        y: 0.56,
+      },
+      {
+        id: "right-3",
+        aspectRatio: 4 / 3, // horizontal
+        width: 0.56,
+        height: 0.44,
+        x: 0.44,
+        y: 0.56,
+      },
+    ],
+  },
+};
+
 export const SPREAD_TEMPLATES = [
   TEMPLATE_CLASSIC,
   TEMPLATE_6PHOTOS,
   TEMPLATE_GRID,
+  TEMPLATE_ASYMMETRIC,
 ];
