@@ -30,6 +30,8 @@ export default function EditorPage() {
     side: "left" | "right";
     photoIndex: number;
     aspectRatio: number;
+    slotWidth: number;
+    slotHeight: number;
   } | null>(null);
 
   // Add new spread
@@ -90,13 +92,15 @@ export default function EditorPage() {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (file) {
         const url = URL.createObjectURL(file);
-        console.log('Opening crop modal - aspectRatio:', slot.aspectRatio, 'slot:', slot.id);
+        console.log('Opening crop modal - aspectRatio:', slot.aspectRatio, 'slot:', slot.id, 'size:', slot.width, 'x', slot.height);
         setCropModal({
           imageUrl: url,
           spreadId,
           side,
           photoIndex,
           aspectRatio: slot.aspectRatio,
+          slotWidth: slot.width,
+          slotHeight: slot.height,
         });
       }
     };
@@ -308,6 +312,8 @@ export default function EditorPage() {
         <ImageCropModal
           imageUrl={cropModal.imageUrl}
           aspectRatio={cropModal.aspectRatio}
+          slotWidth={cropModal.slotWidth}
+          slotHeight={cropModal.slotHeight}
           onComplete={completePhotoUpload}
           onCancel={() => setCropModal(null)}
         />

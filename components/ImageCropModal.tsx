@@ -7,6 +7,8 @@ import { Area } from "react-easy-crop";
 interface ImageCropModalProps {
   imageUrl: string;
   aspectRatio: number; // 1 for square, 0.5 for half-square (quad layout)
+  slotWidth: number; // slot width in relative units (0-1)
+  slotHeight: number; // slot height in relative units (0-1)
   onComplete: (croppedImageUrl: string) => void;
   onCancel: () => void;
 }
@@ -15,7 +17,8 @@ interface ImageCropModalProps {
 const createCroppedImage = async (
   imageSrc: string,
   crop: Area,
-  aspectRatio: number,
+  slotWidth: number,
+  slotHeight: number,
   targetDPI: number = 300
 ): Promise<string> => {
   const image = await loadImage(imageSrc);
@@ -26,33 +29,17 @@ const createCroppedImage = async (
     throw new Error("Canvas context not available");
   }
 
-  // Calculate output size at 300 DPI
+  // Calculate output size at 300 DPI based on actual slot size
   // For 206mm page at 300 DPI = 2429 pixels
-  // For spread (2:1 aspect ratio): 2429 x 4858 pixels
   const mmToPx = (mm: number) => (mm * targetDPI) / 25.4;
-
   const pageSize = mmToPx(206);
 
-  // Calculate canvas size based on aspect ratio
-  // For aspect ratio like 3/4 (portrait): width < height
-  // For aspect ratio like 4/3 (landscape): width > height
-  // For aspect ratio 1 (square): width = height
+  // Canvas size should match the actual slot dimensions on the page
+  // This ensures 300 DPI for the final output
+  canvas.width = Math.round(pageSize * slotWidth);
+  canvas.height = Math.round(pageSize * slotHeight);
 
-  if (Math.abs(aspectRatio - 1) < 0.01) {
-    // Square
-    canvas.width = pageSize;
-    canvas.height = pageSize;
-  } else if (aspectRatio > 1) {
-    // Landscape (e.g., 4/3, 5/4)
-    canvas.width = pageSize * aspectRatio;
-    canvas.height = pageSize;
-  } else {
-    // Portrait (e.g., 3/4)
-    canvas.width = pageSize;
-    canvas.height = pageSize / aspectRatio;
-  }
-
-  // Draw cropped image at high resolution
+  // Draw cropped image at correct resolution
   ctx.drawImage(
     image,
     crop.x,
@@ -81,10 +68,12 @@ const loadImage = (url: string): Promise<HTMLImageElement> => {
 export default function ImageCropModal({
   imageUrl,
   aspectRatio,
+  slotWidth,
+  slotHeight,
   onComplete,
   onCancel,
 }: ImageCropModalProps) {
-  console.log('ImageCropModal rendered with aspectRatio:', aspectRatio);
+  console.log('ImageCropModal rendered with aspectRatio:', aspectRatio, 'slot:', slotWidth, 'x', slotHeight);
 
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
@@ -108,13 +97,14 @@ export default function ImageCropModal({
   const handleSave = async () => {
     if (!croppedAreaPixels) return;
 
-    console.log('Saving crop with aspectRatio:', aspectRatio, 'crop area:', croppedAreaPixels);
+    console.log('Saving crop - slot:', slotWidth, 'x', slotHeight, 'crop area:', croppedAreaPixels);
     setIsProcessing(true);
     try {
       const croppedImageUrl = await createCroppedImage(
         imageUrl,
         croppedAreaPixels,
-        aspectRatio
+        slotWidth,
+        slotHeight
       );
       onComplete(croppedImageUrl);
     } catch (error) {

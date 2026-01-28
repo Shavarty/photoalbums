@@ -29,17 +29,18 @@ const renderTextToCanvas = (
   height: number
 ): string => {
   const canvas = document.createElement("canvas");
-  const scale = 4;
-  canvas.width = width * scale;
-  canvas.height = height * scale;
+  // Use 300 DPI for text, matching photo resolution
+  canvas.width = width;
+  canvas.height = height;
   const ctx = canvas.getContext("2d");
   if (!ctx) return "";
 
-  ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
+  // Solid black background (no transparency issues in PDF)
+  ctx.fillStyle = "rgba(0, 0, 0, 0.75)";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   ctx.fillStyle = "white";
-  ctx.font = `${48 * scale}px IBM Plex Sans, Arial, sans-serif`;
+  ctx.font = `${Math.floor(height * 0.4)}px IBM Plex Sans, Arial, sans-serif`;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
 
@@ -50,7 +51,7 @@ const renderTextToCanvas = (
   for (const word of words) {
     const testLine = currentLine ? `${currentLine} ${word}` : word;
     const metrics = ctx.measureText(testLine);
-    if (metrics.width > (canvas.width - 60 * scale) && currentLine) {
+    if (metrics.width > (canvas.width - 20) && currentLine) {
       lines.push(currentLine);
       currentLine = word;
     } else {
@@ -59,7 +60,7 @@ const renderTextToCanvas = (
   }
   if (currentLine) lines.push(currentLine);
 
-  const lineHeight = 50 * scale;
+  const lineHeight = height / (lines.length + 0.5);
   const startY = (canvas.height - (lines.length * lineHeight)) / 2 + lineHeight / 2;
   lines.forEach((line, i) => {
     ctx.fillText(line, canvas.width / 2, startY + i * lineHeight);
