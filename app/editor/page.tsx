@@ -17,6 +17,7 @@ export default function EditorPage() {
       backImage: null,
     },
     spreads: [],
+    withGaps: true, // default to having gaps
     createdAt: new Date(),
     updatedAt: new Date(),
   });
@@ -199,6 +200,17 @@ export default function EditorPage() {
               }
               className="text-2xl font-serif font-bold border-none focus:outline-none focus:ring-2 focus:ring-brand-orange rounded px-2"
             />
+            <label className="flex items-center gap-2 text-sm cursor-pointer">
+              <input
+                type="checkbox"
+                checked={album.withGaps}
+                onChange={(e) =>
+                  setAlbum((prev) => ({ ...prev, withGaps: e.target.checked, updatedAt: new Date() }))
+                }
+                className="w-4 h-4 text-brand-orange focus:ring-brand-orange rounded"
+              />
+              <span className="text-gray-700">Отступы между фото</span>
+            </label>
           </div>
           <div className="flex gap-3">
             <button
@@ -294,6 +306,7 @@ export default function EditorPage() {
                 <SpreadEditor
                   key={spread.id}
                   spread={spread}
+                  withGaps={album.withGaps}
                   onPhotoClick={(side, idx) =>
                     handlePhotoClick(spread.id, side, idx)
                   }

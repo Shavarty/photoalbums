@@ -1,16 +1,18 @@
 "use client";
 
 import { Spread, Photo } from "@/lib/types";
-import { SPREAD_TEMPLATES, PhotoSlot } from "@/lib/spread-templates";
+import { SPREAD_TEMPLATES, PhotoSlot, applyGaps } from "@/lib/spread-templates";
 
 interface SpreadEditorProps {
   spread: Spread;
+  withGaps: boolean;
   onPhotoClick: (side: "left" | "right", index: number) => void;
   onCaptionChange: (side: "left" | "right", index: number, caption: string) => void;
 }
 
 export default function SpreadEditor({
   spread,
+  withGaps,
   onPhotoClick,
   onCaptionChange,
 }: SpreadEditorProps) {
@@ -21,16 +23,17 @@ export default function SpreadEditor({
     return (
       <div className="relative w-full aspect-square bg-gray-100 border-2 border-gray-300 rounded-lg overflow-hidden">
         {slots.map((slot, index) => {
+          const adjustedSlot = applyGaps(slot, withGaps);
           const photo = photos[index];
           return (
             <div
               key={slot.id}
               className="absolute cursor-pointer hover:opacity-90 transition"
               style={{
-                left: `${slot.x * 100}%`,
-                top: `${slot.y * 100}%`,
-                width: `${slot.width * 100}%`,
-                height: `${slot.height * 100}%`,
+                left: `${adjustedSlot.x * 100}%`,
+                top: `${adjustedSlot.y * 100}%`,
+                width: `${adjustedSlot.width * 100}%`,
+                height: `${adjustedSlot.height * 100}%`,
               }}
               onClick={() => onPhotoClick(side, index)}
             >

@@ -25,6 +25,7 @@ export interface Album {
   title: string;
   cover: Cover;
   spreads: Spread[]; // changed from pages to spreads
+  withGaps: boolean; // whether to use gaps between photos (applies to entire album)
   createdAt: Date;
   updatedAt: Date;
 }

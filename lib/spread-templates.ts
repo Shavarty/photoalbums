@@ -245,3 +245,24 @@ export const SPREAD_TEMPLATES = [
   TEMPLATE_GRID,
   TEMPLATE_ASYMMETRIC,
 ];
+
+// Utility to apply/remove gaps from slot coordinates
+// All templates are designed WITH 2% gaps, this function can remove them
+export function applyGaps(slot: PhotoSlot, withGaps: boolean): PhotoSlot {
+  if (withGaps) {
+    // Return as-is (templates already have gaps)
+    return slot;
+  }
+
+  // Remove gaps: scale from 96% working area (0.02 to 0.98) to full 100% (0 to 1.0)
+  const GAP = 0.02;
+  const AVAILABLE_WITH_GAPS = 0.96; // 1.0 - 2*GAP
+
+  return {
+    ...slot,
+    x: (slot.x - GAP) / AVAILABLE_WITH_GAPS,
+    y: (slot.y - GAP) / AVAILABLE_WITH_GAPS,
+    width: slot.width / AVAILABLE_WITH_GAPS,
+    height: slot.height / AVAILABLE_WITH_GAPS,
+  };
+}
