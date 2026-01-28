@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Album, Spread, Photo } from "@/lib/types";
 import { SPREAD_TEMPLATES } from "@/lib/spread-templates";
-import { generateAlbumPDF, downloadPDF } from "@/lib/pdf-generator";
+import { generateAlbumPDF, downloadPDF } from "@/lib/pdf-generator-spreads";
 import ImageCropModal from "@/components/ImageCropModal";
 import SpreadEditor from "@/components/SpreadEditor";
 
@@ -164,27 +164,8 @@ export default function EditorPage() {
 
     setIsGeneratingPDF(true);
     try {
-      // Convert spreads to pages for PDF generation
-      const pages = album.spreads.flatMap((spread) => {
-        const template = SPREAD_TEMPLATES.find((t) => t.id === spread.templateId);
-        if (!template) return [];
-
-        return [
-          {
-            id: `${spread.id}-left`,
-            layout: "single" as const,
-            photos: spread.leftPhotos,
-          },
-          {
-            id: `${spread.id}-right`,
-            layout: "single" as const,
-            photos: spread.rightPhotos,
-          },
-        ];
-      });
-
-      const pdfAlbum = { ...album, pages };
-      const pdfBlob = await generateAlbumPDF(pdfAlbum as any);
+      // New generator works directly with spreads
+      const pdfBlob = await generateAlbumPDF(album);
       const filename = `${album.title.replace(/[^a-zA-Zа-яА-Я0-9]/g, "_")}_${Date.now()}.pdf`;
       downloadPDF(pdfBlob, filename);
       alert("PDF успешно создан и скачан!");

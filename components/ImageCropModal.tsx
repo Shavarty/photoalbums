@@ -32,17 +32,23 @@ const createCroppedImage = async (
 
   const pageSize = mmToPx(206);
 
-  // Check if this is a spread (2:1 aspect ratio)
-  const isSpread = Math.abs((crop.width / crop.height) - 2) < 0.1;
+  // Calculate canvas size based on aspect ratio
+  // For aspect ratio like 3/4 (portrait): width < height
+  // For aspect ratio like 4/3 (landscape): width > height
+  // For aspect ratio 1 (square): width = height
 
-  if (isSpread) {
-    // Spread: 2:1 aspect ratio (two pages wide)
-    canvas.width = pageSize * 2;
-    canvas.height = pageSize;
-  } else {
-    // Square: 1:1 aspect ratio
+  if (Math.abs(aspectRatio - 1) < 0.01) {
+    // Square
     canvas.width = pageSize;
     canvas.height = pageSize;
+  } else if (aspectRatio > 1) {
+    // Landscape (e.g., 4/3, 5/4)
+    canvas.width = pageSize * aspectRatio;
+    canvas.height = pageSize;
+  } else {
+    // Portrait (e.g., 3/4)
+    canvas.width = pageSize;
+    canvas.height = pageSize / aspectRatio;
   }
 
   // Draw cropped image at high resolution
