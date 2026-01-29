@@ -9,8 +9,8 @@ export default function Home() {
   return (
     <div className="min-h-screen flex flex-col">
       {/* Header */}
-      <header className="bg-brand-olive text-white py-4 px-4 md:px-6 lg:px-12 sticky top-0 z-50 shadow-md">
-        <div className="max-w-7xl mx-auto flex justify-between items-center">
+      <header className="bg-brand-olive text-white py-3 px-4 md:px-6 lg:px-20 sticky top-0 z-50 shadow-md">
+        <div className="max-w-[1400px] mx-auto flex justify-between items-center">
           {/* Mobile menu button + Logo */}
           <div className="flex items-center gap-4">
             <button
@@ -32,7 +32,7 @@ export default function Home() {
           </div>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex gap-6 lg:gap-10 text-sm lg:text-base font-bold uppercase">
+          <nav className="hidden md:flex gap-6 lg:gap-8 text-sm font-bold uppercase">
             <a href="#how-it-works" className="hover:opacity-70 transition-opacity">
               Как это работает
             </a>
@@ -45,10 +45,10 @@ export default function Home() {
           </nav>
 
           {/* Desktop: CTA Button + Icons */}
-          <div className="hidden md:flex items-center gap-4">
+          <div className="hidden md:flex items-center gap-3">
             <Link
               href="/editor"
-              className="btn-gradient px-8 py-2.5 text-white font-semibold text-base whitespace-nowrap"
+              className="btn-gradient px-7 py-2 text-white font-semibold text-sm whitespace-nowrap"
             >
               Создать книгу
             </Link>
@@ -138,8 +138,8 @@ export default function Home() {
       )}
 
       {/* Hero Section */}
-      <main className="flex-1 px-6 py-8 md:px-12 md:py-20">
-        <div className="max-w-7xl mx-auto">
+      <main className="flex-1 px-6 py-8 md:px-20 md:py-16">
+        <div className="max-w-[1400px] mx-auto">
           {/* Mobile Layout */}
           <div className="md:hidden">
             {/* Text Section */}
@@ -183,34 +183,34 @@ export default function Home() {
           </div>
 
           {/* Desktop Layout - Two Columns */}
-          <div className="hidden md:grid md:grid-cols-2 md:gap-16 lg:gap-20 items-start">
+          <div className="hidden md:grid md:grid-cols-2 md:gap-12 lg:gap-16 items-start">
             {/* Left Column - Text */}
             <div>
-              <h2 className="text-4xl lg:text-5xl font-serif font-bold leading-tight mb-8">
+              <h2 className="text-3xl lg:text-[2.5rem] font-serif font-bold leading-tight mb-6">
                 <span className="block uppercase text-left">ФОТОАЛЬБОМ,</span>
                 <span className="block uppercase text-right">КОТОРЫЙ СОХРАНИТ</span>
                 <span className="block text-brand-green uppercase text-right">— ВАШИ ИСТОРИИ</span>
               </h2>
-              <p className="text-base lg:text-lg text-gray-600 mb-8 leading-relaxed font-light">
+              <p className="text-sm lg:text-base text-gray-600 mb-6 leading-relaxed font-light">
                 Создаём профессиональные фотокниги, отображающие историю вашей семьи. Подарок, который тронет сердце и сохранится на всю жизнь.
               </p>
-              <p className="text-base lg:text-lg font-bold mb-10 text-foreground">
+              <p className="text-sm lg:text-base font-bold mb-8 text-foreground">
                 PDF за 10 минут, печатный альбом за 5-7 дней
               </p>
               <Link
                 href="/editor"
-                className="btn-gradient inline-block px-14 py-4 text-lg text-white font-semibold"
+                className="btn-gradient inline-block px-10 py-3 text-base text-white font-semibold"
               >
                 Создать альбом
               </Link>
             </div>
 
             {/* Right Column - Examples 3x2 Grid */}
-            <div className="grid grid-cols-3 gap-4 lg:gap-5">
+            <div className="grid grid-cols-3 gap-3 lg:gap-4">
               {[1, 2, 3, 4, 5, 6].map((i) => (
                 <div
                   key={i}
-                  className="aspect-[3/4] bg-brand-gray rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-shadow"
+                  className="aspect-[3/4] bg-brand-gray rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow"
                 >
                   <img
                     src={`/examples/example-${i <= 4 ? i : i - 4}.jpg`}
