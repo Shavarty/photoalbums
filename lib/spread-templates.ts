@@ -788,11 +788,221 @@ export const TEMPLATE_MAGAZINE: SpreadTemplate = {
   },
 };
 
+// Template 8: Portrait - for portrait photos (3:4, 2:3)
+export const TEMPLATE_PORTRAIT: SpreadTemplate = {
+  id: "portrait",
+  name: "Портретный",
+  description: "Для вертикальных фотографий",
+  // WITH gaps (2% everywhere)
+  leftPage: {
+    slots: [
+      {
+        id: "left-1",
+        aspectRatio: 3 / 4,
+        width: 0.72,
+        height: 0.96,
+        x: 0.14,
+        y: 0.02,
+      },
+    ],
+  },
+  rightPage: {
+    slots: [
+      {
+        id: "right-1",
+        aspectRatio: 3 / 4,
+        width: 0.72,
+        height: 0.96,
+        x: 0.14,
+        y: 0.02,
+      },
+    ],
+  },
+  leftPageNoGaps: {
+    slots: [
+      {
+        id: "left-1",
+        aspectRatio: 3 / 4,
+        width: 0.75,
+        height: 1.0,
+        x: 0.125,
+        y: 0,
+      },
+    ],
+  },
+  rightPageNoGaps: {
+    slots: [
+      {
+        id: "right-1",
+        aspectRatio: 3 / 4,
+        width: 0.75,
+        height: 1.0,
+        x: 0.125,
+        y: 0,
+      },
+    ],
+  },
+};
+
+// Template 9: Squares - Instagram squares (1:1)
+export const TEMPLATE_SQUARES: SpreadTemplate = {
+  id: "squares",
+  name: "Квадраты",
+  description: "4 квадратных фото на каждой странице",
+  // WITH gaps (2% everywhere)
+  leftPage: {
+    slots: [
+      {
+        id: "left-1",
+        aspectRatio: 1,
+        width: 0.47,
+        height: 0.47,
+        x: 0.02,
+        y: 0.02,
+      },
+      {
+        id: "left-2",
+        aspectRatio: 1,
+        width: 0.47,
+        height: 0.47,
+        x: 0.51,
+        y: 0.02,
+      },
+      {
+        id: "left-3",
+        aspectRatio: 1,
+        width: 0.47,
+        height: 0.47,
+        x: 0.02,
+        y: 0.51,
+      },
+      {
+        id: "left-4",
+        aspectRatio: 1,
+        width: 0.47,
+        height: 0.47,
+        x: 0.51,
+        y: 0.51,
+      },
+    ],
+  },
+  rightPage: {
+    slots: [
+      {
+        id: "right-1",
+        aspectRatio: 1,
+        width: 0.47,
+        height: 0.47,
+        x: 0.02,
+        y: 0.02,
+      },
+      {
+        id: "right-2",
+        aspectRatio: 1,
+        width: 0.47,
+        height: 0.47,
+        x: 0.51,
+        y: 0.02,
+      },
+      {
+        id: "right-3",
+        aspectRatio: 1,
+        width: 0.47,
+        height: 0.47,
+        x: 0.02,
+        y: 0.51,
+      },
+      {
+        id: "right-4",
+        aspectRatio: 1,
+        width: 0.47,
+        height: 0.47,
+        x: 0.51,
+        y: 0.51,
+      },
+    ],
+  },
+  leftPageNoGaps: {
+    slots: [
+      {
+        id: "left-1",
+        aspectRatio: 1,
+        width: 0.5,
+        height: 0.5,
+        x: 0,
+        y: 0,
+      },
+      {
+        id: "left-2",
+        aspectRatio: 1,
+        width: 0.5,
+        height: 0.5,
+        x: 0.5,
+        y: 0,
+      },
+      {
+        id: "left-3",
+        aspectRatio: 1,
+        width: 0.5,
+        height: 0.5,
+        x: 0,
+        y: 0.5,
+      },
+      {
+        id: "left-4",
+        aspectRatio: 1,
+        width: 0.5,
+        height: 0.5,
+        x: 0.5,
+        y: 0.5,
+      },
+    ],
+  },
+  rightPageNoGaps: {
+    slots: [
+      {
+        id: "right-1",
+        aspectRatio: 1,
+        width: 0.5,
+        height: 0.5,
+        x: 0,
+        y: 0,
+      },
+      {
+        id: "right-2",
+        aspectRatio: 1,
+        width: 0.5,
+        height: 0.5,
+        x: 0.5,
+        y: 0,
+      },
+      {
+        id: "right-3",
+        aspectRatio: 1,
+        width: 0.5,
+        height: 0.5,
+        x: 0,
+        y: 0.5,
+      },
+      {
+        id: "right-4",
+        aspectRatio: 1,
+        width: 0.5,
+        height: 0.5,
+        x: 0.5,
+        y: 0.5,
+      },
+    ],
+  },
+};
+
 export const SPREAD_TEMPLATES = [
   TEMPLATE_CLASSIC,
   TEMPLATE_6PHOTOS,
   TEMPLATE_GRID,
   TEMPLATE_ASYMMETRIC,
+  TEMPLATE_PORTRAIT,
+  TEMPLATE_SQUARES,
   TEMPLATE_PANORAMA,
   TEMPLATE_FOCUS,
   TEMPLATE_MAGAZINE,

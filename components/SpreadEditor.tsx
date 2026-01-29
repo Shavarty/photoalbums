@@ -37,7 +37,7 @@ export default function SpreadEditor({
               }}
               onClick={() => onPhotoClick(side, index)}
             >
-              <div className="relative w-full h-full bg-gray-200 border border-gray-400 flex items-center justify-center overflow-hidden">
+              <div className="relative w-full h-full bg-gray-200 flex items-center justify-center overflow-hidden">
                 {photo?.url ? (
                   <>
                     <img

@@ -27,7 +27,7 @@ export default function EditorPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Temporarily disabled templates
-  const disabledTemplates = ["panorama", "focus", "magazine"];
+  const disabledTemplates: string[] = [];
 
   // Crop modal state
   const [cropModal, setCropModal] = useState<{
