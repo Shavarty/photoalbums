@@ -18,12 +18,13 @@ export default function EditorPage() {
       backImage: null,
     },
     spreads: [],
-    withGaps: true, // default to having gaps
+    withGaps: true,
     createdAt: new Date(),
     updatedAt: new Date(),
   });
 
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Crop modal state
   const [cropModal, setCropModal] = useState<{
@@ -63,6 +64,9 @@ export default function EditorPage() {
       spreads: [...prev.spreads, newSpread],
       updatedAt: new Date(),
     }));
+
+    // Close sidebar on mobile after adding spread
+    setSidebarOpen(false);
   };
 
   // Delete spread
@@ -171,7 +175,6 @@ export default function EditorPage() {
 
     setIsGeneratingPDF(true);
     try {
-      // New generator works directly with spreads
       const pdfBlob = await generateAlbumPDF(album);
       const filename = `${album.title.replace(/[^a-zA-Zа-яА-Я0-9]/g, "_")}_${Date.now()}.pdf`;
       downloadPDF(pdfBlob, filename);
@@ -186,10 +189,21 @@ export default function EditorPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 px-6 py-4">
-        <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <div className="flex items-center gap-4">
-            <Link href="/" className="text-gray-600 hover:text-gray-900 transition">
+      <header className="bg-white border-b border-gray-200 px-4 md:px-6 py-3 md:py-4 sticky top-0 z-40">
+        <div className="max-w-7xl mx-auto flex justify-between items-center gap-4">
+          <div className="flex items-center gap-3 md:gap-4 flex-1 min-w-0">
+            {/* Mobile menu button */}
+            <button
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="lg:hidden flex-shrink-0 w-8 h-8 flex flex-col justify-center items-center gap-1.5"
+              aria-label="Меню"
+            >
+              <span className="w-6 h-0.5 bg-gray-700"></span>
+              <span className="w-6 h-0.5 bg-gray-700"></span>
+              <span className="w-6 h-0.5 bg-gray-700"></span>
+            </button>
+
+            <Link href="/" className="text-gray-600 hover:text-gray-900 transition text-sm md:text-base flex-shrink-0">
               ← Назад
             </Link>
             <input
@@ -198,25 +212,114 @@ export default function EditorPage() {
               onChange={(e) =>
                 setAlbum((prev) => ({ ...prev, title: e.target.value }))
               }
-              className="text-2xl font-serif font-bold border-none focus:outline-none focus:ring-2 focus:ring-brand-orange rounded px-2"
+              className="text-lg md:text-2xl font-serif font-bold border-none focus:outline-none focus:ring-2 focus:ring-brand-orange rounded px-2 min-w-0 flex-1"
             />
           </div>
-          <div className="flex gap-3">
-            <button
-              onClick={handleGeneratePDF}
-              disabled={isGeneratingPDF}
-              className="btn-gradient px-6 py-2 text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isGeneratingPDF ? "Создаем PDF..." : "Скачать PDF"}
-            </button>
-          </div>
+          <button
+            onClick={handleGeneratePDF}
+            disabled={isGeneratingPDF}
+            className="btn-gradient px-4 md:px-6 py-2 text-white text-sm md:text-base font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
+          >
+            {isGeneratingPDF ? "PDF..." : "Скачать"}
+          </button>
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto py-8 px-6 grid lg:grid-cols-4 gap-8">
-        {/* Sidebar - Templates */}
-        <div className="lg:col-span-1">
-          <div className="bg-white rounded-xl shadow-sm p-4 sticky top-8">
+      <div className="max-w-7xl mx-auto flex">
+        {/* Sidebar - Mobile Overlay */}
+        {sidebarOpen && (
+          <>
+            <div
+              className="fixed inset-0 bg-black bg-opacity-50 z-30 lg:hidden"
+              onClick={() => setSidebarOpen(false)}
+            ></div>
+            <div className="fixed top-0 left-0 bottom-0 w-80 bg-white z-40 shadow-xl lg:hidden overflow-y-auto">
+              <div className="p-4 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white">
+                <h3 className="font-semibold text-lg">
+                  Развороты ({album.spreads.length})
+                </h3>
+                <button
+                  onClick={() => setSidebarOpen(false)}
+                  className="w-8 h-8 flex items-center justify-center"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              <div className="p-4">
+                {/* Gaps toggle */}
+                <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+                  <label className="flex items-center gap-2 text-sm cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={album.withGaps}
+                      onChange={(e) =>
+                        setAlbum((prev) => ({ ...prev, withGaps: e.target.checked, updatedAt: new Date() }))
+                      }
+                      className="w-4 h-4 text-brand-orange focus:ring-brand-orange rounded"
+                    />
+                    <span className="text-gray-700 font-medium">Отступы между фото</span>
+                  </label>
+                </div>
+
+                {/* Add spread buttons */}
+                <div className="space-y-2 mb-4">
+                  {SPREAD_TEMPLATES.map((template) => (
+                    <button
+                      key={template.id}
+                      onClick={() => addSpread(template.id)}
+                      className="w-full px-3 py-2 bg-brand-gray hover:bg-gray-200 rounded-lg text-sm transition text-left flex items-center gap-3"
+                    >
+                      <SpreadPreview templateId={template.id} size={35} />
+                      <div className="flex-1">
+                        <div className="font-medium">{template.name}</div>
+                        <div className="text-xs text-gray-600">
+                          {template.description}
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+
+                {/* Spread list */}
+                <div className="space-y-2">
+                  {album.spreads.map((spread, index) => {
+                    const template = SPREAD_TEMPLATES.find(
+                      (t) => t.id === spread.templateId
+                    );
+                    return (
+                      <div
+                        key={spread.id}
+                        className="p-3 rounded-lg border-2 border-gray-200 hover:border-gray-300 transition"
+                      >
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="text-sm font-medium">
+                            Разворот {index + 1}
+                          </span>
+                          <button
+                            onClick={() => deleteSpread(spread.id)}
+                            className="text-red-500 hover:text-red-700 text-xs"
+                          >
+                            Удалить
+                          </button>
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          {template?.name}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Sidebar - Desktop */}
+        <div className="hidden lg:block lg:w-80 flex-shrink-0">
+          <div className="bg-white rounded-xl shadow-sm p-4 sticky top-24 m-6">
             <h3 className="font-semibold mb-4">
               Развороты ({album.spreads.length})
             </h3>
@@ -288,9 +391,9 @@ export default function EditorPage() {
         </div>
 
         {/* Main Editor Area */}
-        <div className="lg:col-span-3">
+        <div className="flex-1 p-4 md:p-6">
           {album.spreads.length === 0 ? (
-            <div className="bg-white rounded-xl shadow-sm p-12 text-center">
+            <div className="bg-white rounded-xl shadow-sm p-8 md:p-12 text-center">
               <p className="text-gray-500 mb-4">
                 Альбом пустой. Добавьте первый разворот!
               </p>

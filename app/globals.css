@@ -45,11 +45,31 @@ body {
 .btn-gradient {
   background: linear-gradient(90deg, var(--color-orange) 0%, var(--color-gold) 100%);
   box-shadow: 0 0 15px 0 rgba(241, 146, 13, 0.5);
-  border-radius: var(--radius-4xl);
+  border-radius: 2rem;
   transition: all 0.3s ease;
 }
 
 .btn-gradient:hover {
   box-shadow: 0 0 20px 0 rgba(241, 146, 13, 0.7);
   transform: translateY(-1px);
+}
+
+.btn-gradient:active {
+  transform: translateY(0);
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Mobile touch improvements */
+@media (max-width: 768px) {
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  input, textarea, button {
+    font-size: 16px; /* Prevent zoom on iOS */
+  }
 }
