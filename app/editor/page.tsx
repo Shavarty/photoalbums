@@ -26,6 +26,9 @@ export default function EditorPage() {
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
+  // Temporarily disabled templates
+  const disabledTemplates = ["panorama", "focus", "magazine"];
+
   // Crop modal state
   const [cropModal, setCropModal] = useState<{
     imageUrl: string;
@@ -277,21 +280,29 @@ export default function EditorPage() {
 
                 {/* Add spread buttons */}
                 <div className="space-y-2 mb-4">
-                  {SPREAD_TEMPLATES.map((template) => (
-                    <button
-                      key={template.id}
-                      onClick={() => addSpread(template.id)}
-                      className="w-full px-3 py-2 bg-brand-gray hover:bg-gray-200 rounded-lg text-sm transition text-left flex items-center gap-3"
-                    >
-                      <SpreadPreview templateId={template.id} size={35} />
-                      <div className="flex-1">
-                        <div className="font-medium">{template.name}</div>
-                        <div className="text-xs text-gray-600">
-                          {template.description}
+                  {SPREAD_TEMPLATES.map((template) => {
+                    const isDisabled = disabledTemplates.includes(template.id);
+                    return (
+                      <button
+                        key={template.id}
+                        onClick={() => !isDisabled && addSpread(template.id)}
+                        disabled={isDisabled}
+                        className={`w-full px-3 py-2 bg-brand-gray rounded-lg text-sm transition text-left flex items-center gap-3 ${
+                          isDisabled
+                            ? 'opacity-40 cursor-not-allowed'
+                            : 'hover:bg-gray-200'
+                        }`}
+                      >
+                        <SpreadPreview templateId={template.id} size={35} />
+                        <div className="flex-1">
+                          <div className="font-medium">{template.name}</div>
+                          <div className="text-xs text-gray-600">
+                            {template.description}
+                          </div>
                         </div>
-                      </div>
-                    </button>
-                  ))}
+                      </button>
+                    );
+                  })}
                 </div>
 
                 {/* Spread list */}
@@ -352,21 +363,29 @@ export default function EditorPage() {
 
             {/* Add spread buttons */}
             <div className="space-y-2 mb-4">
-              {SPREAD_TEMPLATES.map((template) => (
-                <button
-                  key={template.id}
-                  onClick={() => addSpread(template.id)}
-                  className="w-full px-3 py-2 bg-brand-gray hover:bg-gray-200 rounded-lg text-sm transition text-left flex items-center gap-3"
-                >
-                  <SpreadPreview templateId={template.id} size={35} />
-                  <div className="flex-1">
-                    <div className="font-medium">{template.name}</div>
-                    <div className="text-xs text-gray-600">
-                      {template.description}
+              {SPREAD_TEMPLATES.map((template) => {
+                const isDisabled = disabledTemplates.includes(template.id);
+                return (
+                  <button
+                    key={template.id}
+                    onClick={() => !isDisabled && addSpread(template.id)}
+                    disabled={isDisabled}
+                    className={`w-full px-3 py-2 bg-brand-gray rounded-lg text-sm transition text-left flex items-center gap-3 ${
+                      isDisabled
+                        ? 'opacity-40 cursor-not-allowed'
+                        : 'hover:bg-gray-200'
+                    }`}
+                  >
+                    <SpreadPreview templateId={template.id} size={35} />
+                    <div className="flex-1">
+                      <div className="font-medium">{template.name}</div>
+                      <div className="text-xs text-gray-600">
+                        {template.description}
+                      </div>
                     </div>
-                  </div>
-                </button>
-              ))}
+                  </button>
+                );
+              })}
             </div>
 
             {/* Spread list */}
