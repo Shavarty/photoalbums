@@ -1,16 +1,16 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f8fbf8;
-  --foreground: #222222;
+  --background: #FAF8FB;
+  --foreground: #2E2E2E;
 
   /* Knigodar color scheme */
   --color-orange: #F1920D;
   --color-gold: #FFC472;
   --color-gray-dull: #F5F5F5;
   --color-pink-dull: #FFE5E5;
-  --color-olive: #779914;
-  --color-green-accent: #779914;
+  --color-olive: #77914A;
+  --color-green-accent: #77914A;
 }
 
 @theme inline {
