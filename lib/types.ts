@@ -1,9 +1,18 @@
 // Types for photo album editor with spreads
 
+export interface CropArea {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
 export interface Photo {
   id: string;
   file: File | null;
-  url: string;
+  url: string; // Preview URL (low-res for editor display)
+  originalUrl?: string; // Original high-res URL for PDF generation
+  cropArea?: CropArea; // Crop coordinates in pixels on original image
   caption?: string;
 }
 

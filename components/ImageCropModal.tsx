@@ -3,23 +3,29 @@
 import { useState, useCallback, useEffect } from "react";
 import Cropper from "react-easy-crop";
 import { Area } from "react-easy-crop";
+import { CropArea } from "@/lib/types";
+
+interface CropResult {
+  previewUrl: string; // Low-res preview for editor
+  originalUrl: string; // Original high-res for PDF
+  cropArea: CropArea; // Crop coordinates
+}
 
 interface ImageCropModalProps {
   imageUrl: string;
   aspectRatio: number; // 1 for square, 0.5 for half-square (quad layout)
   slotWidth: number; // slot width in relative units (0-1)
   slotHeight: number; // slot height in relative units (0-1)
-  onComplete: (croppedImageUrl: string) => void;
+  onComplete: (result: CropResult) => void;
   onCancel: () => void;
 }
 
-// Helper to create cropped image
-const createCroppedImage = async (
+// Helper to create LIGHTWEIGHT preview for editor (not for print!)
+const createPreviewImage = async (
   imageSrc: string,
   crop: Area,
   slotWidth: number,
   slotHeight: number,
-  targetDPI: number = 300,
   retryCount: number = 0
 ): Promise<string> => {
   try {
@@ -78,21 +84,21 @@ const createCroppedImage = async (
     throw new Error("Canvas context not available");
   }
 
-  // Lower DPI for mobile devices to prevent crashes
-  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-  const actualDPI = isMobile ? 150 : targetDPI; // 150 DPI for mobile, 300 for desktop
+  // PREVIEW ONLY: Use low DPI for fast, reliable processing
+  // Real 300 DPI processing will happen in PDF generator using original image
+  const PREVIEW_DPI = 100; // Low DPI for editor preview only
 
   // Calculate output size based on actual slot size
-  const mmToPx = (mm: number) => (mm * actualDPI) / 25.4;
+  const mmToPx = (mm: number) => (mm * PREVIEW_DPI) / 25.4;
   const pageSize = mmToPx(206);
 
-  // Canvas size should match the actual slot dimensions on the page
+  // Canvas size for PREVIEW only (small and fast)
   let canvasWidth = Math.round(pageSize * slotWidth);
   let canvasHeight = Math.round(pageSize * slotHeight);
 
-  // Mobile devices have strict canvas size limits
-  const MAX_CANVAS_AREA = isMobile ? 4000000 : 16000000; // 4MP mobile, 16MP desktop
-  const MAX_DIMENSION = isMobile ? 2048 : 4096;
+  // Very conservative limits for preview (we don't need high-res here!)
+  const MAX_CANVAS_AREA = 2000000; // 2MP max - plenty for preview
+  const MAX_DIMENSION = 1500; // 1500px max per dimension
   const currentArea = canvasWidth * canvasHeight;
 
   // Limit by area
@@ -160,7 +166,7 @@ const createCroppedImage = async (
       const delay = 500 * (retryCount + 1); // 500ms, 1000ms, 1500ms
       console.log(`Retrying image processing (attempt ${retryCount + 2}/4) after ${delay}ms...`);
       await new Promise(resolve => setTimeout(resolve, delay));
-      return createCroppedImage(imageSrc, crop, slotWidth, slotHeight, targetDPI, retryCount + 1);
+      return createPreviewImage(imageSrc, crop, slotWidth, slotHeight, retryCount + 1);
     }
     console.error("Final error after all retries:", error);
     throw error;
@@ -234,19 +240,28 @@ export default function ImageCropModal({
     setIsProcessing(true);
 
     try {
-      const croppedImageUrl = await createCroppedImage(
+      // Create lightweight preview for editor display
+      const previewUrl = await createPreviewImage(
         imageUrl,
         croppedAreaPixels,
         slotWidth,
         slotHeight
       );
 
-      // Verify we got a valid result
-      if (!croppedImageUrl || !croppedImageUrl.startsWith('data:image')) {
-        throw new Error("Invalid result from image processing");
+      // Verify we got a valid preview
+      if (!previewUrl || !previewUrl.startsWith('data:image')) {
+        throw new Error("Invalid preview result");
       }
 
-      onComplete(croppedImageUrl);
+      // Return complete crop result
+      const result: CropResult = {
+        previewUrl,              // Low-res for editor
+        originalUrl: imageUrl,   // Original high-res for PDF
+        cropArea: croppedAreaPixels  // Crop coordinates
+      };
+
+      console.log('Crop complete - preview size:', previewUrl.length, 'bytes');
+      onComplete(result);
     } catch (error: any) {
       console.error("Error cropping image:", error);
       const errorMsg = error?.message || "Неизвестная ошибка";

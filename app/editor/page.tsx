@@ -117,7 +117,7 @@ export default function EditorPage() {
   };
 
   // Complete photo upload after crop
-  const completePhotoUpload = (croppedImageUrl: string) => {
+  const completePhotoUpload = (result: { previewUrl: string; originalUrl: string; cropArea: any }) => {
     if (!cropModal) return;
 
     const { spreadId, side, photoIndex } = cropModal;
@@ -132,7 +132,13 @@ export default function EditorPage() {
                 side === "left" ? spread.leftPhotos : spread.rightPhotos
               ).map((photo, idx) =>
                 idx === photoIndex
-                  ? { ...photo, url: croppedImageUrl, file: null }
+                  ? {
+                      ...photo,
+                      url: result.previewUrl,        // Low-res preview for editor
+                      originalUrl: result.originalUrl, // High-res for PDF
+                      cropArea: result.cropArea,      // Crop coordinates
+                      file: null
+                    }
                   : photo
               ),
             }

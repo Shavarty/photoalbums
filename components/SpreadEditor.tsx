@@ -43,7 +43,7 @@ export default function SpreadEditor({
                     <img
                       src={photo.url}
                       alt=""
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-contain bg-gray-100"
                     />
                     {photo.caption && (
                       <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-60 text-white text-xs p-1 text-center">

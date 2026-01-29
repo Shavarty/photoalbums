@@ -1,5 +1,5 @@
 import { jsPDF } from "jspdf";
-import { Album, Spread, Photo } from "./types";
+import { Album, Spread, Photo, CropArea } from "./types";
 import { SPREAD_TEMPLATES, PhotoSlot, getPageSlots } from "./spread-templates";
 
 // Print specs from typography
@@ -20,6 +20,46 @@ const loadImage = (url: string): Promise<HTMLImageElement> => {
     img.onerror = reject;
     img.src = url;
   });
+};
+
+// Crop original image at full 300 DPI quality for PDF
+const cropImageAtFullQuality = async (
+  imageUrl: string,
+  cropArea: { x: number; y: number; width: number; height: number },
+  targetWidthMM: number,
+  targetHeightMM: number
+): Promise<string> => {
+  const image = await loadImage(imageUrl);
+
+  // Calculate target size at 300 DPI
+  const mmToPx = (mm: number) => (mm * 300) / 25.4;
+  const targetWidth = Math.round(mmToPx(targetWidthMM));
+  const targetHeight = Math.round(mmToPx(targetHeightMM));
+
+  const canvas = document.createElement("canvas");
+  canvas.width = targetWidth;
+  canvas.height = targetHeight;
+
+  const ctx = canvas.getContext("2d", { alpha: false });
+  if (!ctx) throw new Error("Canvas context not available");
+
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
+
+  // Draw cropped area from original image scaled to target size
+  ctx.drawImage(
+    image,
+    cropArea.x,
+    cropArea.y,
+    cropArea.width,
+    cropArea.height,
+    0,
+    0,
+    targetWidth,
+    targetHeight
+  );
+
+  return canvas.toDataURL("image/jpeg", 0.92);
 };
 
 // Render text to canvas (Cyrillic support)
@@ -84,15 +124,35 @@ const generatePageWithSlots = async (
     if (!photo?.url) continue;
 
     try {
+      // Use original high-res image if available, fallback to preview
+      const imageUrl = photo.originalUrl || photo.url;
+      const cropArea = photo.cropArea;
+
       // Calculate slot position and size in mm (with horizontal offset for spreads)
       const slotX = slot.x * PAGE_SIZE + offsetX;
       const slotY = slot.y * PAGE_SIZE;
       const slotWidth = slot.width * PAGE_SIZE;
       const slotHeight = slot.height * PAGE_SIZE;
 
-      // Photo already has correct aspect ratio from crop
-      // COVER approach: fill the entire slot, crop overflow if needed
-      const photoAspect = slot.aspectRatio;
+      // Process photo at full 300 DPI quality
+      let finalImageUrl: string;
+
+      if (cropArea && imageUrl !== photo.url) {
+        // We have crop info + original image - crop at 300 DPI
+        finalImageUrl = await cropImageAtFullQuality(imageUrl, cropArea, slotWidth, slotHeight);
+      } else {
+        // No crop info or using preview - use as is
+        finalImageUrl = imageUrl;
+      }
+
+      // Clip to slot boundaries
+      pdf.saveGraphicsState();
+      pdf.rect(slotX, slotY, slotWidth, slotHeight);
+      pdf.clip();
+
+      // COVER approach: fill entire slot
+      const image = await loadImage(finalImageUrl);
+      const imageAspect = image.width / image.height;
       const slotAspect = slotWidth / slotHeight;
 
       let photoWidth: number;
@@ -100,28 +160,21 @@ const generatePageWithSlots = async (
       let photoX: number;
       let photoY: number;
 
-      if (photoAspect > slotAspect) {
-        // Photo is wider - fit to HEIGHT, crop sides
+      if (imageAspect > slotAspect) {
+        // Image wider - fit to HEIGHT, crop sides
         photoHeight = slotHeight;
-        photoWidth = slotHeight * photoAspect;
-        photoX = slotX - (photoWidth - slotWidth) / 2; // center, overflow sides
+        photoWidth = slotHeight * imageAspect;
+        photoX = slotX - (photoWidth - slotWidth) / 2;
         photoY = slotY;
       } else {
-        // Photo is taller - fit to WIDTH, crop top/bottom
+        // Image taller - fit to WIDTH, crop top/bottom
         photoWidth = slotWidth;
-        photoHeight = slotWidth / photoAspect;
+        photoHeight = slotWidth / imageAspect;
         photoX = slotX;
-        photoY = slotY - (photoHeight - slotHeight) / 2; // center, overflow top/bottom
+        photoY = slotY - (photoHeight - slotHeight) / 2;
       }
 
-      // Clip to slot boundaries to prevent overflow
-      pdf.saveGraphicsState();
-      pdf.rect(slotX, slotY, slotWidth, slotHeight);
-      pdf.clip();
-
-      // Add photo (will be clipped to slot)
-      pdf.addImage(photo.url, "JPEG", photoX, photoY, photoWidth, photoHeight, undefined, "FAST");
-
+      pdf.addImage(finalImageUrl, "JPEG", photoX, photoY, photoWidth, photoHeight, undefined, "FAST");
       pdf.restoreGraphicsState();
 
       // Add caption if exists
