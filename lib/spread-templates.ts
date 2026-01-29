@@ -428,95 +428,7 @@ export const TEMPLATE_ASYMMETRIC: SpreadTemplate = {
   },
 };
 
-// Template 5: Portrait Collage - for portrait photos (2:3, 3:4)
-export const TEMPLATE_PORTRAIT: SpreadTemplate = {
-  id: "portrait",
-  name: "Портретный",
-  description: "Для вертикальных фотографий",
-  // WITH gaps (2% everywhere)
-  leftPage: {
-    slots: [
-      {
-        id: "left-1",
-        aspectRatio: 2 / 3,
-        width: 0.47,
-        height: 0.70,
-        x: 0.02,
-        y: 0.02,
-      },
-      {
-        id: "left-2",
-        aspectRatio: 2 / 3,
-        width: 0.47,
-        height: 0.70,
-        x: 0.51,
-        y: 0.02,
-      },
-      {
-        id: "left-3",
-        aspectRatio: 2 / 1,
-        width: 0.96,
-        height: 0.24,
-        x: 0.02,
-        y: 0.74,
-      },
-    ],
-  },
-  rightPage: {
-    slots: [
-      {
-        id: "right-1",
-        aspectRatio: 3 / 4,
-        width: 0.96,
-        height: 1.28,
-        x: 0.02,
-        y: -0.14,
-      },
-    ],
-  },
-  leftPageNoGaps: {
-    slots: [
-      {
-        id: "left-1",
-        aspectRatio: 2 / 3,
-        width: 0.50,
-        height: 0.75,
-        x: 0,
-        y: 0,
-      },
-      {
-        id: "left-2",
-        aspectRatio: 2 / 3,
-        width: 0.50,
-        height: 0.75,
-        x: 0.50,
-        y: 0,
-      },
-      {
-        id: "left-3",
-        aspectRatio: 2 / 1,
-        width: 1.0,
-        height: 0.25,
-        x: 0,
-        y: 0.75,
-      },
-    ],
-  },
-  rightPageNoGaps: {
-    slots: [
-      {
-        id: "right-1",
-        aspectRatio: 3 / 4,
-        width: 1.0,
-        height: 1.333,
-        x: 0,
-        y: -0.1665,
-      },
-    ],
-  },
-};
-
-// Template 6: Panorama - for wide photos (16:9)
+// Template 5: Panorama - for wide photos (16:9)
 export const TEMPLATE_PANORAMA: SpreadTemplate = {
   id: "panorama",
   name: "Панорама",
@@ -620,175 +532,7 @@ export const TEMPLATE_PANORAMA: SpreadTemplate = {
   },
 };
 
-// Template 7: Instagram Squares - for square photos (1:1)
-export const TEMPLATE_SQUARES: SpreadTemplate = {
-  id: "squares",
-  name: "Квадраты",
-  description: "Instagram-стиль, 9 квадратных фото",
-  // WITH gaps (2% everywhere)
-  leftPage: {
-    slots: [
-      {
-        id: "left-1",
-        aspectRatio: 1,
-        width: 0.30,
-        height: 0.30,
-        x: 0.02,
-        y: 0.02,
-      },
-      {
-        id: "left-2",
-        aspectRatio: 1,
-        width: 0.30,
-        height: 0.30,
-        x: 0.35,
-        y: 0.02,
-      },
-      {
-        id: "left-3",
-        aspectRatio: 1,
-        width: 0.30,
-        height: 0.30,
-        x: 0.68,
-        y: 0.02,
-      },
-      {
-        id: "left-4",
-        aspectRatio: 1,
-        width: 0.30,
-        height: 0.30,
-        x: 0.02,
-        y: 0.35,
-      },
-      {
-        id: "left-5",
-        aspectRatio: 1,
-        width: 0.30,
-        height: 0.30,
-        x: 0.35,
-        y: 0.35,
-      },
-      {
-        id: "left-6",
-        aspectRatio: 1,
-        width: 0.30,
-        height: 0.30,
-        x: 0.68,
-        y: 0.35,
-      },
-    ],
-  },
-  rightPage: {
-    slots: [
-      {
-        id: "right-1",
-        aspectRatio: 1,
-        width: 0.30,
-        height: 0.30,
-        x: 0.02,
-        y: 0.02,
-      },
-      {
-        id: "right-2",
-        aspectRatio: 1,
-        width: 0.30,
-        height: 0.30,
-        x: 0.35,
-        y: 0.02,
-      },
-      {
-        id: "right-3",
-        aspectRatio: 1,
-        width: 0.30,
-        height: 0.30,
-        x: 0.68,
-        y: 0.02,
-      },
-    ],
-  },
-  leftPageNoGaps: {
-    slots: [
-      {
-        id: "left-1",
-        aspectRatio: 1,
-        width: 0.333,
-        height: 0.333,
-        x: 0,
-        y: 0,
-      },
-      {
-        id: "left-2",
-        aspectRatio: 1,
-        width: 0.333,
-        height: 0.333,
-        x: 0.333,
-        y: 0,
-      },
-      {
-        id: "left-3",
-        aspectRatio: 1,
-        width: 0.334,
-        height: 0.333,
-        x: 0.666,
-        y: 0,
-      },
-      {
-        id: "left-4",
-        aspectRatio: 1,
-        width: 0.333,
-        height: 0.333,
-        x: 0,
-        y: 0.333,
-      },
-      {
-        id: "left-5",
-        aspectRatio: 1,
-        width: 0.333,
-        height: 0.333,
-        x: 0.333,
-        y: 0.333,
-      },
-      {
-        id: "left-6",
-        aspectRatio: 1,
-        width: 0.334,
-        height: 0.333,
-        x: 0.666,
-        y: 0.333,
-      },
-    ],
-  },
-  rightPageNoGaps: {
-    slots: [
-      {
-        id: "right-1",
-        aspectRatio: 1,
-        width: 0.333,
-        height: 0.333,
-        x: 0,
-        y: 0,
-      },
-      {
-        id: "right-2",
-        aspectRatio: 1,
-        width: 0.333,
-        height: 0.333,
-        x: 0.333,
-        y: 0,
-      },
-      {
-        id: "right-3",
-        aspectRatio: 1,
-        width: 0.334,
-        height: 0.333,
-        x: 0.666,
-        y: 0,
-      },
-    ],
-  },
-};
-
-// Template 8: Focus - one large photo + small details
+// Template 6: Focus - one large photo + small details
 export const TEMPLATE_FOCUS: SpreadTemplate = {
   id: "focus",
   name: "Акцент",
@@ -908,7 +652,7 @@ export const TEMPLATE_FOCUS: SpreadTemplate = {
   },
 };
 
-// Template 9: Magazine - magazine-style mixed formats
+// Template 7: Magazine - magazine-style mixed formats
 export const TEMPLATE_MAGAZINE: SpreadTemplate = {
   id: "magazine",
   name: "Журнальный",
@@ -1049,9 +793,7 @@ export const SPREAD_TEMPLATES = [
   TEMPLATE_6PHOTOS,
   TEMPLATE_GRID,
   TEMPLATE_ASYMMETRIC,
-  TEMPLATE_PORTRAIT,
   TEMPLATE_PANORAMA,
-  TEMPLATE_SQUARES,
   TEMPLATE_FOCUS,
   TEMPLATE_MAGAZINE,
 ];
