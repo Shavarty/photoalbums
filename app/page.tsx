@@ -119,36 +119,38 @@ export default function Home() {
       )}
 
       {/* Hero Section */}
-      <main className="flex-1 px-4 py-12 md:px-6 md:py-16">
-        <div className="max-w-7xl mx-auto">
+      <main className="flex-1 px-6 py-16 md:px-8 md:py-20">
+        <div className="max-w-6xl mx-auto">
           {/* Text Section */}
-          <div className="mb-12 md:mb-16">
-            <h2 className="text-3xl md:text-4xl lg:text-5xl font-serif font-bold leading-tight mb-6 md:mb-8">
-              <span className="block uppercase">ФОТОАЛЬБОМ</span>
-              <span className="block uppercase">КАК ХРАНИТЕЛЬ</span>
-              <span className="block text-brand-green uppercase">— ВАШИХ ИСТОРИЙ</span>
+          <div className="mb-16 md:mb-20">
+            <h2 className="text-3xl md:text-4xl lg:text-[2.75rem] font-serif font-bold leading-tight mb-8 md:mb-10">
+              <span className="block uppercase text-left">ФОТОАЛЬБОМ,</span>
+              <span className="block uppercase text-right">КОТОРЫЙ СОХРАНИТ</span>
+              <span className="block text-brand-green uppercase text-right">— ВАШИ ИСТОРИИ</span>
             </h2>
-            <p className="text-base md:text-lg text-gray-700 mb-6 md:mb-8 leading-relaxed max-w-2xl">
+            <p className="text-sm md:text-base text-gray-600 mb-8 md:mb-10 leading-relaxed max-w-xl font-light">
               Создаём профессиональные фотокниги, отображающие историю вашей семьи.
               Подарок, который тронет сердце и сохранится на всю жизнь.
             </p>
-            <p className="text-lg md:text-xl font-semibold mb-8 md:mb-10 text-gray-900">
+            <p className="text-sm md:text-base font-bold mb-10 md:mb-12 text-foreground text-center">
               PDF за 10 минут, печатный альбом за 5-7 дней
             </p>
-            <Link
-              href="/editor"
-              className="btn-gradient inline-block px-10 md:px-12 py-3 md:py-4 text-base md:text-lg text-white font-semibold"
-            >
-              Создать альбом
-            </Link>
+            <div className="text-center">
+              <Link
+                href="/editor"
+                className="btn-gradient inline-block px-12 md:px-14 py-3.5 md:py-4 text-base md:text-lg text-white font-semibold"
+              >
+                Создать альбом
+              </Link>
+            </div>
           </div>
 
           {/* Album Examples Grid */}
-          <div className="grid grid-cols-2 gap-4 md:gap-6 max-w-3xl">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-5 max-w-2xl md:max-w-none">
             {[1, 2, 3, 4].map((i) => (
               <div
                 key={i}
-                className="aspect-square bg-brand-gray rounded-xl md:rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-shadow"
+                className="aspect-square bg-brand-gray rounded-lg md:rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow"
               >
                 <img
                   src={`/examples/example-${i}.jpg`}
@@ -162,38 +164,38 @@ export default function Home() {
       </main>
 
       {/* Placeholder sections */}
-      <section id="how-it-works" className="bg-brand-gray py-16 md:py-20 px-4 md:px-6">
-        <div className="max-w-7xl mx-auto">
-          <h2 className="text-3xl md:text-4xl font-serif font-bold mb-4 text-center">
-            Как это работает
+      <section id="how-it-works" className="bg-white py-20 md:py-24 px-6 md:px-8">
+        <div className="max-w-6xl mx-auto">
+          <h2 className="text-3xl md:text-4xl font-serif font-bold mb-4 text-center text-foreground">
+            Как заказать книгу?
           </h2>
-          <p className="text-gray-600 text-center">Содержание раздела в разработке</p>
+          <p className="text-gray-500 text-center text-sm md:text-base">Содержание раздела в разработке</p>
         </div>
       </section>
 
-      <section id="examples" className="py-16 md:py-20 px-4 md:px-6">
-        <div className="max-w-7xl mx-auto">
-          <h2 className="text-3xl md:text-4xl font-serif font-bold mb-4 text-center">
+      <section id="examples" className="py-20 md:py-24 px-6 md:px-8">
+        <div className="max-w-6xl mx-auto">
+          <h2 className="text-3xl md:text-4xl font-serif font-bold mb-4 text-center text-foreground">
             Примеры
           </h2>
-          <p className="text-gray-600 text-center">Содержание раздела в разработке</p>
+          <p className="text-gray-500 text-center text-sm md:text-base">Содержание раздела в разработке</p>
         </div>
       </section>
 
-      <section id="questions" className="bg-brand-gray py-16 md:py-20 px-4 md:px-6">
-        <div className="max-w-7xl mx-auto">
-          <h2 className="text-3xl md:text-4xl font-serif font-bold mb-4 text-center">
+      <section id="questions" className="bg-white py-20 md:py-24 px-6 md:px-8">
+        <div className="max-w-6xl mx-auto">
+          <h2 className="text-3xl md:text-4xl font-serif font-bold mb-4 text-center text-foreground">
             Вопросы
           </h2>
-          <p className="text-gray-600 text-center">Содержание раздела в разработке</p>
+          <p className="text-gray-500 text-center text-sm md:text-base">Содержание раздела в разработке</p>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="bg-gray-800 text-white py-8 px-4 md:px-6 text-center">
+      <footer className="bg-gray-800 text-white py-10 md:py-12 px-6 md:px-8 text-center">
         <div className="max-w-6xl mx-auto">
-          <p className="text-sm md:text-base">© 2026 КНИГОДАР. Все права защищены.</p>
-          <p className="mt-2 text-xs md:text-sm opacity-75">
+          <p className="text-sm md:text-base font-light">© 2026 КНИГОДАР. Все права защищены.</p>
+          <p className="mt-2 text-xs md:text-sm opacity-70 font-light">
             ИП Мурзаков Артур Александрович | ИНН: 540961931745
           </p>
         </div>
