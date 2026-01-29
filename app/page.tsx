@@ -124,21 +124,22 @@ export default function Home() {
           {/* Text Section */}
           <div className="mb-12 md:mb-16">
             <h2 className="text-3xl md:text-4xl lg:text-5xl font-serif font-bold leading-tight mb-6 md:mb-8">
-              <span className="block uppercase">КНИГА, ГДЕ ВАШ РЕБЁНОК</span>
-              <span className="block text-brand-green uppercase">— ГЛАВНЫЙ ГЕРОЙ</span>
+              <span className="block uppercase">ФОТОАЛЬБОМ,</span>
+              <span className="block uppercase">ОТОБРАЖАЮЩИЙ</span>
+              <span className="block text-brand-green uppercase">— ВАШУ ИСТОРИЮ</span>
             </h2>
             <p className="text-base md:text-lg text-gray-700 mb-6 md:mb-8 leading-relaxed max-w-2xl">
-              Создаём персональные детские книги по фото и историям вашей семьи.
+              Создаём профессиональные фотокниги, отображающие историю вашей семьи.
               Подарок, который тронет сердце и сохранится на всю жизнь.
             </p>
             <p className="text-lg md:text-xl font-semibold mb-8 md:mb-10 text-gray-900">
-              PDF за 24 часа, печатная книга — за 7–10 дней
+              PDF за 10 минут, печатный альбом за 5-7 дней
             </p>
             <Link
               href="/editor"
               className="btn-gradient inline-block px-10 md:px-12 py-3 md:py-4 text-base md:text-lg text-white font-semibold"
             >
-              Заказать книгу
+              Создать альбом
             </Link>
           </div>
 
