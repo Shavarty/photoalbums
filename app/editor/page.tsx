@@ -231,7 +231,7 @@ export default function EditorPage() {
               setAlbum((prev) => ({ ...prev, title: e.target.value }))
             }
             placeholder="Название альбома"
-            className="text-xl md:text-3xl font-sans font-semibold border-none focus:outline-none focus:ring-2 focus:ring-brand-olive rounded px-2 w-full text-foreground placeholder-gray-400"
+            className="text-xl md:text-3xl font-sans font-semibold border-none focus:outline-none focus:ring-2 focus:ring-brand-olive rounded px-2 w-full text-foreground placeholder-gray-400 text-center"
           />
         </div>
       </div>
