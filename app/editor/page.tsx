@@ -289,7 +289,7 @@ export default function EditorPage() {
                         disabled={isDisabled}
                         className={`w-full px-3 py-2 bg-brand-gray rounded-lg text-sm transition text-left flex items-center gap-3 ${
                           isDisabled
-                            ? 'opacity-40 cursor-not-allowed'
+                            ? 'cursor-not-allowed'
                             : 'hover:bg-gray-200'
                         }`}
                       >
@@ -372,7 +372,7 @@ export default function EditorPage() {
                     disabled={isDisabled}
                     className={`w-full px-3 py-2 bg-brand-gray rounded-lg text-sm transition text-left flex items-center gap-3 ${
                       isDisabled
-                        ? 'opacity-40 cursor-not-allowed'
+                        ? 'cursor-not-allowed'
                         : 'hover:bg-gray-200'
                     }`}
                   >
