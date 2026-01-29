@@ -191,7 +191,7 @@ export default function EditorPage() {
       {/* Header */}
       <header className="bg-brand-olive text-white px-4 md:px-6 py-3 md:py-4 sticky top-0 z-40">
         <div className="max-w-7xl mx-auto flex justify-between items-center gap-4">
-          <div className="flex items-center gap-3 md:gap-4 flex-1 min-w-0">
+          <div className="flex items-center gap-3 md:gap-4">
             {/* Mobile menu button */}
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -203,22 +203,13 @@ export default function EditorPage() {
               <span className="w-6 h-0.5 bg-white"></span>
             </button>
 
-            <Link href="/" className="flex-shrink-0 hidden md:block">
+            <Link href="/" className="flex-shrink-0">
               <img
                 src="/logo.svg"
                 alt="Книгодар"
-                className="h-7 w-auto"
+                className="h-7 md:h-8 w-auto"
               />
             </Link>
-
-            <input
-              type="text"
-              value={album.title}
-              onChange={(e) =>
-                setAlbum((prev) => ({ ...prev, title: e.target.value }))
-              }
-              className="text-lg md:text-2xl font-sans font-semibold border-none focus:outline-none focus:ring-2 focus:ring-white rounded px-2 min-w-0 flex-1 bg-brand-olive text-white placeholder-white placeholder-opacity-70"
-            />
           </div>
           <button
             onClick={handleGeneratePDF}
@@ -229,6 +220,21 @@ export default function EditorPage() {
           </button>
         </div>
       </header>
+
+      {/* Album Title Section */}
+      <div className="bg-white border-b border-gray-200 px-4 md:px-6 py-4">
+        <div className="max-w-7xl mx-auto">
+          <input
+            type="text"
+            value={album.title}
+            onChange={(e) =>
+              setAlbum((prev) => ({ ...prev, title: e.target.value }))
+            }
+            placeholder="Название альбома"
+            className="text-xl md:text-3xl font-sans font-semibold border-none focus:outline-none focus:ring-2 focus:ring-brand-olive rounded px-2 w-full text-foreground placeholder-gray-400"
+          />
+        </div>
+      </div>
 
       <div className="max-w-7xl mx-auto flex">
         {/* Sidebar - Mobile Overlay */}
