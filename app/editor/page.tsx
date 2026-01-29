@@ -175,7 +175,6 @@ export default function EditorPage() {
       const pdfBlob = await generateAlbumPDF(album);
       const filename = `${album.title.replace(/[^a-zA-Zа-яА-Я0-9]/g, "_")}_${Date.now()}.pdf`;
       downloadPDF(pdfBlob, filename);
-      alert("PDF успешно создан и скачан!");
     } catch (error) {
       console.error("Error generating PDF:", error);
       alert("Ошибка при создании PDF. Проверьте консоль.");

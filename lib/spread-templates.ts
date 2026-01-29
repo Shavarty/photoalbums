@@ -374,7 +374,7 @@ export const TEMPLATE_ASYMMETRIC: SpreadTemplate = {
     slots: [
       {
         id: "left-1",
-        aspectRatio: 9 / 21,
+        aspectRatio: 0.43,
         width: 0.43,
         height: 1.0,
         x: 0,
@@ -390,7 +390,7 @@ export const TEMPLATE_ASYMMETRIC: SpreadTemplate = {
       },
       {
         id: "left-3",
-        aspectRatio: 1,
+        aspectRatio: 0.57 / 0.544,
         width: 0.57,
         height: 0.544,
         x: 0.43,
@@ -418,7 +418,7 @@ export const TEMPLATE_ASYMMETRIC: SpreadTemplate = {
       },
       {
         id: "right-3",
-        aspectRatio: 4 / 3,
+        aspectRatio: 9 / 7,
         width: 0.5625,
         height: 0.4375,
         x: 0.4375,
