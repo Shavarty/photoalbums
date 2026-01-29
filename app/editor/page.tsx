@@ -7,6 +7,7 @@ import { SPREAD_TEMPLATES } from "@/lib/spread-templates";
 import { generateAlbumPDF, downloadPDF } from "@/lib/pdf-generator-spreads";
 import ImageCropModal from "@/components/ImageCropModal";
 import SpreadEditor from "@/components/SpreadEditor";
+import SpreadPreview from "@/components/SpreadPreview";
 
 export default function EditorPage() {
   const [album, setAlbum] = useState<Album>({
@@ -200,17 +201,6 @@ export default function EditorPage() {
               }
               className="text-2xl font-serif font-bold border-none focus:outline-none focus:ring-2 focus:ring-brand-orange rounded px-2"
             />
-            <label className="flex items-center gap-2 text-sm cursor-pointer">
-              <input
-                type="checkbox"
-                checked={album.withGaps}
-                onChange={(e) =>
-                  setAlbum((prev) => ({ ...prev, withGaps: e.target.checked, updatedAt: new Date() }))
-                }
-                className="w-4 h-4 text-brand-orange focus:ring-brand-orange rounded"
-              />
-              <span className="text-gray-700">Отступы между фото</span>
-            </label>
           </div>
           <div className="flex gap-3">
             <button
@@ -232,17 +222,35 @@ export default function EditorPage() {
               Развороты ({album.spreads.length})
             </h3>
 
+            {/* Gaps toggle */}
+            <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={album.withGaps}
+                  onChange={(e) =>
+                    setAlbum((prev) => ({ ...prev, withGaps: e.target.checked, updatedAt: new Date() }))
+                  }
+                  className="w-4 h-4 text-brand-orange focus:ring-brand-orange rounded"
+                />
+                <span className="text-gray-700 font-medium">Отступы между фото</span>
+              </label>
+            </div>
+
             {/* Add spread buttons */}
             <div className="space-y-2 mb-4">
               {SPREAD_TEMPLATES.map((template) => (
                 <button
                   key={template.id}
                   onClick={() => addSpread(template.id)}
-                  className="w-full px-4 py-3 bg-brand-gray hover:bg-gray-200 rounded-lg text-sm transition text-left"
+                  className="w-full px-3 py-2 bg-brand-gray hover:bg-gray-200 rounded-lg text-sm transition text-left flex items-center gap-3"
                 >
-                  <div className="font-medium">{template.name}</div>
-                  <div className="text-xs text-gray-600">
-                    {template.description}
+                  <SpreadPreview templateId={template.id} size={35} />
+                  <div className="flex-1">
+                    <div className="font-medium">{template.name}</div>
+                    <div className="text-xs text-gray-600">
+                      {template.description}
+                    </div>
                   </div>
                 </button>
               ))}
