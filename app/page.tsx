@@ -121,26 +121,25 @@ export default function Home() {
       )}
 
       {/* Hero Section */}
-      <main className="flex-1 px-6 py-16 md:px-8 md:py-20">
+      <main className="flex-1 px-6 py-8 md:px-8 md:py-16">
         <div className="max-w-6xl mx-auto">
           {/* Text Section */}
-          <div className="mb-16 md:mb-20">
-            <h2 className="text-3xl md:text-4xl lg:text-[2.75rem] font-serif font-bold leading-tight mb-8 md:mb-10">
-              <span className="block uppercase text-left">ФОТОАЛЬБОМ,</span>
-              <span className="block uppercase text-right">КОТОРЫЙ СОХРАНИТ</span>
+          <div className="mb-8 md:mb-16">
+            <h2 className="text-2xl md:text-4xl lg:text-[2.75rem] font-serif font-bold leading-tight mb-5 md:mb-8">
+              <span className="block uppercase text-left">ФОТОАЛЬБОМ, КОТОРЫЙ СОХРАНИТ</span>
               <span className="block text-brand-green uppercase text-right">— ВАШИ ИСТОРИИ</span>
             </h2>
-            <p className="text-sm md:text-base text-gray-600 mb-8 md:mb-10 leading-relaxed max-w-xl font-light">
+            <p className="text-sm md:text-base text-gray-600 mb-5 md:mb-8 leading-relaxed max-w-xl font-light">
               Создаём профессиональные фотокниги, отображающие историю вашей семьи.
               Подарок, который тронет сердце и сохранится на всю жизнь.
             </p>
-            <p className="text-sm md:text-base font-bold mb-10 md:mb-12 text-foreground text-center">
+            <p className="text-sm md:text-base font-bold mb-6 md:mb-10 text-foreground text-center">
               PDF за 10 минут, печатный альбом за 5-7 дней
             </p>
             <div className="text-center">
               <Link
                 href="/editor"
-                className="btn-gradient inline-block px-12 md:px-14 py-3.5 md:py-4 text-base md:text-lg text-white font-semibold"
+                className="btn-gradient inline-block px-12 md:px-14 py-3 md:py-4 text-base md:text-lg text-white font-semibold"
               >
                 Создать альбом
               </Link>
@@ -148,7 +147,7 @@ export default function Home() {
           </div>
 
           {/* Album Examples Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-5 max-w-2xl md:max-w-none">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-5 max-w-2xl md:max-w-none">
             {[1, 2, 3, 4].map((i) => (
               <div
                 key={i}
