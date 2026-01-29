@@ -19,9 +19,14 @@ const createCroppedImage = async (
   crop: Area,
   slotWidth: number,
   slotHeight: number,
-  targetDPI: number = 300
+  targetDPI: number = 300,
+  retryCount: number = 0
 ): Promise<string> => {
-  const image = await loadImage(imageSrc);
+  try {
+    const image = await loadImage(imageSrc);
+
+    // Wait a bit for image to be fully ready (helps on mobile)
+    await new Promise(resolve => setTimeout(resolve, 50));
 
   // Check if source image is too large and downscale it first
   const MAX_SOURCE_DIMENSION = 4096; // Max dimension for source image
@@ -71,48 +76,73 @@ const createCroppedImage = async (
   let canvasWidth = Math.round(pageSize * slotWidth);
   let canvasHeight = Math.round(pageSize * slotHeight);
 
-  // Mobile Safari has canvas size limit ~16.7 million pixels
-  // Reduce DPI if needed for mobile devices
-  const MAX_CANVAS_AREA = 16000000; // 16 megapixels (safe limit)
+  // Mobile devices have canvas size limits
+  // Use conservative limit to avoid crashes
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+  const MAX_CANVAS_AREA = isMobile ? 8000000 : 16000000; // 8MP mobile, 16MP desktop
   const currentArea = canvasWidth * canvasHeight;
 
   if (currentArea > MAX_CANVAS_AREA) {
     const scale = Math.sqrt(MAX_CANVAS_AREA / currentArea);
     canvasWidth = Math.round(canvasWidth * scale);
     canvasHeight = Math.round(canvasHeight * scale);
-    console.warn(`Canvas too large for mobile, reduced to ${canvasWidth}x${canvasHeight}`);
+    console.warn(`Canvas ${isMobile ? '(mobile)' : ''} reduced to ${canvasWidth}x${canvasHeight}`);
   }
 
   canvas.width = canvasWidth;
   canvas.height = canvasHeight;
 
-  // Draw cropped image at correct resolution
-  try {
-    ctx.drawImage(
-      sourceImage,
-      crop.x,
-      crop.y,
-      crop.width,
-      crop.height,
-      0,
-      0,
-      canvas.width,
-      canvas.height
-    );
-  } catch (error) {
-    console.error("Error drawing image to canvas:", error);
-    throw new Error("Не удалось обработать изображение");
-  }
+    // Verify canvas is valid
+    if (canvas.width === 0 || canvas.height === 0) {
+      throw new Error("Invalid canvas dimensions");
+    }
 
-  return canvas.toDataURL("image/jpeg", 0.88);
+    // Draw cropped image at correct resolution
+    try {
+      ctx.drawImage(
+        sourceImage,
+        crop.x,
+        crop.y,
+        crop.width,
+        crop.height,
+        0,
+        0,
+        canvas.width,
+        canvas.height
+      );
+    } catch (error) {
+      console.error("Error drawing image to canvas:", error);
+      throw new Error("Не удалось обработать изображение");
+    }
+
+    return canvas.toDataURL("image/jpeg", 0.88);
+  } catch (error) {
+    // Retry up to 2 times with exponential backoff
+    if (retryCount < 2) {
+      console.log(`Retrying image processing (attempt ${retryCount + 1})...`);
+      await new Promise(resolve => setTimeout(resolve, 200 * (retryCount + 1)));
+      return createCroppedImage(imageSrc, crop, slotWidth, slotHeight, targetDPI, retryCount + 1);
+    }
+    throw error;
+  }
 };
 
 const loadImage = (url: string): Promise<HTMLImageElement> => {
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.crossOrigin = "anonymous";
-    img.onload = () => resolve(img);
-    img.onerror = reject;
+    img.onload = () => {
+      // Ensure image is fully decoded before resolving
+      if (img.complete && img.naturalWidth > 0) {
+        resolve(img);
+      } else {
+        reject(new Error("Image not fully loaded"));
+      }
+    };
+    img.onerror = (e) => {
+      console.error("Image load error:", e);
+      reject(new Error("Failed to load image"));
+    };
     img.src = url;
   });
 };

@@ -91,7 +91,7 @@ const generatePageWithSlots = async (
       const slotHeight = slot.height * PAGE_SIZE;
 
       // Photo already has correct aspect ratio from crop
-      // Calculate dimensions to fit within slot while preserving aspect ratio
+      // COVER approach: fill the entire slot, crop overflow if needed
       const photoAspect = slot.aspectRatio;
       const slotAspect = slotWidth / slotHeight;
 
@@ -101,21 +101,28 @@ const generatePageWithSlots = async (
       let photoY: number;
 
       if (photoAspect > slotAspect) {
-        // Photo is wider than slot - fit to width
+        // Photo is wider - fit to HEIGHT, crop sides
+        photoHeight = slotHeight;
+        photoWidth = slotHeight * photoAspect;
+        photoX = slotX - (photoWidth - slotWidth) / 2; // center, overflow sides
+        photoY = slotY;
+      } else {
+        // Photo is taller - fit to WIDTH, crop top/bottom
         photoWidth = slotWidth;
         photoHeight = slotWidth / photoAspect;
         photoX = slotX;
-        photoY = slotY + (slotHeight - photoHeight) / 2; // center vertically
-      } else {
-        // Photo is taller than slot - fit to height
-        photoHeight = slotHeight;
-        photoWidth = slotHeight * photoAspect;
-        photoX = slotX + (slotWidth - photoWidth) / 2; // center horizontally
-        photoY = slotY;
+        photoY = slotY - (photoHeight - slotHeight) / 2; // center, overflow top/bottom
       }
 
-      // Add photo with preserved aspect ratio
+      // Clip to slot boundaries to prevent overflow
+      pdf.saveGraphicsState();
+      pdf.rect(slotX, slotY, slotWidth, slotHeight);
+      pdf.clip();
+
+      // Add photo (will be clipped to slot)
       pdf.addImage(photo.url, "JPEG", photoX, photoY, photoWidth, photoHeight, undefined, "FAST");
+
+      pdf.restoreGraphicsState();
 
       // Add caption if exists
       if (photo.caption) {
