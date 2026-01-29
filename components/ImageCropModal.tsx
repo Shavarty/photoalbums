@@ -28,14 +28,16 @@ const createCroppedImage = async (
     // Wait a bit for image to be fully ready (helps on mobile)
     await new Promise(resolve => setTimeout(resolve, 50));
 
-  // Check if source image is too large and downscale it first
-  const MAX_SOURCE_DIMENSION = 4096; // Max dimension for source image
+  // Aggressively downscale source image for mobile stability
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+  const MAX_SOURCE_DIMENSION = isMobile ? 2048 : 4096; // Much smaller for mobile
   let sourceImage = image;
 
+  // Always downscale if too large
   if (image.width > MAX_SOURCE_DIMENSION || image.height > MAX_SOURCE_DIMENSION) {
-    console.warn(`Source image too large (${image.width}x${image.height}), downscaling...`);
+    console.log(`Downscaling source image from ${image.width}x${image.height}...`);
     const downscaleCanvas = document.createElement("canvas");
-    const downscaleCtx = downscaleCanvas.getContext("2d");
+    const downscaleCtx = downscaleCanvas.getContext("2d", { willReadFrequently: false });
 
     if (!downscaleCtx) {
       throw new Error("Canvas context not available");
@@ -45,10 +47,14 @@ const createCroppedImage = async (
     downscaleCanvas.width = Math.round(image.width * scale);
     downscaleCanvas.height = Math.round(image.height * scale);
 
+    // Use better image smoothing
+    downscaleCtx.imageSmoothingEnabled = true;
+    downscaleCtx.imageSmoothingQuality = 'high';
+
     downscaleCtx.drawImage(image, 0, 0, downscaleCanvas.width, downscaleCanvas.height);
 
     // Create new image from downscaled canvas
-    const downscaledDataUrl = downscaleCanvas.toDataURL("image/jpeg", 0.92);
+    const downscaledDataUrl = downscaleCanvas.toDataURL("image/jpeg", 0.90);
     sourceImage = await loadImage(downscaledDataUrl);
 
     // Adjust crop coordinates for downscaled image
@@ -58,44 +64,64 @@ const createCroppedImage = async (
       width: crop.width * scale,
       height: crop.height * scale
     };
+
+    console.log(`Downscaled to ${sourceImage.width}x${sourceImage.height}, crop adjusted`);
   }
 
   const canvas = document.createElement("canvas");
-  const ctx = canvas.getContext("2d");
+  const ctx = canvas.getContext("2d", {
+    willReadFrequently: false,
+    alpha: false // No alpha channel for JPEG
+  });
 
   if (!ctx) {
     throw new Error("Canvas context not available");
   }
 
-  // Calculate output size at 300 DPI based on actual slot size
-  // For 206mm page at 300 DPI = 2429 pixels
-  const mmToPx = (mm: number) => (mm * targetDPI) / 25.4;
+  // Lower DPI for mobile devices to prevent crashes
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+  const actualDPI = isMobile ? 150 : targetDPI; // 150 DPI for mobile, 300 for desktop
+
+  // Calculate output size based on actual slot size
+  const mmToPx = (mm: number) => (mm * actualDPI) / 25.4;
   const pageSize = mmToPx(206);
 
   // Canvas size should match the actual slot dimensions on the page
   let canvasWidth = Math.round(pageSize * slotWidth);
   let canvasHeight = Math.round(pageSize * slotHeight);
 
-  // Mobile devices have canvas size limits
-  // Use conservative limit to avoid crashes
-  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-  const MAX_CANVAS_AREA = isMobile ? 8000000 : 16000000; // 8MP mobile, 16MP desktop
+  // Mobile devices have strict canvas size limits
+  const MAX_CANVAS_AREA = isMobile ? 4000000 : 16000000; // 4MP mobile, 16MP desktop
+  const MAX_DIMENSION = isMobile ? 2048 : 4096;
   const currentArea = canvasWidth * canvasHeight;
 
+  // Limit by area
   if (currentArea > MAX_CANVAS_AREA) {
     const scale = Math.sqrt(MAX_CANVAS_AREA / currentArea);
     canvasWidth = Math.round(canvasWidth * scale);
     canvasHeight = Math.round(canvasHeight * scale);
-    console.warn(`Canvas ${isMobile ? '(mobile)' : ''} reduced to ${canvasWidth}x${canvasHeight}`);
+    console.log(`Canvas area reduced to ${canvasWidth}x${canvasHeight} (${(canvasWidth * canvasHeight / 1000000).toFixed(1)}MP)`);
+  }
+
+  // Limit by dimension
+  if (canvasWidth > MAX_DIMENSION || canvasHeight > MAX_DIMENSION) {
+    const scale = Math.min(MAX_DIMENSION / canvasWidth, MAX_DIMENSION / canvasHeight);
+    canvasWidth = Math.round(canvasWidth * scale);
+    canvasHeight = Math.round(canvasHeight * scale);
+    console.log(`Canvas dimension limited to ${canvasWidth}x${canvasHeight}`);
   }
 
   canvas.width = canvasWidth;
   canvas.height = canvasHeight;
 
-    // Verify canvas is valid
-    if (canvas.width === 0 || canvas.height === 0) {
-      throw new Error("Invalid canvas dimensions");
-    }
+  // Verify canvas is valid
+  if (canvas.width === 0 || canvas.height === 0 || canvas.width > MAX_DIMENSION || canvas.height > MAX_DIMENSION) {
+    throw new Error(`Invalid canvas dimensions: ${canvas.width}x${canvas.height}`);
+  }
+
+    // Use better image smoothing
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
 
     // Draw cropped image at correct resolution
     try {
@@ -112,17 +138,31 @@ const createCroppedImage = async (
       );
     } catch (error) {
       console.error("Error drawing image to canvas:", error);
-      throw new Error("Не удалось обработать изображение");
+      throw new Error("Не удалось нарисовать изображение на canvas");
     }
 
-    return canvas.toDataURL("image/jpeg", 0.88);
-  } catch (error) {
-    // Retry up to 2 times with exponential backoff
-    if (retryCount < 2) {
-      console.log(`Retrying image processing (attempt ${retryCount + 1})...`);
-      await new Promise(resolve => setTimeout(resolve, 200 * (retryCount + 1)));
+    // Convert to data URL with error handling
+    let dataUrl: string;
+    try {
+      dataUrl = canvas.toDataURL("image/jpeg", 0.85);
+      if (!dataUrl || dataUrl === "data:,") {
+        throw new Error("Empty data URL");
+      }
+    } catch (error) {
+      console.error("Error converting canvas to data URL:", error);
+      throw new Error("Не удалось конвертировать изображение");
+    }
+
+    return dataUrl;
+  } catch (error: any) {
+    // Retry up to 3 times with longer delays
+    if (retryCount < 3) {
+      const delay = 500 * (retryCount + 1); // 500ms, 1000ms, 1500ms
+      console.log(`Retrying image processing (attempt ${retryCount + 2}/4) after ${delay}ms...`);
+      await new Promise(resolve => setTimeout(resolve, delay));
       return createCroppedImage(imageSrc, crop, slotWidth, slotHeight, targetDPI, retryCount + 1);
     }
+    console.error("Final error after all retries:", error);
     throw error;
   }
 };
@@ -131,18 +171,29 @@ const loadImage = (url: string): Promise<HTMLImageElement> => {
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.crossOrigin = "anonymous";
+
+    // Timeout after 30 seconds
+    const timeout = setTimeout(() => {
+      reject(new Error("Image load timeout"));
+    }, 30000);
+
     img.onload = () => {
+      clearTimeout(timeout);
       // Ensure image is fully decoded before resolving
-      if (img.complete && img.naturalWidth > 0) {
+      if (img.complete && img.naturalWidth > 0 && img.naturalHeight > 0) {
+        console.log(`Image loaded: ${img.naturalWidth}x${img.naturalHeight}`);
         resolve(img);
       } else {
-        reject(new Error("Image not fully loaded"));
+        reject(new Error(`Image not fully loaded: ${img.naturalWidth}x${img.naturalHeight}`));
       }
     };
+
     img.onerror = (e) => {
+      clearTimeout(timeout);
       console.error("Image load error:", e);
       reject(new Error("Failed to load image"));
     };
+
     img.src = url;
   });
 };
@@ -181,6 +232,7 @@ export default function ImageCropModal({
 
     console.log('Saving crop - slot:', slotWidth, 'x', slotHeight, 'crop area:', croppedAreaPixels);
     setIsProcessing(true);
+
     try {
       const croppedImageUrl = await createCroppedImage(
         imageUrl,
@@ -188,10 +240,24 @@ export default function ImageCropModal({
         slotWidth,
         slotHeight
       );
+
+      // Verify we got a valid result
+      if (!croppedImageUrl || !croppedImageUrl.startsWith('data:image')) {
+        throw new Error("Invalid result from image processing");
+      }
+
       onComplete(croppedImageUrl);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error cropping image:", error);
-      alert("Не удалось обработать изображение.\n\nПопробуйте выбрать другое фото.");
+      const errorMsg = error?.message || "Неизвестная ошибка";
+      alert(
+        "Не удалось обработать изображение.\n\n" +
+        `Причина: ${errorMsg}\n\n` +
+        "Попробуйте:\n" +
+        "• Выбрать фото меньшего размера\n" +
+        "• Перезагрузить страницу\n" +
+        "• Использовать другой браузер"
+      );
     } finally {
       setIsProcessing(false);
     }
