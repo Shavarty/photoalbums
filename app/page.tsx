@@ -124,9 +124,9 @@ export default function Home() {
           {/* Text Section */}
           <div className="mb-12 md:mb-16">
             <h2 className="text-3xl md:text-4xl lg:text-5xl font-serif font-bold leading-tight mb-6 md:mb-8">
-              <span className="block uppercase">ФОТОАЛЬБОМ,</span>
-              <span className="block uppercase">ОТОБРАЖАЮЩИЙ</span>
-              <span className="block text-brand-green uppercase">— ВАШУ ИСТОРИЮ</span>
+              <span className="block uppercase">ФОТОАЛЬБОМ</span>
+              <span className="block uppercase">КАК ХРАНИТЕЛЬ</span>
+              <span className="block text-brand-green uppercase">— ВАШИХ ИСТОРИЙ</span>
             </h2>
             <p className="text-base md:text-lg text-gray-700 mb-6 md:mb-8 leading-relaxed max-w-2xl">
               Создаём профессиональные фотокниги, отображающие историю вашей семьи.
@@ -148,7 +148,7 @@ export default function Home() {
             {[1, 2, 3, 4].map((i) => (
               <div
                 key={i}
-                className="aspect-[3/4] bg-brand-gray rounded-xl md:rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-shadow"
+                className="aspect-square bg-brand-gray rounded-xl md:rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-shadow"
               >
                 <img
                   src={`/examples/example-${i}.jpg`}

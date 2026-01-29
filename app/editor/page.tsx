@@ -12,7 +12,7 @@ import SpreadPreview from "@/components/SpreadPreview";
 export default function EditorPage() {
   const [album, setAlbum] = useState<Album>({
     id: crypto.randomUUID(),
-    title: "Новый альбом",
+    title: "Название альбома",
     cover: {
       frontImage: null,
       backImage: null,
@@ -203,16 +203,13 @@ export default function EditorPage() {
               <span className="w-6 h-0.5 bg-white"></span>
             </button>
 
-            <Link href="/" className="hover:underline transition text-sm md:text-base flex-shrink-0">
-              ← Назад
-            </Link>
             <input
               type="text"
               value={album.title}
               onChange={(e) =>
                 setAlbum((prev) => ({ ...prev, title: e.target.value }))
               }
-              className="text-lg md:text-2xl font-serif font-bold border-none focus:outline-none focus:ring-2 focus:ring-white rounded px-2 min-w-0 flex-1 bg-brand-olive text-white placeholder-white placeholder-opacity-70"
+              className="text-lg md:text-2xl font-sans font-semibold border-none focus:outline-none focus:ring-2 focus:ring-white rounded px-2 min-w-0 flex-1 bg-brand-olive text-white placeholder-white placeholder-opacity-70"
             />
           </div>
           <button
