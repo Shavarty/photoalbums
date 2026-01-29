@@ -139,17 +139,12 @@ export async function generateAlbumPDF(album: Album): Promise<Blob> {
     compress: true,
   });
 
-  let isFirstPage = true;
+  // Delete default first page
+  pdf.deletePage(1);
 
   // Generate cover if exists
   if (album.cover.frontImage?.url || album.cover.backImage?.url) {
-    if (!isFirstPage) {
-      pdf.addPage([COVER_WIDTH, COVER_HEIGHT], "landscape");
-    } else {
-      pdf.deletePage(1);
-      pdf.addPage([COVER_WIDTH, COVER_HEIGHT], "landscape");
-      isFirstPage = false;
-    }
+    pdf.addPage([COVER_WIDTH, COVER_HEIGHT], "landscape");
 
     if (album.cover.backImage?.url) {
       try {
@@ -183,14 +178,7 @@ export async function generateAlbumPDF(album: Album): Promise<Blob> {
 
     // Create spread page (left + right page side by side)
     const SPREAD_WIDTH = PAGE_SIZE * 2; // 412mm
-    if (!isFirstPage) {
-      pdf.addPage([SPREAD_WIDTH, PAGE_SIZE], "landscape");
-    } else {
-      if (album.cover.frontImage?.url || album.cover.backImage?.url) {
-        pdf.addPage([SPREAD_WIDTH, PAGE_SIZE], "landscape");
-      }
-      isFirstPage = false;
-    }
+    pdf.addPage([SPREAD_WIDTH, PAGE_SIZE], "landscape");
 
     // LEFT PAGE (x: 0 to PAGE_SIZE)
     const leftSlots = getPageSlots(template, 'left', album.withGaps);
