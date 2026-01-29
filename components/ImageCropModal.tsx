@@ -35,24 +35,43 @@ const createCroppedImage = async (
   const pageSize = mmToPx(206);
 
   // Canvas size should match the actual slot dimensions on the page
-  // This ensures 300 DPI for the final output
-  canvas.width = Math.round(pageSize * slotWidth);
-  canvas.height = Math.round(pageSize * slotHeight);
+  let canvasWidth = Math.round(pageSize * slotWidth);
+  let canvasHeight = Math.round(pageSize * slotHeight);
+
+  // Mobile Safari has canvas size limit ~16.7 million pixels
+  // Reduce DPI if needed for mobile devices
+  const MAX_CANVAS_AREA = 16000000; // 16 megapixels (safe limit)
+  const currentArea = canvasWidth * canvasHeight;
+
+  if (currentArea > MAX_CANVAS_AREA) {
+    const scale = Math.sqrt(MAX_CANVAS_AREA / currentArea);
+    canvasWidth = Math.round(canvasWidth * scale);
+    canvasHeight = Math.round(canvasHeight * scale);
+    console.warn(`Canvas too large for mobile, reduced to ${canvasWidth}x${canvasHeight}`);
+  }
+
+  canvas.width = canvasWidth;
+  canvas.height = canvasHeight;
 
   // Draw cropped image at correct resolution
-  ctx.drawImage(
-    image,
-    crop.x,
-    crop.y,
-    crop.width,
-    crop.height,
-    0,
-    0,
-    canvas.width,
-    canvas.height
-  );
+  try {
+    ctx.drawImage(
+      image,
+      crop.x,
+      crop.y,
+      crop.width,
+      crop.height,
+      0,
+      0,
+      canvas.width,
+      canvas.height
+    );
+  } catch (error) {
+    console.error("Error drawing image to canvas:", error);
+    throw new Error("Failed to process image. Try with a smaller photo.");
+  }
 
-  return canvas.toDataURL("image/jpeg", 0.95);
+  return canvas.toDataURL("image/jpeg", 0.92);
 };
 
 const loadImage = (url: string): Promise<HTMLImageElement> => {
@@ -109,7 +128,8 @@ export default function ImageCropModal({
       onComplete(croppedImageUrl);
     } catch (error) {
       console.error("Error cropping image:", error);
-      alert("Ошибка при обрезке изображения");
+      const errorMessage = error instanceof Error ? error.message : "Ошибка при обрезке изображения";
+      alert(errorMessage + "\n\nПопробуйте загрузить изображение меньшего размера.");
     } finally {
       setIsProcessing(false);
     }
