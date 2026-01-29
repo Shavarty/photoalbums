@@ -189,7 +189,7 @@ export default function EditorPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 px-4 md:px-6 py-3 md:py-4 sticky top-0 z-40">
+      <header className="bg-brand-olive text-white px-4 md:px-6 py-3 md:py-4 sticky top-0 z-40">
         <div className="max-w-7xl mx-auto flex justify-between items-center gap-4">
           <div className="flex items-center gap-3 md:gap-4 flex-1 min-w-0">
             {/* Mobile menu button */}
@@ -198,12 +198,12 @@ export default function EditorPage() {
               className="lg:hidden flex-shrink-0 w-8 h-8 flex flex-col justify-center items-center gap-1.5"
               aria-label="Меню"
             >
-              <span className="w-6 h-0.5 bg-gray-700"></span>
-              <span className="w-6 h-0.5 bg-gray-700"></span>
-              <span className="w-6 h-0.5 bg-gray-700"></span>
+              <span className="w-6 h-0.5 bg-white"></span>
+              <span className="w-6 h-0.5 bg-white"></span>
+              <span className="w-6 h-0.5 bg-white"></span>
             </button>
 
-            <Link href="/" className="text-gray-600 hover:text-gray-900 transition text-sm md:text-base flex-shrink-0">
+            <Link href="/" className="hover:underline transition text-sm md:text-base flex-shrink-0">
               ← Назад
             </Link>
             <input
@@ -212,7 +212,7 @@ export default function EditorPage() {
               onChange={(e) =>
                 setAlbum((prev) => ({ ...prev, title: e.target.value }))
               }
-              className="text-lg md:text-2xl font-serif font-bold border-none focus:outline-none focus:ring-2 focus:ring-brand-orange rounded px-2 min-w-0 flex-1"
+              className="text-lg md:text-2xl font-serif font-bold border-none focus:outline-none focus:ring-2 focus:ring-white rounded px-2 min-w-0 flex-1 bg-brand-olive text-white placeholder-white placeholder-opacity-70"
             />
           </div>
           <button
@@ -398,7 +398,7 @@ export default function EditorPage() {
                 Альбом пустой. Добавьте первый разворот!
               </p>
               <button
-                onClick={() => addSpread("classic")}
+                onClick={() => setSidebarOpen(true)}
                 className="btn-gradient px-8 py-3 text-white font-semibold"
               >
                 Добавить разворот
@@ -419,6 +419,16 @@ export default function EditorPage() {
                   }
                 />
               ))}
+
+              {/* Add more spreads button */}
+              <div className="bg-white rounded-xl shadow-sm p-6 text-center">
+                <button
+                  onClick={() => setSidebarOpen(true)}
+                  className="btn-gradient px-8 py-3 text-white font-semibold"
+                >
+                  + Добавить ещё разворот
+                </button>
+              </div>
             </div>
           )}
         </div>

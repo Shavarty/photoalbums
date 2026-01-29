@@ -144,17 +144,17 @@ export default function Home() {
           </div>
 
           {/* Album Examples Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6 max-w-4xl">
-            {[1, 2, 3, 4, 5, 6].map((i) => (
+          <div className="grid grid-cols-2 gap-4 md:gap-6 max-w-3xl">
+            {[1, 2, 3, 4].map((i) => (
               <div
                 key={i}
                 className="aspect-[3/4] bg-brand-gray rounded-xl md:rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-shadow"
               >
-                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-brand-gray to-gray-200">
-                  <span className="text-gray-400 text-xs md:text-sm font-serif">
-                    Пример {i}
-                  </span>
-                </div>
+                <img
+                  src={`/examples/example-${i}.jpg`}
+                  alt={`Пример фотоальбома ${i}`}
+                  className="w-full h-full object-cover"
+                />
               </div>
             ))}
           </div>
