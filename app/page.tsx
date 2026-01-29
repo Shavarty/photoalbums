@@ -9,7 +9,7 @@ export default function Home() {
   return (
     <div className="min-h-screen flex flex-col">
       {/* Header */}
-      <header className="bg-brand-olive text-white py-3 px-4 md:px-6 lg:px-20 sticky top-0 z-50 shadow-md">
+      <header className="bg-brand-olive text-white py-3 px-4 md:px-6 lg:px-24 sticky top-0 z-50 shadow-md">
         <div className="max-w-[1400px] mx-auto flex justify-between items-center">
           {/* Mobile menu button + Logo */}
           <div className="flex items-center gap-4">
@@ -50,7 +50,7 @@ export default function Home() {
               href="/editor"
               className="btn-gradient px-7 py-2 text-white font-semibold text-sm whitespace-nowrap"
             >
-              Создать книгу
+              Создать альбом
             </Link>
             <button className="w-8 h-8 hover:opacity-70 transition-opacity" aria-label="Telegram">
               <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
@@ -138,7 +138,7 @@ export default function Home() {
       )}
 
       {/* Hero Section */}
-      <main className="flex-1 px-6 py-8 md:px-20 md:py-16">
+      <main className="flex-1 px-6 py-8 md:px-24 md:py-16">
         <div className="max-w-[1400px] mx-auto">
           {/* Mobile Layout */}
           <div className="md:hidden">
@@ -186,12 +186,12 @@ export default function Home() {
           <div className="hidden md:grid md:grid-cols-2 md:gap-12 lg:gap-16 items-start">
             {/* Left Column - Text */}
             <div>
-              <h2 className="text-3xl lg:text-[2.5rem] font-serif font-bold leading-tight mb-6">
+              <h2 className="text-3xl lg:text-[2.2rem] font-serif font-bold leading-tight mb-6">
                 <span className="block uppercase text-left">ФОТОАЛЬБОМ,</span>
                 <span className="block uppercase text-right">КОТОРЫЙ СОХРАНИТ</span>
                 <span className="block text-brand-green uppercase text-right">— ВАШИ ИСТОРИИ</span>
               </h2>
-              <p className="text-sm lg:text-base text-gray-600 mb-6 leading-relaxed font-light">
+              <p className="text-base lg:text-[17px] text-gray-600 mb-6 leading-relaxed font-light">
                 Создаём профессиональные фотокниги, отображающие историю вашей семьи. Подарок, который тронет сердце и сохранится на всю жизнь.
               </p>
               <p className="text-sm lg:text-base font-bold mb-8 text-foreground">
@@ -205,12 +205,14 @@ export default function Home() {
               </Link>
             </div>
 
-            {/* Right Column - Examples 3x2 Grid */}
+            {/* Right Column - Examples 3x2 Grid with offset */}
             <div className="grid grid-cols-3 gap-3 lg:gap-4">
               {[1, 2, 3, 4, 5, 6].map((i) => (
                 <div
                   key={i}
-                  className="aspect-[3/4] bg-brand-gray rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+                  className={`aspect-[3/4] bg-brand-gray rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow ${
+                    i <= 3 ? 'transform translate-y-[-8px]' : ''
+                  }`}
                 >
                   <img
                     src={`/examples/example-${i <= 4 ? i : i - 4}.jpg`}
