@@ -7,7 +7,6 @@ import { SPREAD_TEMPLATES } from "@/lib/spread-templates";
 import { generateAlbumPDF, downloadPDF } from "@/lib/pdf-generator-spreads";
 import ImageCropModal from "@/components/ImageCropModal";
 import SpreadEditor from "@/components/SpreadEditor";
-import PDFViewer from "@/components/PDFViewer";
 
 export default function EditorPage() {
   const [album, setAlbum] = useState<Album>({
@@ -24,7 +23,6 @@ export default function EditorPage() {
   });
 
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
-  const [pdfPreviewBlob, setPdfPreviewBlob] = useState<Blob | null>(null);
 
   // Crop modal state
   const [cropModal, setCropModal] = useState<{
@@ -163,25 +161,6 @@ export default function EditorPage() {
     }));
   };
 
-  // Generate PDF preview
-  const handlePreviewPDF = async () => {
-    if (album.spreads.length === 0) {
-      alert("Добавьте хотя бы один разворот!");
-      return;
-    }
-
-    setIsGeneratingPDF(true);
-    try {
-      const pdfBlob = await generateAlbumPDF(album);
-      setPdfPreviewBlob(pdfBlob);
-    } catch (error) {
-      console.error("Error generating PDF preview:", error);
-      alert("Ошибка при создании предпросмотра PDF.");
-    } finally {
-      setIsGeneratingPDF(false);
-    }
-  };
-
   // Generate PDF and download
   const handleGeneratePDF = async () => {
     if (album.spreads.length === 0) {
@@ -235,18 +214,11 @@ export default function EditorPage() {
           </div>
           <div className="flex gap-3">
             <button
-              onClick={handlePreviewPDF}
-              disabled={isGeneratingPDF}
-              className="px-6 py-2 border border-gray-300 rounded-full hover:bg-gray-50 transition font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isGeneratingPDF ? "Генерация..." : "Предпросмотр"}
-            </button>
-            <button
               onClick={handleGeneratePDF}
               disabled={isGeneratingPDF}
               className="btn-gradient px-6 py-2 text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isGeneratingPDF ? "Создаем PDF..." : "Создать PDF"}
+              {isGeneratingPDF ? "Создаем PDF..." : "Скачать PDF"}
             </button>
           </div>
         </div>
@@ -351,14 +323,6 @@ export default function EditorPage() {
           slotHeight={cropModal.slotHeight}
           onComplete={completePhotoUpload}
           onCancel={() => setCropModal(null)}
-        />
-      )}
-
-      {/* PDF Preview */}
-      {pdfPreviewBlob && (
-        <PDFViewer
-          pdfBlob={pdfPreviewBlob}
-          onClose={() => setPdfPreviewBlob(null)}
         />
       )}
     </div>

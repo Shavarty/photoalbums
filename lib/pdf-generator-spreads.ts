@@ -73,7 +73,8 @@ const renderTextToCanvas = (
 const generatePageWithSlots = async (
   pdf: jsPDF,
   photos: Photo[],
-  slots: PhotoSlot[]
+  slots: PhotoSlot[],
+  offsetX: number = 0 // Horizontal offset for right page in spread
 ): Promise<void> => {
   // Add each photo according to slot position
   for (let i = 0; i < slots.length; i++) {
@@ -83,8 +84,8 @@ const generatePageWithSlots = async (
     if (!photo?.url) continue;
 
     try {
-      // Calculate slot position and size in mm
-      const slotX = slot.x * PAGE_SIZE;
+      // Calculate slot position and size in mm (with horizontal offset for spreads)
+      const slotX = slot.x * PAGE_SIZE + offsetX;
       const slotY = slot.y * PAGE_SIZE;
       const slotWidth = slot.width * PAGE_SIZE;
       const slotHeight = slot.height * PAGE_SIZE;
@@ -175,28 +176,29 @@ export async function generateAlbumPDF(album: Album): Promise<Blob> {
     }
   }
 
-  // Generate spreads
+  // Generate spreads (two pages side by side)
   for (const spread of album.spreads) {
     const template = SPREAD_TEMPLATES.find((t) => t.id === spread.templateId);
     if (!template) continue;
 
-    // LEFT PAGE
+    // Create spread page (left + right page side by side)
+    const SPREAD_WIDTH = PAGE_SIZE * 2; // 412mm
     if (!isFirstPage) {
-      pdf.addPage([PAGE_SIZE, PAGE_SIZE], "portrait");
+      pdf.addPage([SPREAD_WIDTH, PAGE_SIZE], "landscape");
     } else {
       if (album.cover.frontImage?.url || album.cover.backImage?.url) {
-        pdf.addPage([PAGE_SIZE, PAGE_SIZE], "portrait");
+        pdf.addPage([SPREAD_WIDTH, PAGE_SIZE], "landscape");
       }
       isFirstPage = false;
     }
 
+    // LEFT PAGE (x: 0 to PAGE_SIZE)
     const leftSlots = getPageSlots(template, 'left', album.withGaps);
-    await generatePageWithSlots(pdf, spread.leftPhotos, leftSlots);
+    await generatePageWithSlots(pdf, spread.leftPhotos, leftSlots, 0);
 
-    // RIGHT PAGE
-    pdf.addPage([PAGE_SIZE, PAGE_SIZE], "portrait");
+    // RIGHT PAGE (x: PAGE_SIZE to SPREAD_WIDTH)
     const rightSlots = getPageSlots(template, 'right', album.withGaps);
-    await generatePageWithSlots(pdf, spread.rightPhotos, rightSlots);
+    await generatePageWithSlots(pdf, spread.rightPhotos, rightSlots, PAGE_SIZE);
   }
 
   return pdf.output("blob");
