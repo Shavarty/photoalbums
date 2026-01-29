@@ -9,7 +9,7 @@ export default function Home() {
   return (
     <div className="min-h-screen flex flex-col">
       {/* Header */}
-      <header className="bg-brand-olive text-white py-3 px-4 md:px-6 lg:px-24 sticky top-0 z-50 shadow-md">
+      <header className="bg-brand-olive text-white py-3 px-4 md:px-6 lg:px-24 sticky top-0 z-50 shadow-lg">
         <div className="max-w-[1400px] mx-auto flex justify-between items-center">
           {/* Mobile menu button + Logo */}
           <div className="flex items-center gap-4">

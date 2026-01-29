@@ -192,7 +192,7 @@ export default function EditorPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-brand-olive text-white px-4 md:px-6 py-3 md:py-4 sticky top-0 z-40">
+      <header className="bg-brand-olive text-white px-4 md:px-6 py-3 md:py-4 sticky top-0 z-40 shadow-lg">
         <div className="max-w-7xl mx-auto flex justify-between items-center gap-4">
           <div className="flex items-center gap-3 md:gap-4">
             {/* Mobile menu button */}
