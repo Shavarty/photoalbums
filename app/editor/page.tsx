@@ -203,6 +203,14 @@ export default function EditorPage() {
               <span className="w-6 h-0.5 bg-white"></span>
             </button>
 
+            <Link href="/" className="flex-shrink-0 hidden md:block">
+              <img
+                src="/logo.svg"
+                alt="Книгодар"
+                className="h-7 w-auto"
+              />
+            </Link>
+
             <input
               type="text"
               value={album.title}

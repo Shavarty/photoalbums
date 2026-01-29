@@ -22,9 +22,11 @@ export default function Home() {
               <span className="w-6 h-0.5 bg-white transition-all"></span>
               <span className="w-6 h-0.5 bg-white transition-all"></span>
             </button>
-            <h1 className="text-2xl md:text-3xl font-serif italic font-semibold">
-              Книгодар
-            </h1>
+            <img
+              src="/logo.svg"
+              alt="Книгодар"
+              className="h-8 md:h-9 w-auto"
+            />
           </div>
 
           {/* Desktop Navigation */}
