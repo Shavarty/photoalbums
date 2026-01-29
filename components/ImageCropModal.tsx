@@ -22,6 +22,39 @@ const createCroppedImage = async (
   targetDPI: number = 300
 ): Promise<string> => {
   const image = await loadImage(imageSrc);
+
+  // Check if source image is too large and downscale it first
+  const MAX_SOURCE_DIMENSION = 4096; // Max dimension for source image
+  let sourceImage = image;
+
+  if (image.width > MAX_SOURCE_DIMENSION || image.height > MAX_SOURCE_DIMENSION) {
+    console.warn(`Source image too large (${image.width}x${image.height}), downscaling...`);
+    const downscaleCanvas = document.createElement("canvas");
+    const downscaleCtx = downscaleCanvas.getContext("2d");
+
+    if (!downscaleCtx) {
+      throw new Error("Canvas context not available");
+    }
+
+    const scale = Math.min(MAX_SOURCE_DIMENSION / image.width, MAX_SOURCE_DIMENSION / image.height);
+    downscaleCanvas.width = Math.round(image.width * scale);
+    downscaleCanvas.height = Math.round(image.height * scale);
+
+    downscaleCtx.drawImage(image, 0, 0, downscaleCanvas.width, downscaleCanvas.height);
+
+    // Create new image from downscaled canvas
+    const downscaledDataUrl = downscaleCanvas.toDataURL("image/jpeg", 0.92);
+    sourceImage = await loadImage(downscaledDataUrl);
+
+    // Adjust crop coordinates for downscaled image
+    crop = {
+      x: crop.x * scale,
+      y: crop.y * scale,
+      width: crop.width * scale,
+      height: crop.height * scale
+    };
+  }
+
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d");
 
@@ -56,7 +89,7 @@ const createCroppedImage = async (
   // Draw cropped image at correct resolution
   try {
     ctx.drawImage(
-      image,
+      sourceImage,
       crop.x,
       crop.y,
       crop.width,
@@ -68,10 +101,10 @@ const createCroppedImage = async (
     );
   } catch (error) {
     console.error("Error drawing image to canvas:", error);
-    throw new Error("Failed to process image. Try with a smaller photo.");
+    throw new Error("Не удалось обработать изображение");
   }
 
-  return canvas.toDataURL("image/jpeg", 0.92);
+  return canvas.toDataURL("image/jpeg", 0.88);
 };
 
 const loadImage = (url: string): Promise<HTMLImageElement> => {
@@ -128,8 +161,7 @@ export default function ImageCropModal({
       onComplete(croppedImageUrl);
     } catch (error) {
       console.error("Error cropping image:", error);
-      const errorMessage = error instanceof Error ? error.message : "Ошибка при обрезке изображения";
-      alert(errorMessage + "\n\nПопробуйте загрузить изображение меньшего размера.");
+      alert("Не удалось обработать изображение.\n\nПопробуйте выбрать другое фото.");
     } finally {
       setIsProcessing(false);
     }
