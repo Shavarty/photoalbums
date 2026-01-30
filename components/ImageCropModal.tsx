@@ -117,9 +117,8 @@ const createPreviewImage = async (
     throw new Error("Canvas context not available");
   }
 
-  // PREVIEW: Use NATURAL aspect ratio of crop area
-  // This is EXACTLY what user selected, no forcing
-  // PDF will use same approach = perfect match
+  // PREVIEW: Use SLOT aspect ratio (same as cropper enforces)
+  // This ensures preview matches PDF output exactly
   // Real 300 DPI processing will happen in PDF generator using original image
 
   // Target max dimension for preview (small and fast)
@@ -147,7 +146,7 @@ const createPreviewImage = async (
     throw new Error(`Invalid canvas dimensions: ${canvas.width}x${canvas.height}`);
   }
 
-  console.log(`Preview: ${canvasWidth}x${canvasHeight}px, aspect=${targetAspectRatio.toFixed(3)} (natural crop ratio)`);
+  console.log(`Preview: ${canvasWidth}x${canvasHeight}px, aspect=${targetAspectRatio.toFixed(3)} (slot aspect ratio)`);
 
     // Use better image smoothing
     ctx.imageSmoothingEnabled = true;
@@ -266,12 +265,11 @@ export default function ImageCropModal({
 
     try {
       // Create lightweight preview for editor display
-      // Calculate natural aspect ratio of actual crop area
-      const cropAspectRatio = croppedAreaPixels.width / croppedAreaPixels.height;
+      // Use SAME aspect ratio as cropper (which matches slot dimensions)
       const previewUrl = await createPreviewImage(
         imageUrl,
         croppedAreaPixels,
-        cropAspectRatio  // Use actual crop aspect ratio (not forced)
+        aspectRatio  // Use cropper's aspect ratio (= slot aspect ratio)
       );
 
       // Verify we got a valid preview

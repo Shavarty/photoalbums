@@ -94,6 +94,9 @@ export default function EditorPage() {
         ? template.leftPage.slots[photoIndex]
         : template.rightPage.slots[photoIndex];
 
+    // CALCULATE aspect ratio from actual slot dimensions (ignore slot.aspectRatio)
+    const realAspectRatio = slot.width / slot.height;
+
     const input = document.createElement("input");
     input.type = "file";
     input.accept = "image/*";
@@ -101,13 +104,13 @@ export default function EditorPage() {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (file) {
         const url = URL.createObjectURL(file);
-        console.log('Opening crop modal - aspectRatio:', slot.aspectRatio, 'slot:', slot.id, 'size:', slot.width, 'x', slot.height);
+        console.log('Opening crop modal - REAL aspectRatio:', realAspectRatio.toFixed(3), 'slot:', slot.id, 'size:', slot.width, 'x', slot.height);
         setCropModal({
           imageUrl: url,
           spreadId,
           side,
           photoIndex,
-          aspectRatio: slot.aspectRatio,
+          aspectRatio: realAspectRatio,  // Use REAL aspect ratio
           slotWidth: slot.width,
           slotHeight: slot.height,
         });
