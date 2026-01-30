@@ -36,42 +36,76 @@ const createPreviewImage = async (
 
   // Aggressively downscale source image for mobile stability
   const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-  const MAX_SOURCE_DIMENSION = isMobile ? 2048 : 4096; // Much smaller for mobile
+  const MAX_SOURCE_DIMENSION = isMobile ? 1536 : 3072; // Very conservative for mobile
   let sourceImage = image;
 
   // Always downscale if too large
   if (image.width > MAX_SOURCE_DIMENSION || image.height > MAX_SOURCE_DIMENSION) {
     console.log(`Downscaling source image from ${image.width}x${image.height}...`);
-    const downscaleCanvas = document.createElement("canvas");
-    const downscaleCtx = downscaleCanvas.getContext("2d", { willReadFrequently: false });
 
-    if (!downscaleCtx) {
-      throw new Error("Canvas context not available");
+    try {
+      const downscaleCanvas = document.createElement("canvas");
+      const downscaleCtx = downscaleCanvas.getContext("2d", { willReadFrequently: false, alpha: false });
+
+      if (!downscaleCtx) {
+        throw new Error("Canvas context not available");
+      }
+
+      const scale = Math.min(MAX_SOURCE_DIMENSION / image.width, MAX_SOURCE_DIMENSION / image.height);
+      downscaleCanvas.width = Math.round(image.width * scale);
+      downscaleCanvas.height = Math.round(image.height * scale);
+
+      // Verify downscale canvas is not too large
+      if (downscaleCanvas.width * downscaleCanvas.height > 4000000) {
+        throw new Error("Downscaled image still too large");
+      }
+
+      // Use better image smoothing
+      downscaleCtx.imageSmoothingEnabled = true;
+      downscaleCtx.imageSmoothingQuality = 'high';
+
+      downscaleCtx.drawImage(image, 0, 0, downscaleCanvas.width, downscaleCanvas.height);
+
+      // Create new image from downscaled canvas
+      const downscaledDataUrl = downscaleCanvas.toDataURL("image/jpeg", 0.88);
+      sourceImage = await loadImage(downscaledDataUrl);
+
+      // Adjust crop coordinates for downscaled image
+      crop = {
+        x: crop.x * scale,
+        y: crop.y * scale,
+        width: crop.width * scale,
+        height: crop.height * scale
+      };
+
+      console.log(`Downscaled to ${sourceImage.width}x${sourceImage.height}, crop adjusted`);
+    } catch (downscaleError) {
+      console.error("Downscaling failed, trying more aggressive reduction:", downscaleError);
+
+      // Fallback: use even smaller size
+      const FALLBACK_DIMENSION = 1024;
+      const fallbackScale = Math.min(FALLBACK_DIMENSION / image.width, FALLBACK_DIMENSION / image.height);
+
+      const fallbackCanvas = document.createElement("canvas");
+      fallbackCanvas.width = Math.round(image.width * fallbackScale);
+      fallbackCanvas.height = Math.round(image.height * fallbackScale);
+
+      const fallbackCtx = fallbackCanvas.getContext("2d", { alpha: false });
+      if (fallbackCtx) {
+        fallbackCtx.drawImage(image, 0, 0, fallbackCanvas.width, fallbackCanvas.height);
+        const fallbackDataUrl = fallbackCanvas.toDataURL("image/jpeg", 0.80);
+        sourceImage = await loadImage(fallbackDataUrl);
+
+        crop = {
+          x: crop.x * fallbackScale,
+          y: crop.y * fallbackScale,
+          width: crop.width * fallbackScale,
+          height: crop.height * fallbackScale
+        };
+
+        console.log(`Fallback downscale to ${sourceImage.width}x${sourceImage.height}`);
+      }
     }
-
-    const scale = Math.min(MAX_SOURCE_DIMENSION / image.width, MAX_SOURCE_DIMENSION / image.height);
-    downscaleCanvas.width = Math.round(image.width * scale);
-    downscaleCanvas.height = Math.round(image.height * scale);
-
-    // Use better image smoothing
-    downscaleCtx.imageSmoothingEnabled = true;
-    downscaleCtx.imageSmoothingQuality = 'high';
-
-    downscaleCtx.drawImage(image, 0, 0, downscaleCanvas.width, downscaleCanvas.height);
-
-    // Create new image from downscaled canvas
-    const downscaledDataUrl = downscaleCanvas.toDataURL("image/jpeg", 0.90);
-    sourceImage = await loadImage(downscaledDataUrl);
-
-    // Adjust crop coordinates for downscaled image
-    crop = {
-      x: crop.x * scale,
-      y: crop.y * scale,
-      width: crop.width * scale,
-      height: crop.height * scale
-    };
-
-    console.log(`Downscaled to ${sourceImage.width}x${sourceImage.height}, crop adjusted`);
   }
 
   const canvas = document.createElement("canvas");
@@ -84,46 +118,38 @@ const createPreviewImage = async (
     throw new Error("Canvas context not available");
   }
 
-  // PREVIEW ONLY: Use low DPI for fast, reliable processing
+  // PREVIEW ONLY: Keep original aspect ratio of cropped area
   // Real 300 DPI processing will happen in PDF generator using original image
-  const PREVIEW_DPI = 100; // Low DPI for editor preview only
 
-  // Calculate output size based on actual slot size
-  const mmToPx = (mm: number) => (mm * PREVIEW_DPI) / 25.4;
-  const pageSize = mmToPx(206);
+  // Calculate aspect ratio of the cropped area
+  const cropAspectRatio = crop.width / crop.height;
 
-  // Canvas size for PREVIEW only (small and fast)
-  let canvasWidth = Math.round(pageSize * slotWidth);
-  let canvasHeight = Math.round(pageSize * slotHeight);
+  // Target max dimension for preview (small and fast)
+  const MAX_PREVIEW_SIZE = 800; // max 800px on longest side
 
-  // Very conservative limits for preview (we don't need high-res here!)
-  const MAX_CANVAS_AREA = 2000000; // 2MP max - plenty for preview
-  const MAX_DIMENSION = 1500; // 1500px max per dimension
-  const currentArea = canvasWidth * canvasHeight;
+  let canvasWidth: number;
+  let canvasHeight: number;
 
-  // Limit by area
-  if (currentArea > MAX_CANVAS_AREA) {
-    const scale = Math.sqrt(MAX_CANVAS_AREA / currentArea);
-    canvasWidth = Math.round(canvasWidth * scale);
-    canvasHeight = Math.round(canvasHeight * scale);
-    console.log(`Canvas area reduced to ${canvasWidth}x${canvasHeight} (${(canvasWidth * canvasHeight / 1000000).toFixed(1)}MP)`);
+  if (cropAspectRatio > 1) {
+    // Wider than tall
+    canvasWidth = MAX_PREVIEW_SIZE;
+    canvasHeight = Math.round(MAX_PREVIEW_SIZE / cropAspectRatio);
+  } else {
+    // Taller than wide
+    canvasHeight = MAX_PREVIEW_SIZE;
+    canvasWidth = Math.round(MAX_PREVIEW_SIZE * cropAspectRatio);
   }
 
-  // Limit by dimension
-  if (canvasWidth > MAX_DIMENSION || canvasHeight > MAX_DIMENSION) {
-    const scale = Math.min(MAX_DIMENSION / canvasWidth, MAX_DIMENSION / canvasHeight);
-    canvasWidth = Math.round(canvasWidth * scale);
-    canvasHeight = Math.round(canvasHeight * scale);
-    console.log(`Canvas dimension limited to ${canvasWidth}x${canvasHeight}`);
-  }
-
+  // Already limited to 800px max, so dimensions are safe
   canvas.width = canvasWidth;
   canvas.height = canvasHeight;
 
   // Verify canvas is valid
-  if (canvas.width === 0 || canvas.height === 0 || canvas.width > MAX_DIMENSION || canvas.height > MAX_DIMENSION) {
+  if (canvas.width === 0 || canvas.height === 0) {
     throw new Error(`Invalid canvas dimensions: ${canvas.width}x${canvas.height}`);
   }
+
+  console.log(`Preview canvas: ${canvasWidth}x${canvasHeight} (aspect: ${cropAspectRatio.toFixed(2)})`);
 
     // Use better image smoothing
     ctx.imageSmoothingEnabled = true;
@@ -161,14 +187,15 @@ const createPreviewImage = async (
 
     return dataUrl;
   } catch (error: any) {
-    // Retry up to 3 times with longer delays
-    if (retryCount < 3) {
-      const delay = 500 * (retryCount + 1); // 500ms, 1000ms, 1500ms
-      console.log(`Retrying image processing (attempt ${retryCount + 2}/4) after ${delay}ms...`);
+    // Retry up to 5 times with exponential backoff
+    if (retryCount < 5) {
+      const delay = 300 * Math.pow(2, retryCount); // 300ms, 600ms, 1200ms, 2400ms, 4800ms
+      console.log(`Retrying image processing (attempt ${retryCount + 2}/6) after ${delay}ms...`);
+      console.log(`Error was:`, error?.message || error);
       await new Promise(resolve => setTimeout(resolve, delay));
       return createPreviewImage(imageSrc, crop, slotWidth, slotHeight, retryCount + 1);
     }
-    console.error("Final error after all retries:", error);
+    console.error("Final error after 6 attempts:", error);
     throw error;
   }
 };
@@ -178,10 +205,10 @@ const loadImage = (url: string): Promise<HTMLImageElement> => {
     const img = new Image();
     img.crossOrigin = "anonymous";
 
-    // Timeout after 30 seconds
+    // Timeout after 60 seconds (generous for slow mobile connections)
     const timeout = setTimeout(() => {
-      reject(new Error("Image load timeout"));
-    }, 30000);
+      reject(new Error("Image load timeout (60s)"));
+    }, 60000);
 
     img.onload = () => {
       clearTimeout(timeout);
