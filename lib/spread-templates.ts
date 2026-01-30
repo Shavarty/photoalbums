@@ -446,19 +446,19 @@ export const TEMPLATE_PANORAMA: SpreadTemplate = {
       },
       {
         id: "left-2",
-        aspectRatio: 1,
-        width: 0.45,
-        height: 0.45,
+        aspectRatio: 1.143,  // Match NO gaps aspect
+        width: 0.47,
+        height: 0.411,
         x: 0.02,
-        y: 0.55,
+        y: 0.589,
       },
       {
         id: "left-3",
-        aspectRatio: 1,
-        width: 0.45,
-        height: 0.45,
+        aspectRatio: 1.143,  // Match NO gaps aspect
+        width: 0.47,
+        height: 0.411,
         x: 0.51,
-        y: 0.55,
+        y: 0.589,
       },
     ],
   },
@@ -494,16 +494,16 @@ export const TEMPLATE_PANORAMA: SpreadTemplate = {
       },
       {
         id: "left-2",
-        aspectRatio: 1,
-        width: 0.4375,
+        aspectRatio: 1.143,  // 0.5/0.4375 = 1.143
+        width: 0.5,
         height: 0.4375,
-        x: 0.0625,
+        x: 0,
         y: 0.5625,
       },
       {
         id: "left-3",
-        aspectRatio: 1,
-        width: 0.4375,
+        aspectRatio: 1.143,  // 0.5/0.4375 = 1.143
+        width: 0.5,
         height: 0.4375,
         x: 0.5,
         y: 0.5625,
