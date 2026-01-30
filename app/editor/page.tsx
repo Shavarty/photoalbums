@@ -133,6 +133,59 @@ export default function EditorPage() {
           }
         }
 
+        // Compress large images for mobile stability
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        const maxDimension = isMobile ? 2048 : 4096;
+
+        console.log("Loading image for compression check...");
+        const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+          const image = new Image();
+          const objectUrl = URL.createObjectURL(processedFile);
+
+          image.onload = () => {
+            URL.revokeObjectURL(objectUrl);
+            resolve(image);
+          };
+          image.onerror = () => {
+            URL.revokeObjectURL(objectUrl);
+            reject(new Error("Failed to load image"));
+          };
+
+          image.src = objectUrl;
+        });
+
+        console.log(`Image loaded: ${img.width}x${img.height}`);
+
+        // Compress if too large
+        if (img.width > maxDimension || img.height > maxDimension) {
+          console.log(`Compressing large image from ${img.width}x${img.height}...`);
+
+          const canvas = document.createElement("canvas");
+          const scale = Math.min(maxDimension / img.width, maxDimension / img.height);
+          canvas.width = Math.round(img.width * scale);
+          canvas.height = Math.round(img.height * scale);
+
+          const ctx = canvas.getContext("2d", { alpha: false });
+          if (!ctx) throw new Error("Canvas context unavailable");
+
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = "high";
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+          processedFile = await new Promise<Blob>((resolve, reject) => {
+            canvas.toBlob(
+              (blob) => {
+                if (blob) resolve(blob);
+                else reject(new Error("Failed to compress image"));
+              },
+              "image/jpeg",
+              0.88
+            );
+          });
+
+          console.log(`Compressed to ${canvas.width}x${canvas.height}`);
+        }
+
         const url = URL.createObjectURL(processedFile);
         console.log('Opening crop modal - REAL aspectRatio:', realAspectRatio.toFixed(3), 'slot:', slot.id, 'size:', slot.width, 'x', slot.height);
         setCropModal({
@@ -146,7 +199,7 @@ export default function EditorPage() {
         });
       } catch (error) {
         console.error("Error processing image:", error);
-        alert("Не удалось загрузить изображение");
+        alert("Не удалось загрузить изображение. Попробуйте выбрать фото меньшего размера.");
       }
     };
     input.click();
