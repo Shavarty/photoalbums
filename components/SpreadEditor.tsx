@@ -37,13 +37,13 @@ export default function SpreadEditor({
               }}
               onClick={() => onPhotoClick(side, index)}
             >
-              <div className="relative w-full h-full bg-gray-200 flex items-center justify-center overflow-hidden">
+              <div className={`relative w-full h-full flex items-center justify-center overflow-hidden ${!photo?.url ? 'bg-gray-200' : ''}`}>
                 {photo?.url ? (
                   <>
                     <img
                       src={photo.url}
                       alt=""
-                      className="w-full h-full object-contain bg-gray-100"
+                      className="w-full h-full object-cover"
                     />
                     {photo.caption && (
                       <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-60 text-white text-xs p-1 text-center">
