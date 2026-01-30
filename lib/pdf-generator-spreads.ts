@@ -23,22 +23,35 @@ const loadImage = (url: string): Promise<HTMLImageElement> => {
 };
 
 // Crop original image at full 300 DPI quality for PDF
+// Forces exact aspect ratio to match slot (fixes floating point rounding)
 const cropImageAtFullQuality = async (
   imageUrl: string,
   cropArea: { x: number; y: number; width: number; height: number },
-  targetWidthMM: number,
-  targetHeightMM: number
+  targetAspectRatio: number
 ): Promise<string> => {
   const image = await loadImage(imageUrl);
 
-  // Calculate target size at 300 DPI
+  // Target size at 300 DPI with EXACT aspect ratio of slot
   const mmToPx = (mm: number) => (mm * 300) / 25.4;
-  const targetWidth = Math.round(mmToPx(targetWidthMM));
-  const targetHeight = Math.round(mmToPx(targetHeightMM));
+  const MAX_SIZE_MM = 206; // Full page size
+  const maxSizePx = mmToPx(MAX_SIZE_MM);
+
+  let canvasWidth: number;
+  let canvasHeight: number;
+
+  if (targetAspectRatio > 1) {
+    // Wider than tall
+    canvasWidth = maxSizePx;
+    canvasHeight = Math.round(maxSizePx / targetAspectRatio);
+  } else {
+    // Taller than wide
+    canvasHeight = maxSizePx;
+    canvasWidth = Math.round(maxSizePx * targetAspectRatio);
+  }
 
   const canvas = document.createElement("canvas");
-  canvas.width = targetWidth;
-  canvas.height = targetHeight;
+  canvas.width = canvasWidth;
+  canvas.height = canvasHeight;
 
   const ctx = canvas.getContext("2d", { alpha: false });
   if (!ctx) throw new Error("Canvas context not available");
@@ -46,7 +59,7 @@ const cropImageAtFullQuality = async (
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = "high";
 
-  // Draw cropped area from original image scaled to target size
+  // Draw cropped area - will slightly adjust to match target aspect ratio
   ctx.drawImage(
     image,
     cropArea.x,
@@ -55,8 +68,8 @@ const cropImageAtFullQuality = async (
     cropArea.height,
     0,
     0,
-    targetWidth,
-    targetHeight
+    canvasWidth,
+    canvasHeight
   );
 
   return canvas.toDataURL("image/jpeg", 0.92);
@@ -139,43 +152,52 @@ const generatePageWithSlots = async (
 
       if (cropArea && imageUrl !== photo.url) {
         // We have crop info + original image - crop at 300 DPI
-        finalImageUrl = await cropImageAtFullQuality(imageUrl, cropArea, slotWidth, slotHeight);
+        // Force aspect ratio to match slot exactly (fixes rounding issues)
+        const slotAspectRatio = slotWidth / slotHeight;
+        finalImageUrl = await cropImageAtFullQuality(imageUrl, cropArea, slotAspectRatio);
       } else {
         // No crop info or using preview - use as is
         finalImageUrl = imageUrl;
       }
 
-      // Clip to slot boundaries
-      pdf.saveGraphicsState();
-      pdf.rect(slotX, slotY, slotWidth, slotHeight);
-      pdf.clip();
-
-      // COVER approach: fill entire slot
+      // Crop area aspect ratio should match slot aspect ratio (from cropper)
+      // So image should fill slot perfectly with no gaps or stretching
+      // Use slight tolerance for floating point rounding
       const image = await loadImage(finalImageUrl);
       const imageAspect = image.width / image.height;
       const slotAspect = slotWidth / slotHeight;
+      const aspectDiff = Math.abs(imageAspect - slotAspect);
 
       let photoWidth: number;
       let photoHeight: number;
       let photoX: number;
       let photoY: number;
 
-      if (imageAspect > slotAspect) {
-        // Image wider - fit to HEIGHT, crop sides
+      if (aspectDiff < 0.01) {
+        // Aspect ratios match - fill slot exactly (no gaps, no stretch)
+        photoWidth = slotWidth;
         photoHeight = slotHeight;
-        photoWidth = slotHeight * imageAspect;
-        photoX = slotX - (photoWidth - slotWidth) / 2;
+        photoX = slotX;
         photoY = slotY;
       } else {
-        // Image taller - fit to WIDTH, crop top/bottom
-        photoWidth = slotWidth;
-        photoHeight = slotWidth / imageAspect;
-        photoX = slotX;
-        photoY = slotY - (photoHeight - slotHeight) / 2;
+        // Aspect ratios don't match (shouldn't happen with proper crop)
+        // Use CONTAIN to avoid stretching
+        console.warn(`Aspect ratio mismatch: image=${imageAspect.toFixed(3)}, slot=${slotAspect.toFixed(3)}`);
+
+        if (imageAspect > slotAspect) {
+          photoWidth = slotWidth;
+          photoHeight = slotWidth / imageAspect;
+          photoX = slotX;
+          photoY = slotY + (slotHeight - photoHeight) / 2;
+        } else {
+          photoHeight = slotHeight;
+          photoWidth = slotHeight * imageAspect;
+          photoX = slotX + (slotWidth - photoWidth) / 2;
+          photoY = slotY;
+        }
       }
 
       pdf.addImage(finalImageUrl, "JPEG", photoX, photoY, photoWidth, photoHeight, undefined, "FAST");
-      pdf.restoreGraphicsState();
 
       // Add caption if exists
       if (photo.caption) {
