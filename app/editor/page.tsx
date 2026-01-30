@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import heic2any from "heic2any";
 import { Album, Spread, Photo } from "@/lib/types";
 import { SPREAD_TEMPLATES } from "@/lib/spread-templates";
 import { generateAlbumPDF, downloadPDF } from "@/lib/pdf-generator-spreads";
@@ -99,11 +100,40 @@ export default function EditorPage() {
 
     const input = document.createElement("input");
     input.type = "file";
-    input.accept = "image/*";
-    input.onchange = (e) => {
+    input.accept = "image/*,.heic,.heif";
+    input.onchange = async (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];
-      if (file) {
-        const url = URL.createObjectURL(file);
+      if (!file) return;
+
+      try {
+        let processedFile: File | Blob = file;
+
+        // Check if file is HEIC/HEIF format and convert to JPEG
+        const isHeic = file.type === "image/heic" ||
+                       file.type === "image/heif" ||
+                       file.name.toLowerCase().endsWith(".heic") ||
+                       file.name.toLowerCase().endsWith(".heif");
+
+        if (isHeic) {
+          console.log("Converting HEIC to JPEG...");
+          try {
+            const convertedBlob = await heic2any({
+              blob: file,
+              toType: "image/jpeg",
+              quality: 0.9,
+            });
+
+            // heic2any can return Blob or Blob[], handle both cases
+            processedFile = Array.isArray(convertedBlob) ? convertedBlob[0] : convertedBlob;
+            console.log("HEIC converted successfully");
+          } catch (conversionError) {
+            console.error("HEIC conversion failed:", conversionError);
+            alert("Не удалось обработать HEIC изображение. Попробуйте конвертировать его в JPEG вручную.");
+            return;
+          }
+        }
+
+        const url = URL.createObjectURL(processedFile);
         console.log('Opening crop modal - REAL aspectRatio:', realAspectRatio.toFixed(3), 'slot:', slot.id, 'size:', slot.width, 'x', slot.height);
         setCropModal({
           imageUrl: url,
@@ -114,6 +144,9 @@ export default function EditorPage() {
           slotWidth: slot.width,
           slotHeight: slot.height,
         });
+      } catch (error) {
+        console.error("Error processing image:", error);
+        alert("Не удалось загрузить изображение");
       }
     };
     input.click();
