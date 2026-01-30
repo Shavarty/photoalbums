@@ -434,31 +434,32 @@ export const TEMPLATE_PANORAMA: SpreadTemplate = {
   name: "Панорама",
   description: "Для широкоформатных снимков",
   // WITH gaps (2% everywhere)
+  // Aspect ratios MATCH noGaps version to prevent stretching when switching modes
   leftPage: {
     slots: [
       {
         id: "left-1",
-        aspectRatio: 16 / 9,
+        aspectRatio: 1.815,  // 0.96 / 0.529 (slightly wider than 16:9)
         width: 0.96,
-        height: 0.54,
+        height: 0.529,
         x: 0.02,
         y: 0.02,
       },
       {
         id: "left-2",
-        aspectRatio: 1.143,  // Match NO gaps aspect
+        aspectRatio: 1.143,  // MATCHES noGaps (0.47 / 0.411)
         width: 0.47,
         height: 0.411,
         x: 0.02,
-        y: 0.589,
+        y: 0.569,
       },
       {
         id: "left-3",
-        aspectRatio: 1.143,  // Match NO gaps aspect
+        aspectRatio: 1.143,  // MATCHES noGaps (0.47 / 0.411)
         width: 0.47,
         height: 0.411,
         x: 0.51,
-        y: 0.589,
+        y: 0.569,
       },
     ],
   },
@@ -466,15 +467,15 @@ export const TEMPLATE_PANORAMA: SpreadTemplate = {
     slots: [
       {
         id: "right-1",
-        aspectRatio: 16 / 9,
+        aspectRatio: 1.846,  // 0.96 / 0.52
         width: 0.96,
-        height: 0.54,
+        height: 0.52,
         x: 0.02,
-        y: 0.44,
+        y: 0.46,
       },
       {
         id: "right-2",
-        aspectRatio: 16 / 9,  // Match noGaps aspect ratio
+        aspectRatio: 2.286,  // MATCHES noGaps (0.96 / 0.42)
         width: 0.96,
         height: 0.42,
         x: 0.02,
