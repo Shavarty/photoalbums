@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import heic2any from "heic2any";
 import { Album, Spread, Photo } from "@/lib/types";
 import { SPREAD_TEMPLATES } from "@/lib/spread-templates";
 import { generateAlbumPDF, downloadPDF } from "@/lib/pdf-generator-spreads";
@@ -117,6 +116,9 @@ export default function EditorPage() {
         if (isHeic) {
           console.log("Converting HEIC to JPEG...");
           try {
+            // Dynamic import to avoid SSR issues
+            const heic2any = (await import("heic2any")).default;
+
             const convertedBlob = await heic2any({
               blob: file,
               toType: "image/jpeg",
