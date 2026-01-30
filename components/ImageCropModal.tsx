@@ -24,8 +24,7 @@ interface ImageCropModalProps {
 const createPreviewImage = async (
   imageSrc: string,
   crop: Area,
-  slotWidth: number,
-  slotHeight: number,
+  targetAspectRatio: number,  // Use same aspect ratio as cropper/slot
   retryCount: number = 0
 ): Promise<string> => {
   try {
@@ -118,11 +117,9 @@ const createPreviewImage = async (
     throw new Error("Canvas context not available");
   }
 
-  // PREVIEW ONLY: Keep original aspect ratio of cropped area
+  // PREVIEW ONLY: Use SAME aspect ratio as slot/cropper
+  // This ensures preview looks identical to PDF output
   // Real 300 DPI processing will happen in PDF generator using original image
-
-  // Calculate aspect ratio of the cropped area
-  const cropAspectRatio = crop.width / crop.height;
 
   // Target max dimension for preview (small and fast)
   const MAX_PREVIEW_SIZE = 800; // max 800px on longest side
@@ -130,14 +127,14 @@ const createPreviewImage = async (
   let canvasWidth: number;
   let canvasHeight: number;
 
-  if (cropAspectRatio > 1) {
+  if (targetAspectRatio > 1) {
     // Wider than tall
     canvasWidth = MAX_PREVIEW_SIZE;
-    canvasHeight = Math.round(MAX_PREVIEW_SIZE / cropAspectRatio);
+    canvasHeight = Math.round(MAX_PREVIEW_SIZE / targetAspectRatio);
   } else {
     // Taller than wide
     canvasHeight = MAX_PREVIEW_SIZE;
-    canvasWidth = Math.round(MAX_PREVIEW_SIZE * cropAspectRatio);
+    canvasWidth = Math.round(MAX_PREVIEW_SIZE * targetAspectRatio);
   }
 
   // Already limited to 800px max, so dimensions are safe
@@ -149,7 +146,7 @@ const createPreviewImage = async (
     throw new Error(`Invalid canvas dimensions: ${canvas.width}x${canvas.height}`);
   }
 
-  console.log(`Preview canvas: ${canvasWidth}x${canvasHeight} (aspect: ${cropAspectRatio.toFixed(2)})`);
+  console.log(`Preview canvas: ${canvasWidth}x${canvasHeight} (target aspect: ${targetAspectRatio.toFixed(3)})`);
 
     // Use better image smoothing
     ctx.imageSmoothingEnabled = true;
@@ -193,7 +190,7 @@ const createPreviewImage = async (
       console.log(`Retrying image processing (attempt ${retryCount + 2}/6) after ${delay}ms...`);
       console.log(`Error was:`, error?.message || error);
       await new Promise(resolve => setTimeout(resolve, delay));
-      return createPreviewImage(imageSrc, crop, slotWidth, slotHeight, retryCount + 1);
+      return createPreviewImage(imageSrc, crop, targetAspectRatio, retryCount + 1);
     }
     console.error("Final error after 6 attempts:", error);
     throw error;
@@ -268,11 +265,11 @@ export default function ImageCropModal({
 
     try {
       // Create lightweight preview for editor display
+      // Use SAME aspect ratio as cropper (which matches slot)
       const previewUrl = await createPreviewImage(
         imageUrl,
         croppedAreaPixels,
-        slotWidth,
-        slotHeight
+        aspectRatio  // Use cropper's aspect ratio (same as slot)
       );
 
       // Verify we got a valid preview
