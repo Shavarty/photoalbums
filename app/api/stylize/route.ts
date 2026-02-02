@@ -14,27 +14,19 @@ export async function POST(request: Request) {
       );
     }
 
-    // Промпт оптимизирован для Gemini 3 Pro Image (concise, direct, positive)
-    const prompt = `Image expansion (outpainting) task:
+    // Промпт: возврат к рабочей простой версии + negative prompt для предотвращения рамок
+    const prompt = `Transform this entire image into vibrant comic book style with bold black outlines, cel shading, and saturated flat colors.
 
-INPUT: Photo positioned within white canvas. White areas = space to fill with extended background.
-OUTPUT: Same canvas size. Photo stays in exact same position. Fill white areas by extending the photo's background seamlessly.
+IMPORTANT INSTRUCTIONS:
+1. If there are white/blank areas around the photo content, EXPAND the scene naturally by filling these areas with continuation of the background (sky, ground, walls, scenery, etc.) in the same comic book style.
+2. Keep the original photo content in its EXACT position - do not move, resize, or recompose it.
+3. The white areas are NOT part of the scene - they are blank space that needs to be filled with natural scene extension.
+4. Maintain spatial composition: if the photo is positioned upper-left, keep content there and extend the scene to right and bottom.
+5. Make people and objects recognizable but stylized as comic characters.
 
-SPATIAL RULES:
-- Photo position: Keep exactly where shown (no centering, no moving)
-- Photo size: Keep same percentage of canvas as input (1:1 scaling)
-- Canvas size: Keep input dimensions exactly
+Transform and extend seamlessly in comic book art style.
 
-BACKGROUND EXTENSION:
-- Analyze visible background in photo (sky, ground, trees, water, buildings, etc.)
-- Extend that same background environment into white areas
-- Create natural panoramic continuation
-- Match perspective, lighting, and elements from original photo
-
-STYLE APPLICATION:
-Modern romantic graphic novel illustration: clean linework, soft cel-shading, vibrant natural colors, cinematic golden-hour lighting, smooth gradients, high-quality digital 2D art. Maintain character likeness and facial features.
-
-Seamlessly blend extended background with original photo content in illustrated style.`;
+Negative prompt: no white borders, no margins, no frame, no mockup, no black border, no composite layers.`;
 
     // Убираем префикс data:image/jpeg;base64, если есть
     const base64Data = imageBase64.includes(',')
