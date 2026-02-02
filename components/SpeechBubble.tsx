@@ -21,24 +21,58 @@ export default function SpeechBubble({ bubble, onEdit, onDelete, onMove }: Speec
   const estimatedWidth = Math.max(minWidth, Math.min(300, textLength * 8 + padding * 2));
   const estimatedHeight = Math.max(minHeight, Math.ceil(textLength / 30) * 20 + padding * 2);
 
-  // Tail position based on direction - connects seamlessly to ellipse
-  const getTailPath = () => {
-    const cx = estimatedWidth / 2 + 10; // Center X of ellipse
-    const cy = estimatedHeight / 2 + 10; // Center Y of ellipse
-    const rx = estimatedWidth / 2; // Radius X
-    const ry = estimatedHeight / 2; // Radius Y
+  // Create complete bubble path (ellipse + tail as one shape)
+  const getBubblePath = () => {
+    const cx = estimatedWidth / 2 + 10;
+    const cy = estimatedHeight / 2 + 10;
+    const rx = estimatedWidth / 2;
+    const ry = estimatedHeight / 2;
 
-    switch (bubble.tailDirection || 'bottom-left') {
-      case 'bottom-left':
-        // Start from ellipse edge, go to point, return to edge
-        return `M ${cx - rx * 0.3},${cy + ry * 0.8} L ${cx - rx * 0.6},${cy + ry + 15} L ${cx - rx * 0.1},${cy + ry * 0.9} Z`;
-      case 'bottom-right':
-        return `M ${cx + rx * 0.1},${cy + ry * 0.9} L ${cx + rx * 0.6},${cy + ry + 15} L ${cx + rx * 0.3},${cy + ry * 0.8} Z`;
-      case 'top-left':
-        return `M ${cx - rx * 0.1},${cy - ry * 0.9} L ${cx - rx * 0.6},${cy - ry - 15} L ${cx - rx * 0.3},${cy - ry * 0.8} Z`;
-      case 'top-right':
-        return `M ${cx + rx * 0.3},${cy - ry * 0.8} L ${cx + rx * 0.6},${cy - ry - 15} L ${cx + rx * 0.1},${cy - ry * 0.9} Z`;
+    // Ellipse approximation with cubic Bezier curves (magic number 0.551915 for smooth circle)
+    const kappa = 0.551915;
+    const ox = rx * kappa; // Control point offset x
+    const oy = ry * kappa; // Control point offset y
+
+    // Start at right-middle of ellipse
+    let path = `M ${cx + rx},${cy}`;
+
+    // Top-right quadrant
+    path += ` C ${cx + rx},${cy - oy} ${cx + ox},${cy - ry} ${cx},${cy - ry}`;
+
+    // Top-left quadrant
+    path += ` C ${cx - ox},${cy - ry} ${cx - rx},${cy - oy} ${cx - rx},${cy}`;
+
+    // Bottom-left quadrant - with tail insertion
+    const direction = bubble.tailDirection || 'bottom-left';
+
+    if (direction === 'bottom-left') {
+      path += ` C ${cx - rx},${cy + oy} ${cx - ox},${cy + ry} ${cx - rx * 0.3},${cy + ry}`;
+      path += ` L ${cx - rx * 0.5},${cy + ry + 15} L ${cx - rx * 0.1},${cy + ry}`;
+      path += ` C ${cx + ox},${cy + ry} ${cx + rx},${cy + oy} ${cx + rx},${cy}`;
+    } else if (direction === 'bottom-right') {
+      path += ` C ${cx - rx},${cy + oy} ${cx - ox},${cy + ry} ${cx + rx * 0.1},${cy + ry}`;
+      path += ` L ${cx + rx * 0.5},${cy + ry + 15} L ${cx + rx * 0.3},${cy + ry}`;
+      path += ` C ${cx + rx},${cy + ry} ${cx + rx},${cy + oy} ${cx + rx},${cy}`;
+    } else if (direction === 'top-left') {
+      // Modify top-left quadrant to include tail
+      path = `M ${cx + rx},${cy}`;
+      path += ` C ${cx + rx},${cy - oy} ${cx + ox},${cy - ry} ${cx - rx * 0.1},${cy - ry}`;
+      path += ` L ${cx - rx * 0.5},${cy - ry - 15} L ${cx - rx * 0.3},${cy - ry}`;
+      path += ` C ${cx - rx},${cy - ry} ${cx - rx},${cy - oy} ${cx - rx},${cy}`;
+      path += ` C ${cx - rx},${cy + oy} ${cx - ox},${cy + ry} ${cx},${cy + ry}`;
+      path += ` C ${cx + ox},${cy + ry} ${cx + rx},${cy + oy} ${cx + rx},${cy}`;
+    } else if (direction === 'top-right') {
+      path = `M ${cx + rx},${cy}`;
+      path += ` C ${cx + rx},${cy - oy} ${cx + ox},${cy - ry} ${cx + rx * 0.3},${cy - ry}`;
+      path += ` L ${cx + rx * 0.5},${cy - ry - 15} L ${cx + rx * 0.1},${cy - ry}`;
+      path += ` C ${cx},${cy - ry} ${cx - ox},${cy - ry} ${cx - rx},${cy - oy}`;
+      path += ` L ${cx - rx},${cy}`;
+      path += ` C ${cx - rx},${cy + oy} ${cx - ox},${cy + ry} ${cx},${cy + ry}`;
+      path += ` C ${cx + ox},${cy + ry} ${cx + rx},${cy + oy} ${cx + rx},${cy}`;
     }
+
+    path += ` Z`;
+    return path;
   };
 
   // Drag handlers
@@ -113,20 +147,9 @@ export default function SpeechBubble({ bubble, onEdit, onDelete, onMove }: Speec
         height={estimatedHeight + 30}
         className="drop-shadow-lg"
       >
-        {/* Main bubble */}
-        <ellipse
-          cx={estimatedWidth / 2 + 10}
-          cy={estimatedHeight / 2 + 10}
-          rx={estimatedWidth / 2}
-          ry={estimatedHeight / 2}
-          fill="white"
-          stroke="black"
-          strokeWidth="2"
-        />
-
-        {/* Tail - now seamlessly connected */}
+        {/* Complete bubble with tail as single path */}
         <path
-          d={getTailPath()}
+          d={getBubblePath()}
           fill="white"
           stroke="black"
           strokeWidth="2"
