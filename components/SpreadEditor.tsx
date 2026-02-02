@@ -37,7 +37,7 @@ export default function SpreadEditor({
               }}
               onClick={() => onPhotoClick(side, index)}
             >
-              <div className={`relative w-full h-full flex items-center justify-center overflow-hidden ${!photo?.url ? 'bg-gray-200 border border-gray-400' : ''}`}>
+              <div className={`relative w-full h-full flex flex-col items-center justify-center overflow-hidden transition-all ${!photo?.url ? 'bg-gray-200 border border-gray-400 hover:bg-gray-300 hover:border-brand-orange' : ''}`}>
                 {photo?.url ? (
                   <>
                     <img
@@ -52,29 +52,33 @@ export default function SpreadEditor({
                     )}
                   </>
                 ) : (
-                  <span className="text-gray-400 text-xs text-center px-2">
-                    {(() => {
-                      const ratio = slot.aspectRatio;
-                      // Common aspect ratios in WxH format
-                      if (Math.abs(ratio - 1) < 0.05) return "1x1";
-                      if (Math.abs(ratio - 16/9) < 0.05) return "16x9";
-                      if (Math.abs(ratio - 4/3) < 0.05) return "4x3";
-                      if (Math.abs(ratio - 5/4) < 0.05) return "5x4";
-                      if (Math.abs(ratio - 3/2) < 0.05) return "3x2";
-                      if (Math.abs(ratio - 21/9) < 0.05) return "21x9";
-                      if (Math.abs(ratio - 9/21) < 0.05) return "9x21";
-                      if (Math.abs(ratio - 3/4) < 0.05) return "3x4";
-                      if (Math.abs(ratio - 2/3) < 0.05) return "2x3";
-                      // Fallback to calculated ratio
-                      if (ratio > 1) {
-                        const h = Math.round(10 / ratio);
-                        return `10x${h}`;
-                      } else {
-                        const w = Math.round(10 * ratio);
-                        return `${w}x10`;
-                      }
-                    })()}
-                  </span>
+                  <div className="flex flex-col items-center justify-center gap-0.5 p-1 md:p-2 opacity-25">
+                    {/* Camera Icon */}
+                    <svg
+                      className="w-4 h-4 md:w-6 md:h-6 text-gray-500"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={1.5}
+                        d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"
+                      />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={1.5}
+                        d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"
+                      />
+                    </svg>
+
+                    {/* Text */}
+                    <span className="text-gray-600 text-[8px] md:text-xs font-normal text-center leading-tight">
+                      Добавить фото
+                    </span>
+                  </div>
                 )}
               </div>
             </div>
@@ -104,6 +108,15 @@ export default function SpreadEditor({
           {renderPage(spread.rightPhotos, "right")}
         </div>
       </div>
+
+      {/* Helper Text */}
+      {[...spread.leftPhotos, ...spread.rightPhotos].every(p => !p?.url) && (
+        <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+          <p className="text-sm text-blue-800 text-center">
+            💡 Нажмите на ячейку, чтобы добавить фото
+          </p>
+        </div>
+      )}
 
       {/* Captions */}
       <div className="mt-4 space-y-2">

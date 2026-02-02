@@ -7,11 +7,17 @@ import { SPREAD_TEMPLATES } from "@/lib/spread-templates";
 import { generateAlbumPDF, downloadPDF } from "@/lib/pdf-generator-spreads";
 import ImageCropModal from "@/components/ImageCropModal";
 import SpreadEditor from "@/components/SpreadEditor";
+import TokenSummary from "@/components/TokenSummary";
 import SpreadPreview from "@/components/SpreadPreview";
+
+// Generate unique ID (works on both server and client)
+const generateId = () => {
+  return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+};
 
 export default function EditorPage() {
   const [album, setAlbum] = useState<Album>({
-    id: crypto.randomUUID(),
+    id: generateId(),
     title: "Название альбома",
     cover: {
       frontImage: null,
@@ -49,14 +55,14 @@ export default function EditorPage() {
       Array(count)
         .fill(null)
         .map(() => ({
-          id: crypto.randomUUID(),
+          id: generateId(),
           file: null,
           url: "",
           caption: "",
         }));
 
     const newSpread: Spread = {
-      id: crypto.randomUUID(),
+      id: generateId(),
       templateId,
       leftPhotos: createEmptyPhotos(template.leftPage.slots.length),
       rightPhotos: createEmptyPhotos(template.rightPage.slots.length),
@@ -208,11 +214,12 @@ export default function EditorPage() {
   };
 
   // Complete photo upload after crop
-  const completePhotoUpload = (result: { previewUrl: string; originalUrl: string; cropArea: any }) => {
+  const completePhotoUpload = async (result: { previewUrl: string; originalUrl: string; cropArea: any; tokens?: any; isStylizing?: boolean; modelId?: string }) => {
     if (!cropModal) return;
 
     const { spreadId, side, photoIndex } = cropModal;
 
+    // Сначала сохраняем обычное фото (быстро закрываем modal)
     setAlbum((prev) => ({
       ...prev,
       spreads: prev.spreads.map((spread) =>
@@ -228,6 +235,7 @@ export default function EditorPage() {
                       url: result.previewUrl,        // Low-res preview for editor
                       originalUrl: result.originalUrl, // High-res for PDF
                       cropArea: result.cropArea,      // Crop coordinates
+                      tokens: result.tokens,          // AI tokens if stylized
                       file: null
                     }
                   : photo
@@ -239,6 +247,59 @@ export default function EditorPage() {
     }));
 
     setCropModal(null);
+
+    // Если нужна стилизация - запускаем в фоне
+    if (result.isStylizing && result.modelId) {
+      console.log("Starting background stylization...");
+
+      try {
+        const apiResponse = await fetch('/api/stylize', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            imageBase64: result.previewUrl,
+            modelId: result.modelId
+          })
+        });
+
+        const stylizeResult = await apiResponse.json();
+
+        if (stylizeResult.success) {
+          // Обновляем фото стилизованной версией
+          setAlbum((prev) => ({
+            ...prev,
+            spreads: prev.spreads.map((spread) =>
+              spread.id === spreadId
+                ? {
+                    ...spread,
+                    [side === "left" ? "leftPhotos" : "rightPhotos"]: (
+                      side === "left" ? spread.leftPhotos : spread.rightPhotos
+                    ).map((photo, idx) =>
+                      idx === photoIndex
+                        ? {
+                            ...photo,
+                            url: stylizeResult.stylizedUrl,
+                            originalUrl: stylizeResult.stylizedUrl,
+                            tokens: stylizeResult.tokens
+                          }
+                        : photo
+                    ),
+                  }
+                : spread
+            ),
+            updatedAt: new Date(),
+          }));
+
+          console.log("Stylization complete!");
+        } else {
+          console.error("Stylization failed:", stylizeResult.error);
+          alert("Не удалось стилизовать изображение: " + stylizeResult.error);
+        }
+      } catch (error: any) {
+        console.error("Background stylization error:", error);
+        alert("Ошибка стилизации: " + error.message);
+      }
+    }
   };
 
   // Handle caption change
@@ -270,6 +331,16 @@ export default function EditorPage() {
   const handleGeneratePDF = async () => {
     if (album.spreads.length === 0) {
       alert("Добавьте хотя бы один разворот!");
+      return;
+    }
+
+    // Check if at least one photo exists in any spread
+    const hasPhotos = album.spreads.some(spread =>
+      [...spread.leftPhotos, ...spread.rightPhotos].some(photo => photo?.url)
+    );
+
+    if (!hasPhotos) {
+      alert("Прежде чем скачать альбом, загрузите свои фотографии в ячейки разворотов");
       return;
     }
 
@@ -534,17 +605,21 @@ export default function EditorPage() {
           ) : (
             <div className="space-y-6">
               {album.spreads.map((spread) => (
-                <SpreadEditor
-                  key={spread.id}
-                  spread={spread}
-                  withGaps={album.withGaps}
-                  onPhotoClick={(side, idx) =>
-                    handlePhotoClick(spread.id, side, idx)
-                  }
-                  onCaptionChange={(side, idx, caption) =>
-                    handleCaptionChange(spread.id, side, idx, caption)
-                  }
-                />
+                <div key={spread.id}>
+                  <SpreadEditor
+                    spread={spread}
+                    withGaps={album.withGaps}
+                    onPhotoClick={(side, idx) =>
+                      handlePhotoClick(spread.id, side, idx)
+                    }
+                    onCaptionChange={(side, idx, caption) =>
+                      handleCaptionChange(spread.id, side, idx, caption)
+                    }
+                  />
+                  <TokenSummary
+                    photos={[...spread.leftPhotos, ...spread.rightPhotos]}
+                  />
+                </div>
               ))}
 
               {/* Add more spreads button */}

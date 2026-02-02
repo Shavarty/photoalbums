@@ -9,12 +9,17 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "global-agent": "^3.0.0",
     "heic2any": "^0.0.4",
+    "https-proxy-agent": "^7.0.6",
     "jspdf": "^4.0.0",
     "next": "16.1.6",
+    "node-fetch": "^2.7.0",
     "react": "19.2.3",
     "react-dom": "19.2.3",
-    "react-easy-crop": "^5.5.6"
+    "react-easy-crop": "^5.5.6",
+    "socks-proxy-agent": "^8.0.5"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

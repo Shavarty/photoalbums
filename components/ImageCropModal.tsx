@@ -3,12 +3,16 @@
 import { useState, useCallback, useEffect } from "react";
 import Cropper from "react-easy-crop";
 import { Area } from "react-easy-crop";
-import { CropArea } from "@/lib/types";
+import { CropArea, TokenUsage } from "@/lib/types";
+import { GEMINI_MODELS, DEFAULT_MODEL } from "@/lib/geminiModels";
 
 interface CropResult {
   previewUrl: string; // Low-res preview for editor
   originalUrl: string; // Original high-res for PDF
   cropArea: CropArea; // Crop coordinates
+  tokens?: TokenUsage; // AI stylization tokens if used
+  isStylizing?: boolean; // Flag that stylization is in progress
+  modelId?: string; // Model to use for stylization
 }
 
 interface ImageCropModalProps {
@@ -242,6 +246,7 @@ export default function ImageCropModal({
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [selectedModel, setSelectedModel] = useState<string>(DEFAULT_MODEL);
 
   // Reset crop and zoom when image changes
   useEffect(() => {
@@ -257,50 +262,43 @@ export default function ImageCropModal({
     []
   );
 
-  const handleSave = async () => {
-    if (!croppedAreaPixels) return;
+  // Стилизация и сразу сохранение
+  const handleStylizeAndSave = async () => {
+    if (!croppedAreaPixels) {
+      alert("Сначала настройте область обрезки");
+      return;
+    }
 
-    console.log('Saving crop - slot:', slotWidth, 'x', slotHeight, 'crop area:', croppedAreaPixels);
     setIsProcessing(true);
-
     try {
-      // Create lightweight preview for editor display
-      // Use SAME aspect ratio as cropper (which matches slot dimensions)
-      const previewUrl = await createPreviewImage(
+      // Создаем обрезанный фрагмент
+      console.log("Creating cropped preview for stylization...");
+      const croppedPreview = await createPreviewImage(
         imageUrl,
         croppedAreaPixels,
-        aspectRatio  // Use cropper's aspect ratio (= slot aspect ratio)
+        aspectRatio
       );
 
-      // Verify we got a valid preview
-      if (!previewUrl || !previewUrl.startsWith('data:image')) {
-        throw new Error("Invalid preview result");
-      }
-
-      // Return complete crop result
+      // Сначала сохраняем обычное фото (чтобы быстро закрыть modal)
       const result: CropResult = {
-        previewUrl,              // Low-res for editor
-        originalUrl: imageUrl,   // Original high-res for PDF
-        cropArea: croppedAreaPixels  // Crop coordinates
+        previewUrl: croppedPreview,
+        originalUrl: imageUrl,
+        cropArea: croppedAreaPixels,
+        tokens: undefined,
+        isStylizing: true,  // флаг что стилизация в процессе
+        modelId: selectedModel
       };
 
-      console.log('Crop complete - preview size:', previewUrl.length, 'bytes');
+      // Сразу закрываем modal и сохраняем
       onComplete(result);
+
     } catch (error: any) {
-      console.error("Error cropping image:", error);
-      const errorMsg = error?.message || "Неизвестная ошибка";
-      alert(
-        "Не удалось обработать изображение.\n\n" +
-        `Причина: ${errorMsg}\n\n` +
-        "Попробуйте:\n" +
-        "• Выбрать фото меньшего размера\n" +
-        "• Перезагрузить страницу\n" +
-        "• Использовать другой браузер"
-      );
-    } finally {
+      console.error("Error during stylization:", error);
+      alert("Не удалось обработать изображение: " + error.message);
       setIsProcessing(false);
     }
   };
+
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
@@ -344,6 +342,28 @@ export default function ImageCropModal({
             />
           </div>
 
+          {/* Model Selection */}
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Модель AI стилизации
+            </label>
+            <select
+              value={selectedModel}
+              onChange={(e) => setSelectedModel(e.target.value)}
+              disabled={isProcessing}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:opacity-50"
+            >
+              {Object.values(GEMINI_MODELS).map((model) => (
+                <option key={model.id} value={model.id}>
+                  {model.name} — ~${model.pricing.avgImageCost.toFixed(3)}/фото
+                </option>
+              ))}
+            </select>
+            <p className="text-xs text-gray-500 mt-1">
+              {GEMINI_MODELS[selectedModel]?.description}
+            </p>
+          </div>
+
           <div className="flex gap-3 justify-end">
             <button
               onClick={onCancel}
@@ -353,11 +373,11 @@ export default function ImageCropModal({
               Отмена
             </button>
             <button
-              onClick={handleSave}
+              onClick={handleStylizeAndSave}
               disabled={isProcessing}
               className="btn-gradient px-8 py-2 text-white font-semibold disabled:opacity-50"
             >
-              {isProcessing ? "Обработка..." : "Применить"}
+              {isProcessing ? "Обработка..." : "🎨 Стилизовать"}
             </button>
           </div>
         </div>

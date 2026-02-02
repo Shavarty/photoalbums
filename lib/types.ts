@@ -7,6 +7,13 @@ export interface CropArea {
   height: number;
 }
 
+export interface TokenUsage {
+  promptTokens: number;
+  candidatesTokens: number;
+  totalTokens: number;
+  modelId?: string; // Which Gemini model was used
+}
+
 export interface Photo {
   id: string;
   file: File | null;
@@ -14,6 +21,7 @@ export interface Photo {
   originalUrl?: string; // Original high-res URL for PDF generation
   cropArea?: CropArea; // Crop coordinates in pixels on original image
   caption?: string;
+  tokens?: TokenUsage; // AI stylization token usage
 }
 
 export interface Spread {
