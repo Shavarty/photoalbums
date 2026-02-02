@@ -14,32 +14,27 @@ export async function POST(request: Request) {
       );
     }
 
-    // Промпт для стилизации с поддержкой expansion (основан на успешном промпте пользователя)
-    const prompt = `TASK: STYLIZE and TRANSFORM. DO NOT CROP. DO NOT ZOOM IN.
+    // Промпт оптимизирован для Gemini 3 Pro Image (concise, direct, positive)
+    const prompt = `Image expansion (outpainting) task:
 
-STRICT SPATIAL INTEGRITY RULES (HIGHEST PRIORITY):
-- NO CROPPING ALLOWED: The input image represents the FINAL CANVAS SIZE. White space should be treated as "canvas underlay" to be filled with paint, NOT as empty space to be cropped away.
-- 1:1 SCALING: Characters/subjects MUST occupy EXACTLY THE SAME percentage of pixels in output as in input. If subjects occupy 20% of height in input, they must occupy 20% of height in output.
-- ABSOLUTE PLACEMENT: Do not move subjects to center. If they are in the bottom-right corner, keep them in the bottom-right corner.
-- ANCHORING: Imagine the input image is a locked layer. You are painting underneath the subjects. The subjects themselves act as a fixed anchor.
+INPUT: Photo positioned within white canvas. White areas = space to fill with extended background.
+OUTPUT: Same canvas size. Photo stays in exact same position. Fill white areas by extending the photo's background seamlessly.
 
-MODE: STYLIZATION AND PAINTING
-INSTRUCTIONS:
-1. Keep subjects EXACTLY as presented in the source image. Do not change their pose, position, or clothing. Strictly preserve their likeness and facial features.
-2. Apply Style: Apply "Modern Romantic Graphic Novel" style (clean lines, soft cel-shaded shading) to make subjects look like high-quality digital illustration, not a photo filter.
-3. Background Extension: Analyze the small fragment of background visible in the source photo (e.g., wooden floor, sunset, water, trees, sky). Extend this EXACT SAME environment to fill the rest of the white canvas. Create a wide panoramic view of this location.
+SPATIAL RULES:
+- Photo position: Keep exactly where shown (no centering, no moving)
+- Photo size: Keep same percentage of canvas as input (1:1 scaling)
+- Canvas size: Keep input dimensions exactly
 
-VISUAL STYLE:
-- Modern Western comic aesthetic
-- High-quality digital 2D illustration
-- Vibrant but natural colors
-- Cinematic lighting (golden hour tones)
-- Sharp outlines, soft gradients
-- Smooth, soft shading
-- NOT photorealistic, NOT anime
-- NO artifacts, NO frames, NO borders
+BACKGROUND EXTENSION:
+- Analyze visible background in photo (sky, ground, trees, water, buildings, etc.)
+- Extend that same background environment into white areas
+- Create natural panoramic continuation
+- Match perspective, lighting, and elements from original photo
 
-Remember: White areas are empty canvas to paint on with natural scene continuation.`;
+STYLE APPLICATION:
+Modern romantic graphic novel illustration: clean linework, soft cel-shading, vibrant natural colors, cinematic golden-hour lighting, smooth gradients, high-quality digital 2D art. Maintain character likeness and facial features.
+
+Seamlessly blend extended background with original photo content in illustrated style.`;
 
     // Убираем префикс data:image/jpeg;base64, если есть
     const base64Data = imageBase64.includes(',')
@@ -64,7 +59,7 @@ Remember: White areas are empty canvas to paint on with natural scene continuati
         }
       ],
       generationConfig: {
-        temperature: 0.6  // Проверенная температура для стабильных результатов
+        temperature: 1.0  // Google рекомендует 1.0 для Gemini 3 (оптимально для reasoning)
       }
     };
 
