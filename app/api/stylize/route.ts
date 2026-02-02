@@ -24,9 +24,10 @@ IMPORTANT INSTRUCTIONS:
 4. Keep the original photo content in its EXACT position - do not move, resize, or recompose it.
 5. Maintain spatial composition: if the photo is positioned upper-left, keep content there and extend the scene to right and bottom.
 6. Match the perspective, lighting, and elements from the visible background.
-7. Make people and objects recognizable but stylized as comic characters.
+7. The photo MUST MERGE seamlessly with the extended background - there should be NO separation, NO dividing lines, NO borders between the photo and the extended areas. The background from the photo should continue all the way to the outer edges of the canvas.
+8. Make people and objects recognizable but stylized as comic characters.
 
-Transform and extend seamlessly in comic book art style.
+Transform and extend seamlessly in comic book art style. The result should look like one unified scene, not a photo placed on a background.
 
 Negative prompt: no borders, no frames, no margins, no mockup, no black border, no white border, no composite, no layered effect, no picture-in-picture.`;
 
