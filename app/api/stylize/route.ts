@@ -17,14 +17,18 @@ export async function POST(request: Request) {
     // Промпт для стилизации с поддержкой expansion
     const prompt = `Transform this entire image into vibrant comic book style with bold black outlines, cel shading, and saturated flat colors.
 
-IMPORTANT INSTRUCTIONS:
-1. If there are white/blank areas around the photo content, EXPAND the scene naturally by filling these areas with continuation of the background (sky, ground, walls, scenery, etc.) in the same comic book style.
-2. Keep the original photo content in its EXACT position - do not move, resize, or recompose it.
-3. The white areas are NOT part of the scene - they are blank space that needs to be filled with natural scene extension.
-4. Maintain spatial composition: if the photo is positioned upper-left, keep content there and extend the scene to right and bottom.
-5. Make people and objects recognizable but stylized as comic characters.
+CRITICAL OUTPAINTING RULES:
+1. ANALYZE the background in the photo content (sky, clouds, ground, walls, trees, water, etc.)
+2. EXTEND this background naturally into white/blank areas - continue sky as sky, ground as ground, water as water
+3. DO NOT create frames, borders, or "picture-in-picture" effect
+4. DO NOT add any boundaries around the original photo
+5. Make the transition SEAMLESS - the extended areas should blend naturally as if the photo was always this size
+6. Keep the original photo content in its EXACT position without moving or resizing
+7. The white areas are empty canvas to fill with natural scene continuation, not decoration space
 
-Transform and extend seamlessly in comic book art style.`;
+Example: If photo shows sky at top and ground at bottom, extend MORE sky upward and MORE ground downward. If photo is in upper-left, fill right side with more of what's on the right edge, fill bottom with more of what's on the bottom edge.
+
+Transform everything into comic book art style with seamless outpainting.`;
 
     // Убираем префикс data:image/jpeg;base64, если есть
     const base64Data = imageBase64.includes(',')
