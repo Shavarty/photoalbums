@@ -1,13 +1,17 @@
 "use client";
 
-import { Spread, Photo } from "@/lib/types";
+import { Spread, Photo, SpeechBubble as SpeechBubbleType } from "@/lib/types";
 import { SPREAD_TEMPLATES, PhotoSlot, getPageSlots } from "@/lib/spread-templates";
+import SpeechBubble from "./SpeechBubble";
 
 interface SpreadEditorProps {
   spread: Spread;
   withGaps: boolean;
   onPhotoClick: (side: "left" | "right", index: number) => void;
   onCaptionChange: (side: "left" | "right", index: number, caption: string) => void;
+  onAddSpeechBubble?: (side: "left" | "right", index: number, x: number, y: number) => void;
+  onEditSpeechBubble?: (side: "left" | "right", photoIndex: number, bubbleId: string) => void;
+  onDeleteSpeechBubble?: (side: "left" | "right", photoIndex: number, bubbleId: string) => void;
 }
 
 export default function SpreadEditor({
@@ -15,6 +19,9 @@ export default function SpreadEditor({
   withGaps,
   onPhotoClick,
   onCaptionChange,
+  onAddSpeechBubble,
+  onEditSpeechBubble,
+  onDeleteSpeechBubble,
 }: SpreadEditorProps) {
   const template = SPREAD_TEMPLATES.find((t) => t.id === spread.templateId);
   if (!template) return null;
@@ -35,9 +42,23 @@ export default function SpreadEditor({
                 width: `${slot.width * 100}%`,
                 height: `${slot.height * 100}%`,
               }}
-              onClick={() => onPhotoClick(side, index)}
+              onClick={(e) => {
+                // If clicking on photo (not bubbles), allow adding speech bubble
+                if (photo?.url && onAddSpeechBubble && e.target instanceof HTMLElement) {
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  const x = ((e.clientX - rect.left) / rect.width) * 100;
+                  const y = ((e.clientY - rect.top) / rect.height) * 100;
+
+                  // Only trigger if clicking directly on image area (not buttons)
+                  if (!e.target.closest('button')) {
+                    onAddSpeechBubble(side, index, x, y);
+                  }
+                } else if (!photo?.url) {
+                  onPhotoClick(side, index);
+                }
+              }}
             >
-              <div className={`relative w-full h-full flex flex-col items-center justify-center overflow-hidden transition-all ${!photo?.url ? 'bg-gray-200 border border-gray-400 hover:bg-gray-300 hover:border-brand-orange' : ''}`}>
+              <div className={`relative w-full h-full flex flex-col items-center justify-center overflow-visible transition-all ${!photo?.url ? 'bg-gray-200 border border-gray-400 hover:bg-gray-300 hover:border-brand-orange' : ''}`}>
                 {photo?.url ? (
                   <>
                     <img
@@ -45,6 +66,16 @@ export default function SpreadEditor({
                       alt=""
                       className="w-full h-full object-cover"
                     />
+
+                    {/* Speech Bubbles */}
+                    {photo.speechBubbles?.map((bubble) => (
+                      <SpeechBubble
+                        key={bubble.id}
+                        bubble={bubble}
+                        onEdit={() => onEditSpeechBubble?.(side, index, bubble.id)}
+                        onDelete={() => onDeleteSpeechBubble?.(side, index, bubble.id)}
+                      />
+                    ))}
                     {photo.isStylizing && (
                       <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
                         <div className="flex flex-col items-center gap-2">

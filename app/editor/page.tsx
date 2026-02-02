@@ -9,6 +9,7 @@ import ImageCropModal from "@/components/ImageCropModal";
 import SpreadEditor from "@/components/SpreadEditor";
 import TokenSummary from "@/components/TokenSummary";
 import SpreadPreview from "@/components/SpreadPreview";
+import SpeechBubbleModal from "@/components/SpeechBubbleModal";
 
 // Generate unique ID (works on both server and client)
 const generateId = () => {
@@ -44,6 +45,17 @@ export default function EditorPage() {
     aspectRatio: number;
     slotWidth: number;
     slotHeight: number;
+  } | null>(null);
+
+  // Speech bubble modal state
+  const [speechBubbleModal, setSpeechBubbleModal] = useState<{
+    spreadId: string;
+    side: "left" | "right";
+    photoIndex: number;
+    x: number;
+    y: number;
+    bubbleId?: string; // If editing existing bubble
+    initialText?: string;
   } | null>(null);
 
   // Add new spread
@@ -329,6 +341,135 @@ export default function EditorPage() {
       ),
       updatedAt: new Date(),
     }));
+  };
+
+  // Handle speech bubble addition
+  const handleAddSpeechBubble = (
+    spreadId: string,
+    side: "left" | "right",
+    photoIndex: number,
+    x: number,
+    y: number
+  ) => {
+    setSpeechBubbleModal({
+      spreadId,
+      side,
+      photoIndex,
+      x,
+      y,
+    });
+  };
+
+  // Handle speech bubble edit
+  const handleEditSpeechBubble = (
+    spreadId: string,
+    side: "left" | "right",
+    photoIndex: number,
+    bubbleId: string
+  ) => {
+    const spread = album.spreads.find(s => s.id === spreadId);
+    if (!spread) return;
+
+    const photos = side === "left" ? spread.leftPhotos : spread.rightPhotos;
+    const photo = photos[photoIndex];
+    const bubble = photo?.speechBubbles?.find(b => b.id === bubbleId);
+
+    if (bubble) {
+      setSpeechBubbleModal({
+        spreadId,
+        side,
+        photoIndex,
+        x: bubble.x,
+        y: bubble.y,
+        bubbleId: bubble.id,
+        initialText: bubble.text,
+      });
+    }
+  };
+
+  // Handle speech bubble delete
+  const handleDeleteSpeechBubble = (
+    spreadId: string,
+    side: "left" | "right",
+    photoIndex: number,
+    bubbleId: string
+  ) => {
+    setAlbum((prev) => ({
+      ...prev,
+      spreads: prev.spreads.map((spread) =>
+        spread.id === spreadId
+          ? {
+              ...spread,
+              [side === "left" ? "leftPhotos" : "rightPhotos"]: (
+                side === "left" ? spread.leftPhotos : spread.rightPhotos
+              ).map((photo, idx) =>
+                idx === photoIndex
+                  ? {
+                      ...photo,
+                      speechBubbles: photo.speechBubbles?.filter(b => b.id !== bubbleId) || [],
+                    }
+                  : photo
+              ),
+            }
+          : spread
+      ),
+      updatedAt: new Date(),
+    }));
+  };
+
+  // Save speech bubble (add or edit)
+  const saveSpeechBubble = (text: string, tailDirection: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right') => {
+    if (!speechBubbleModal) return;
+
+    const { spreadId, side, photoIndex, x, y, bubbleId, initialText } = speechBubbleModal;
+
+    setAlbum((prev) => ({
+      ...prev,
+      spreads: prev.spreads.map((spread) =>
+        spread.id === spreadId
+          ? {
+              ...spread,
+              [side === "left" ? "leftPhotos" : "rightPhotos"]: (
+                side === "left" ? spread.leftPhotos : spread.rightPhotos
+              ).map((photo, idx) => {
+                if (idx !== photoIndex) return photo;
+
+                const bubbles = photo.speechBubbles || [];
+
+                // Edit existing bubble
+                if (bubbleId) {
+                  return {
+                    ...photo,
+                    speechBubbles: bubbles.map(b =>
+                      b.id === bubbleId
+                        ? { ...b, text, tailDirection }
+                        : b
+                    ),
+                  };
+                }
+
+                // Add new bubble
+                return {
+                  ...photo,
+                  speechBubbles: [
+                    ...bubbles,
+                    {
+                      id: generateId(),
+                      x,
+                      y,
+                      text,
+                      tailDirection,
+                    },
+                  ],
+                };
+              }),
+            }
+          : spread
+      ),
+      updatedAt: new Date(),
+    }));
+
+    setSpeechBubbleModal(null);
   };
 
   // Generate PDF and download
@@ -619,6 +760,15 @@ export default function EditorPage() {
                     onCaptionChange={(side, idx, caption) =>
                       handleCaptionChange(spread.id, side, idx, caption)
                     }
+                    onAddSpeechBubble={(side, idx, x, y) =>
+                      handleAddSpeechBubble(spread.id, side, idx, x, y)
+                    }
+                    onEditSpeechBubble={(side, idx, bubbleId) =>
+                      handleEditSpeechBubble(spread.id, side, idx, bubbleId)
+                    }
+                    onDeleteSpeechBubble={(side, idx, bubbleId) =>
+                      handleDeleteSpeechBubble(spread.id, side, idx, bubbleId)
+                    }
                   />
                   <TokenSummary
                     photos={[...spread.leftPhotos, ...spread.rightPhotos]}
@@ -649,6 +799,15 @@ export default function EditorPage() {
           slotHeight={cropModal.slotHeight}
           onComplete={completePhotoUpload}
           onCancel={() => setCropModal(null)}
+        />
+      )}
+
+      {/* Speech Bubble Modal */}
+      {speechBubbleModal && (
+        <SpeechBubbleModal
+          initialText={speechBubbleModal.initialText}
+          onSave={saveSpeechBubble}
+          onCancel={() => setSpeechBubbleModal(null)}
         />
       )}
     </div>

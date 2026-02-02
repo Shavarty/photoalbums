@@ -14,6 +14,14 @@ export interface TokenUsage {
   modelId?: string; // Which Gemini model was used
 }
 
+export interface SpeechBubble {
+  id: string;
+  x: number; // Position X in percentage (0-100)
+  y: number; // Position Y in percentage (0-100)
+  text: string;
+  tailDirection?: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
+}
+
 export interface Photo {
   id: string;
   file: File | null;
@@ -23,6 +31,7 @@ export interface Photo {
   caption?: string;
   tokens?: TokenUsage; // AI stylization token usage
   isStylizing?: boolean; // Currently being stylized
+  speechBubbles?: SpeechBubble[]; // Comic speech bubbles
 }
 
 export interface Spread {
