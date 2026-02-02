@@ -14,15 +14,17 @@ export async function POST(request: Request) {
       );
     }
 
-    // Промпт: возврат к рабочей простой версии + negative prompt для предотвращения рамок
+    // Промпт: конкретные инструкции по анализу и расширению фона
     const prompt = `Transform this entire image into vibrant comic book style with bold black outlines, cel shading, and saturated flat colors.
 
 IMPORTANT INSTRUCTIONS:
-1. If there are white/blank areas around the photo content, EXPAND the scene naturally by filling these areas with continuation of the background (sky, ground, walls, scenery, etc.) in the same comic book style.
-2. Keep the original photo content in its EXACT position - do not move, resize, or recompose it.
-3. The white areas are NOT part of the scene - they are blank space that needs to be filled with natural scene extension.
-4. Maintain spatial composition: if the photo is positioned upper-left, keep content there and extend the scene to right and bottom.
-5. Make people and objects recognizable but stylized as comic characters.
+1. ANALYZE the small fragment of background visible in the source photo (e.g., sky, clouds, trees, ground, water, buildings, sunset).
+2. EXTEND this EXACT SAME environment to fill the white areas. Create a wide panoramic view of this location.
+3. The white areas are NOT part of the scene - they are blank canvas to paint the extended background on.
+4. Keep the original photo content in its EXACT position - do not move, resize, or recompose it.
+5. Maintain spatial composition: if the photo is positioned upper-left, keep content there and extend the scene to right and bottom.
+6. Match the perspective, lighting, and elements from the visible background.
+7. Make people and objects recognizable but stylized as comic characters.
 
 Transform and extend seamlessly in comic book art style.
 
