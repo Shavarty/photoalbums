@@ -417,6 +417,40 @@ export default function EditorPage() {
     }));
   };
 
+  // Handle speech bubble move (drag)
+  const handleMoveSpeechBubble = (
+    spreadId: string,
+    side: "left" | "right",
+    photoIndex: number,
+    bubbleId: string,
+    x: number,
+    y: number
+  ) => {
+    setAlbum((prev) => ({
+      ...prev,
+      spreads: prev.spreads.map((spread) =>
+        spread.id === spreadId
+          ? {
+              ...spread,
+              [side === "left" ? "leftPhotos" : "rightPhotos"]: (
+                side === "left" ? spread.leftPhotos : spread.rightPhotos
+              ).map((photo, idx) =>
+                idx === photoIndex
+                  ? {
+                      ...photo,
+                      speechBubbles: photo.speechBubbles?.map(b =>
+                        b.id === bubbleId ? { ...b, x, y } : b
+                      ) || [],
+                    }
+                  : photo
+              ),
+            }
+          : spread
+      ),
+      updatedAt: new Date(),
+    }));
+  };
+
   // Save speech bubble (add or edit)
   const saveSpeechBubble = (text: string, tailDirection: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right') => {
     if (!speechBubbleModal) return;
@@ -768,6 +802,9 @@ export default function EditorPage() {
                     }
                     onDeleteSpeechBubble={(side, idx, bubbleId) =>
                       handleDeleteSpeechBubble(spread.id, side, idx, bubbleId)
+                    }
+                    onMoveSpeechBubble={(side, idx, bubbleId, x, y) =>
+                      handleMoveSpeechBubble(spread.id, side, idx, bubbleId, x, y)
                     }
                   />
                   <TokenSummary

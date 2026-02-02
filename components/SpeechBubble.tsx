@@ -1,12 +1,16 @@
+import React, { useState, useRef, useEffect } from "react";
 import { SpeechBubble as SpeechBubbleType } from "@/lib/types";
 
 interface SpeechBubbleProps {
   bubble: SpeechBubbleType;
   onEdit?: () => void;
   onDelete?: () => void;
+  onMove?: (x: number, y: number) => void;
 }
 
-export default function SpeechBubble({ bubble, onEdit, onDelete }: SpeechBubbleProps) {
+export default function SpeechBubble({ bubble, onEdit, onDelete, onMove }: SpeechBubbleProps) {
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStartRef = useRef<{ x: number; y: number; bubbleX: number; bubbleY: number } | null>(null);
   // Calculate bubble size based on text length
   const textLength = bubble.text.length;
   const minWidth = 100;
@@ -17,22 +21,80 @@ export default function SpeechBubble({ bubble, onEdit, onDelete }: SpeechBubbleP
   const estimatedWidth = Math.max(minWidth, Math.min(300, textLength * 8 + padding * 2));
   const estimatedHeight = Math.max(minHeight, Math.ceil(textLength / 30) * 20 + padding * 2);
 
-  // Tail position based on direction
+  // Tail position based on direction - connects seamlessly to ellipse
   const getTailPath = () => {
-    const w = estimatedWidth;
-    const h = estimatedHeight;
+    const cx = estimatedWidth / 2 + 10; // Center X of ellipse
+    const cy = estimatedHeight / 2 + 10; // Center Y of ellipse
+    const rx = estimatedWidth / 2; // Radius X
+    const ry = estimatedHeight / 2; // Radius Y
 
     switch (bubble.tailDirection || 'bottom-left') {
       case 'bottom-left':
-        return `M 20,${h} L 10,${h + 15} L 30,${h}`;
+        // Start from ellipse edge, go to point, return to edge
+        return `M ${cx - rx * 0.3},${cy + ry * 0.8} L ${cx - rx * 0.6},${cy + ry + 15} L ${cx - rx * 0.1},${cy + ry * 0.9} Z`;
       case 'bottom-right':
-        return `M ${w - 30},${h} L ${w - 10},${h + 15} L ${w - 20},${h}`;
+        return `M ${cx + rx * 0.1},${cy + ry * 0.9} L ${cx + rx * 0.6},${cy + ry + 15} L ${cx + rx * 0.3},${cy + ry * 0.8} Z`;
       case 'top-left':
-        return `M 20,0 L 10,-15 L 30,0`;
+        return `M ${cx - rx * 0.1},${cy - ry * 0.9} L ${cx - rx * 0.6},${cy - ry - 15} L ${cx - rx * 0.3},${cy - ry * 0.8} Z`;
       case 'top-right':
-        return `M ${w - 30},0 L ${w - 10},-15 L ${w - 20},0`;
+        return `M ${cx + rx * 0.3},${cy - ry * 0.8} L ${cx + rx * 0.6},${cy - ry - 15} L ${cx + rx * 0.1},${cy - ry * 0.9} Z`;
     }
   };
+
+  // Drag handlers
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (e.button !== 0 || !onMove) return; // Only left click
+    if ((e.target as HTMLElement).closest('button')) return; // Don't drag when clicking buttons
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    const parentRect = (e.currentTarget as HTMLElement).parentElement?.getBoundingClientRect();
+    if (!parentRect) return;
+
+    setIsDragging(true);
+    dragStartRef.current = {
+      x: e.clientX,
+      y: e.clientY,
+      bubbleX: bubble.x,
+      bubbleY: bubble.y,
+    };
+  };
+
+  const handleMouseMove = (e: MouseEvent) => {
+    if (!isDragging || !dragStartRef.current || !onMove) return;
+
+    const parentRect = document.querySelector('.relative.w-full.aspect-square')?.getBoundingClientRect();
+    if (!parentRect) return;
+
+    const deltaX = e.clientX - dragStartRef.current.x;
+    const deltaY = e.clientY - dragStartRef.current.y;
+
+    const deltaXPercent = (deltaX / parentRect.width) * 100;
+    const deltaYPercent = (deltaY / parentRect.height) * 100;
+
+    const newX = Math.max(5, Math.min(95, dragStartRef.current.bubbleX + deltaXPercent));
+    const newY = Math.max(5, Math.min(95, dragStartRef.current.bubbleY + deltaYPercent));
+
+    onMove(newX, newY);
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+    dragStartRef.current = null;
+  };
+
+  // Add/remove global event listeners for drag
+  useEffect(() => {
+    if (isDragging) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+      return () => {
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+      };
+    }
+  }, [isDragging]);
 
   return (
     <div
@@ -42,7 +104,9 @@ export default function SpeechBubble({ bubble, onEdit, onDelete }: SpeechBubbleP
         top: `${bubble.y}%`,
         transform: 'translate(-50%, -50%)',
         zIndex: 10,
+        cursor: isDragging ? 'grabbing' : (onMove ? 'grab' : 'default'),
       }}
+      onMouseDown={handleMouseDown}
     >
       <svg
         width={estimatedWidth + 20}
@@ -60,13 +124,13 @@ export default function SpeechBubble({ bubble, onEdit, onDelete }: SpeechBubbleP
           strokeWidth="2"
         />
 
-        {/* Tail */}
+        {/* Tail - now seamlessly connected */}
         <path
           d={getTailPath()}
           fill="white"
           stroke="black"
           strokeWidth="2"
-          transform={`translate(${10}, ${bubble.tailDirection?.startsWith('top') ? 10 : 10})`}
+          strokeLinejoin="round"
         />
 
         {/* Text */}
