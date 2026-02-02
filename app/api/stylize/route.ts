@@ -26,7 +26,7 @@ IMPORTANT INSTRUCTIONS:
 
 Transform and extend seamlessly in comic book art style.
 
-Negative prompt: no white borders, no margins, no frame, no mockup, no black border, no composite layers.`;
+Negative prompt: no borders, no frames, no margins, no mockup, no black border, no white border, no composite, no layered effect, no picture-in-picture.`;
 
     // Убираем префикс data:image/jpeg;base64, если есть
     const base64Data = imageBase64.includes(',')
@@ -51,7 +51,7 @@ Negative prompt: no white borders, no margins, no frame, no mockup, no black bor
         }
       ],
       generationConfig: {
-        temperature: 1.0  // Google рекомендует 1.0 для Gemini 3 (оптимально для reasoning)
+        temperature: 0.8  // Компромисс: сохраняет reasoning, снижает вариативность (меньше рамок/композитов)
       }
     };
 
