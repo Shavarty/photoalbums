@@ -131,13 +131,28 @@ const renderSpeechBubbleToCanvas = (
   slotWidthMm: number,
   slotHeightMm: number
 ): { dataUrl: string; widthMm: number; heightMm: number; xMm: number; yMm: number } => {
-  // Estimate bubble size based on text
+  // Estimate bubble size based on text (same algorithm as in SpeechBubble.tsx)
   const textLength = bubble.text.length;
   const minWidth = 100;
   const minHeight = 60;
   const padding = 12;
   const estimatedWidth = Math.max(minWidth, Math.min(300, textLength * 8 + padding * 2));
   const estimatedHeight = Math.max(minHeight, Math.ceil(textLength / 30) * 20 + padding * 2);
+
+  // Bubble size in pixels (with extra space for tail)
+  const bubbleWidthPx = estimatedWidth + 20;
+  const bubbleHeightPx = estimatedHeight + 30;
+
+  // Reference slot size in editor (assume 800px as standard preview size)
+  const EDITOR_SLOT_SIZE_PX = 800;
+
+  // Calculate bubble size as percentage of slot
+  const bubbleWidthPercent = (bubbleWidthPx / EDITOR_SLOT_SIZE_PX) * 100;
+  const bubbleHeightPercent = (bubbleHeightPx / EDITOR_SLOT_SIZE_PX) * 100;
+
+  // Convert to mm based on actual slot size in PDF
+  const bubbleWidthMm = (bubbleWidthPercent / 100) * slotWidthMm;
+  const bubbleHeightMm = (bubbleHeightPercent / 100) * slotHeightMm;
 
   // Create high-res canvas for PDF (300 DPI equivalent)
   const scale = 3; // 3x for better quality
@@ -219,15 +234,13 @@ const renderSpeechBubbleToCanvas = (
   // Calculate position in mm relative to slot
   const xMm = (bubble.x / 100) * slotWidthMm;
   const yMm = (bubble.y / 100) * slotHeightMm;
-  const widthMm = (estimatedWidth + 20) / 10; // rough conversion
-  const heightMm = (estimatedHeight + 30) / 10;
 
   return {
     dataUrl: canvas.toDataURL("image/png"),
-    widthMm,
-    heightMm,
-    xMm: xMm - widthMm / 2, // Center bubble on position
-    yMm: yMm - heightMm / 2,
+    widthMm: bubbleWidthMm,
+    heightMm: bubbleHeightMm,
+    xMm: xMm - bubbleWidthMm / 2, // Center bubble on position
+    yMm: yMm - bubbleHeightMm / 2,
   };
 };
 
