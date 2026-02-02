@@ -45,6 +45,14 @@ export default function SpreadEditor({
                       alt=""
                       className="w-full h-full object-cover"
                     />
+                    {photo.isStylizing && (
+                      <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+                        <div className="flex flex-col items-center gap-2">
+                          <div className="animate-spin rounded-full h-8 w-8 border-4 border-purple-500 border-t-transparent"></div>
+                          <div className="text-white text-xs font-medium">🎨 Стилизация...</div>
+                        </div>
+                      </div>
+                    )}
                     {photo.caption && (
                       <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-60 text-white text-xs p-1 text-center">
                         {photo.caption}

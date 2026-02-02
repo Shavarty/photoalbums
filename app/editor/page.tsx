@@ -236,6 +236,7 @@ export default function EditorPage() {
                       originalUrl: result.originalUrl, // High-res for PDF
                       cropArea: result.cropArea,      // Crop coordinates
                       tokens: result.tokens,          // AI tokens if stylized
+                      isStylizing: result.isStylizing || false, // Show progress if stylizing
                       file: null
                     }
                   : photo
@@ -280,7 +281,8 @@ export default function EditorPage() {
                             ...photo,
                             url: stylizeResult.stylizedUrl,
                             originalUrl: stylizeResult.stylizedUrl,
-                            tokens: stylizeResult.tokens
+                            tokens: stylizeResult.tokens,
+                            isStylizing: false
                           }
                         : photo
                     ),

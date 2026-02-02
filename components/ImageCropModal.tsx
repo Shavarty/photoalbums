@@ -161,32 +161,28 @@ const createPreviewImage = async (
     // Draw image
     try {
       if (expansionMode) {
-        // EXPANSION MODE: Fill canvas with white, draw photo in center/position
+        // EXPANSION MODE: Fill canvas with white, draw photo at crop position
         // This creates space for AI to extend the image
 
         // Fill with white background
         ctx.fillStyle = '#FFFFFF';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        // Calculate photo dimensions and position within canvas
-        // Photo should be smaller than canvas (because zoom < 1.0)
-        // We need to place the photo content in the correct position
+        // Calculate scale factor from crop dimensions to canvas dimensions
+        const scaleX = canvas.width / crop.width;
+        const scaleY = canvas.height / crop.height;
 
-        // The crop area is larger than the visible photo
-        // So we draw the ENTIRE source image at a scaled size within the canvas
-        const photoScale = Math.min(
-          canvas.width / sourceImage.width,
-          canvas.height / sourceImage.height
-        );
+        // Calculate source image dimensions in canvas space
+        const sourceWidthScaled = sourceImage.width * scaleX;
+        const sourceHeightScaled = sourceImage.height * scaleY;
 
-        const photoWidth = sourceImage.width * photoScale;
-        const photoHeight = sourceImage.height * photoScale;
+        // Calculate position - crop.x and crop.y are the top-left of crop in source image
+        // We need to offset by these values
+        const destX = -crop.x * scaleX;
+        const destY = -crop.y * scaleY;
 
-        // Center the photo (can be adjusted based on crop.x, crop.y later)
-        const photoX = (canvas.width - photoWidth) / 2;
-        const photoY = (canvas.height - photoHeight) / 2;
-
-        console.log(`Expansion: photo ${photoWidth}x${photoHeight} at (${photoX}, ${photoY})`);
+        console.log(`Expansion: source ${sourceImage.width}x${sourceImage.height}, crop ${crop.width}x${crop.height}, scale ${scaleX.toFixed(2)}x${scaleY.toFixed(2)}`);
+        console.log(`Drawing at (${destX.toFixed(1)}, ${destY.toFixed(1)}) size ${sourceWidthScaled.toFixed(1)}x${sourceHeightScaled.toFixed(1)}`);
 
         ctx.drawImage(
           sourceImage,
@@ -194,10 +190,10 @@ const createPreviewImage = async (
           0,
           sourceImage.width,
           sourceImage.height,
-          photoX,
-          photoY,
-          photoWidth,
-          photoHeight
+          destX,
+          destY,
+          sourceWidthScaled,
+          sourceHeightScaled
         );
       } else {
         // NORMAL CROP MODE: Draw cropped area to fill entire canvas
@@ -291,7 +287,6 @@ export default function ImageCropModal({
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [selectedModel, setSelectedModel] = useState<string>(DEFAULT_MODEL);
-  const [stylizationProgress, setStylizationProgress] = useState<number>(0);
 
   // Reset crop and zoom when image changes
   useEffect(() => {
@@ -349,7 +344,6 @@ export default function ImageCropModal({
     }
 
     setIsProcessing(true);
-    setStylizationProgress(10);
 
     try {
       // Создаем обрезанный фрагмент
@@ -362,21 +356,15 @@ export default function ImageCropModal({
         isExpansionMode
       );
 
-      setStylizationProgress(30);
-
-      // Сначала сохраняем обычное фото (чтобы быстро закрыть modal)
-      const photoId = `photo-${Date.now()}`;
+      // Сохраняем обычное фото (чтобы быстро закрыть modal)
       const result: CropResult = {
         previewUrl: croppedPreview,
         originalUrl: imageUrl,
         cropArea: croppedAreaPixels,
         tokens: undefined,
         isStylizing: true,  // флаг что стилизация в процессе
-        modelId: selectedModel,
-        photoId
+        modelId: selectedModel
       };
-
-      setStylizationProgress(50);
 
       // Сразу закрываем modal и сохраняем
       onComplete(result);
@@ -385,7 +373,6 @@ export default function ImageCropModal({
       console.error("Error during stylization:", error);
       alert("Не удалось обработать изображение: " + error.message);
       setIsProcessing(false);
-      setStylizationProgress(0);
     }
   };
 
@@ -412,6 +399,7 @@ export default function ImageCropModal({
             onCropChange={setCrop}
             onZoomChange={setZoom}
             onCropComplete={onCropComplete}
+            restrictPosition={false}
           />
         </div>
 
@@ -423,9 +411,9 @@ export default function ImageCropModal({
             </label>
             <input
               type="range"
-              min={0.5}
+              min={0.3}
               max={3}
-              step={0.1}
+              step={0.05}
               value={zoom}
               onChange={(e) => setZoom(Number(e.target.value))}
               className="w-full"
@@ -458,22 +446,6 @@ export default function ImageCropModal({
               {GEMINI_MODELS[selectedModel]?.description}
             </p>
           </div>
-
-          {/* Progress Bar */}
-          {isProcessing && stylizationProgress > 0 && (
-            <div className="mb-4">
-              <div className="flex justify-between text-sm text-gray-600 mb-2">
-                <span>Стилизация...</span>
-                <span>{stylizationProgress}%</span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div
-                  className="bg-gradient-to-r from-purple-500 to-pink-500 h-2 rounded-full transition-all duration-300"
-                  style={{ width: `${stylizationProgress}%` }}
-                />
-              </div>
-            </div>
-          )}
 
           <div className="flex gap-3 justify-end">
             <button

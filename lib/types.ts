@@ -22,6 +22,7 @@ export interface Photo {
   cropArea?: CropArea; // Crop coordinates in pixels on original image
   caption?: string;
   tokens?: TokenUsage; // AI stylization token usage
+  isStylizing?: boolean; // Currently being stylized
 }
 
 export interface Spread {
