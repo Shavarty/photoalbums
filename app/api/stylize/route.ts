@@ -14,8 +14,17 @@ export async function POST(request: Request) {
       );
     }
 
-    // Простой промпт для стилизации
-    const prompt = "Transform this photo into vibrant comic book style with bold black outlines, cel shading, and saturated flat colors. Keep the composition and people recognizable but stylize them as comic characters.";
+    // Промпт для стилизации с поддержкой expansion
+    const prompt = `Transform this entire image into vibrant comic book style with bold black outlines, cel shading, and saturated flat colors.
+
+IMPORTANT INSTRUCTIONS:
+1. If there are white/blank areas around the photo content, EXPAND the scene naturally by filling these areas with continuation of the background (sky, ground, walls, scenery, etc.) in the same comic book style.
+2. Keep the original photo content in its EXACT position - do not move, resize, or recompose it.
+3. The white areas are NOT part of the scene - they are blank space that needs to be filled with natural scene extension.
+4. Maintain spatial composition: if the photo is positioned upper-left, keep content there and extend the scene to right and bottom.
+5. Make people and objects recognizable but stylized as comic characters.
+
+Transform and extend seamlessly in comic book art style.`;
 
     // Убираем префикс data:image/jpeg;base64, если есть
     const base64Data = imageBase64.includes(',')

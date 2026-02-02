@@ -30,6 +30,7 @@ const createPreviewImage = async (
   imageSrc: string,
   crop: Area,
   targetAspectRatio: number,  // Use same aspect ratio as cropper/slot
+  expansionMode: boolean = false,  // If true, create canvas with white background for AI expansion
   retryCount: number = 0
 ): Promise<string> => {
   try {
@@ -151,25 +152,67 @@ const createPreviewImage = async (
     throw new Error(`Invalid canvas dimensions: ${canvas.width}x${canvas.height}`);
   }
 
-  console.log(`Preview: ${canvasWidth}x${canvasHeight}px, aspect=${targetAspectRatio.toFixed(3)} (slot aspect ratio)`);
+  console.log(`Preview: ${canvasWidth}x${canvasHeight}px, aspect=${targetAspectRatio.toFixed(3)} (slot aspect ratio)${expansionMode ? ' [EXPANSION MODE]' : ''}`);
 
     // Use better image smoothing
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'high';
 
-    // Draw cropped image at correct resolution
+    // Draw image
     try {
-      ctx.drawImage(
-        sourceImage,
-        crop.x,
-        crop.y,
-        crop.width,
-        crop.height,
-        0,
-        0,
-        canvas.width,
-        canvas.height
-      );
+      if (expansionMode) {
+        // EXPANSION MODE: Fill canvas with white, draw photo in center/position
+        // This creates space for AI to extend the image
+
+        // Fill with white background
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Calculate photo dimensions and position within canvas
+        // Photo should be smaller than canvas (because zoom < 1.0)
+        // We need to place the photo content in the correct position
+
+        // The crop area is larger than the visible photo
+        // So we draw the ENTIRE source image at a scaled size within the canvas
+        const photoScale = Math.min(
+          canvas.width / sourceImage.width,
+          canvas.height / sourceImage.height
+        );
+
+        const photoWidth = sourceImage.width * photoScale;
+        const photoHeight = sourceImage.height * photoScale;
+
+        // Center the photo (can be adjusted based on crop.x, crop.y later)
+        const photoX = (canvas.width - photoWidth) / 2;
+        const photoY = (canvas.height - photoHeight) / 2;
+
+        console.log(`Expansion: photo ${photoWidth}x${photoHeight} at (${photoX}, ${photoY})`);
+
+        ctx.drawImage(
+          sourceImage,
+          0,
+          0,
+          sourceImage.width,
+          sourceImage.height,
+          photoX,
+          photoY,
+          photoWidth,
+          photoHeight
+        );
+      } else {
+        // NORMAL CROP MODE: Draw cropped area to fill entire canvas
+        ctx.drawImage(
+          sourceImage,
+          crop.x,
+          crop.y,
+          crop.width,
+          crop.height,
+          0,
+          0,
+          canvas.width,
+          canvas.height
+        );
+      }
     } catch (error) {
       console.error("Error drawing image to canvas:", error);
       throw new Error("Не удалось нарисовать изображение на canvas");
@@ -274,10 +317,12 @@ export default function ImageCropModal({
     setIsProcessing(true);
     try {
       console.log("Creating cropped preview...");
+      const isExpansionMode = zoom < 1.0;
       const croppedPreview = await createPreviewImage(
         imageUrl,
         croppedAreaPixels,
-        aspectRatio
+        aspectRatio,
+        isExpansionMode
       );
 
       const result: CropResult = {
@@ -309,10 +354,12 @@ export default function ImageCropModal({
     try {
       // Создаем обрезанный фрагмент
       console.log("Creating cropped preview for stylization...");
+      const isExpansionMode = zoom < 1.0;
       const croppedPreview = await createPreviewImage(
         imageUrl,
         croppedAreaPixels,
-        aspectRatio
+        aspectRatio,
+        isExpansionMode
       );
 
       setStylizationProgress(30);
@@ -376,13 +423,18 @@ export default function ImageCropModal({
             </label>
             <input
               type="range"
-              min={1}
+              min={0.5}
               max={3}
               step={0.1}
               value={zoom}
               onChange={(e) => setZoom(Number(e.target.value))}
               className="w-full"
             />
+            <p className="text-xs text-gray-500 mt-1">
+              {zoom < 1
+                ? "📐 Режим расширения: AI дорисует фон вокруг фото"
+                : "✂️ Обычная обрезка"}
+            </p>
           </div>
 
           {/* Model Selection */}
