@@ -214,7 +214,7 @@ export default function EditorPage() {
   };
 
   // Complete photo upload after crop
-  const completePhotoUpload = async (result: { previewUrl: string; originalUrl: string; cropArea: any; tokens?: any; isStylizing?: boolean; modelId?: string }) => {
+  const completePhotoUpload = async (result: { previewUrl: string; originalUrl: string; cropArea: any; tokens?: any; isStylizing?: boolean; modelId?: string; photoId?: string }) => {
     if (!cropModal) return;
 
     const { spreadId, side, photoIndex } = cropModal;
@@ -293,11 +293,13 @@ export default function EditorPage() {
           console.log("Stylization complete!");
         } else {
           console.error("Stylization failed:", stylizeResult.error);
-          alert("Не удалось стилизовать изображение: " + stylizeResult.error);
+          // Не показываем alert, просто логируем - чтобы не мешать пользователю
+          console.error("User will see original photo instead");
         }
       } catch (error: any) {
         console.error("Background stylization error:", error);
-        alert("Ошибка стилизации: " + error.message);
+        // Не показываем alert, просто логируем
+        console.error("User will see original photo instead");
       }
     }
   };

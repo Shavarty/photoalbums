@@ -13,6 +13,7 @@ interface CropResult {
   tokens?: TokenUsage; // AI stylization tokens if used
   isStylizing?: boolean; // Flag that stylization is in progress
   modelId?: string; // Model to use for stylization
+  photoId?: string; // Photo ID for progress tracking
 }
 
 interface ImageCropModalProps {
@@ -247,6 +248,7 @@ export default function ImageCropModal({
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [selectedModel, setSelectedModel] = useState<string>(DEFAULT_MODEL);
+  const [stylizationProgress, setStylizationProgress] = useState<number>(0);
 
   // Reset crop and zoom when image changes
   useEffect(() => {
@@ -262,6 +264,38 @@ export default function ImageCropModal({
     []
   );
 
+  // Сохранение БЕЗ стилизации
+  const handleSaveWithoutStylization = async () => {
+    if (!croppedAreaPixels) {
+      alert("Сначала настройте область обрезки");
+      return;
+    }
+
+    setIsProcessing(true);
+    try {
+      console.log("Creating cropped preview...");
+      const croppedPreview = await createPreviewImage(
+        imageUrl,
+        croppedAreaPixels,
+        aspectRatio
+      );
+
+      const result: CropResult = {
+        previewUrl: croppedPreview,
+        originalUrl: imageUrl,
+        cropArea: croppedAreaPixels,
+        tokens: undefined,
+        isStylizing: false
+      };
+
+      onComplete(result);
+    } catch (error: any) {
+      console.error("Error cropping image:", error);
+      alert("Не удалось обработать изображение: " + error.message);
+      setIsProcessing(false);
+    }
+  };
+
   // Стилизация и сразу сохранение
   const handleStylizeAndSave = async () => {
     if (!croppedAreaPixels) {
@@ -270,6 +304,8 @@ export default function ImageCropModal({
     }
 
     setIsProcessing(true);
+    setStylizationProgress(10);
+
     try {
       // Создаем обрезанный фрагмент
       console.log("Creating cropped preview for stylization...");
@@ -279,15 +315,21 @@ export default function ImageCropModal({
         aspectRatio
       );
 
+      setStylizationProgress(30);
+
       // Сначала сохраняем обычное фото (чтобы быстро закрыть modal)
+      const photoId = `photo-${Date.now()}`;
       const result: CropResult = {
         previewUrl: croppedPreview,
         originalUrl: imageUrl,
         cropArea: croppedAreaPixels,
         tokens: undefined,
         isStylizing: true,  // флаг что стилизация в процессе
-        modelId: selectedModel
+        modelId: selectedModel,
+        photoId
       };
+
+      setStylizationProgress(50);
 
       // Сразу закрываем modal и сохраняем
       onComplete(result);
@@ -296,6 +338,7 @@ export default function ImageCropModal({
       console.error("Error during stylization:", error);
       alert("Не удалось обработать изображение: " + error.message);
       setIsProcessing(false);
+      setStylizationProgress(0);
     }
   };
 
@@ -364,6 +407,22 @@ export default function ImageCropModal({
             </p>
           </div>
 
+          {/* Progress Bar */}
+          {isProcessing && stylizationProgress > 0 && (
+            <div className="mb-4">
+              <div className="flex justify-between text-sm text-gray-600 mb-2">
+                <span>Стилизация...</span>
+                <span>{stylizationProgress}%</span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div
+                  className="bg-gradient-to-r from-purple-500 to-pink-500 h-2 rounded-full transition-all duration-300"
+                  style={{ width: `${stylizationProgress}%` }}
+                />
+              </div>
+            </div>
+          )}
+
           <div className="flex gap-3 justify-end">
             <button
               onClick={onCancel}
@@ -371,6 +430,13 @@ export default function ImageCropModal({
               className="px-6 py-2 border border-gray-300 rounded-full hover:bg-gray-50 transition font-medium disabled:opacity-50"
             >
               Отмена
+            </button>
+            <button
+              onClick={handleSaveWithoutStylization}
+              disabled={isProcessing}
+              className="px-6 py-2 border border-purple-500 text-purple-600 rounded-full hover:bg-purple-50 transition font-medium disabled:opacity-50"
+            >
+              Применить
             </button>
             <button
               onClick={handleStylizeAndSave}
