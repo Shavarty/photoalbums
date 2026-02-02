@@ -163,7 +163,7 @@ export default function SpeechBubble({ bubble, onEdit, onDelete, onMove }: Speec
           width={estimatedWidth - padding * 2}
           height={estimatedHeight - padding * 2}
         >
-          <div className="text-sm font-bold text-center flex items-center justify-center h-full break-words">
+          <div className="text-sm font-bold text-center flex items-center justify-center h-full break-words whitespace-pre-wrap">
             {bubble.text}
           </div>
         </foreignObject>

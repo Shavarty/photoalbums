@@ -1,5 +1,5 @@
 import { jsPDF } from "jspdf";
-import { Album, Spread, Photo, CropArea } from "./types";
+import { Album, Spread, Photo, CropArea, SpeechBubble } from "./types";
 import { SPREAD_TEMPLATES, PhotoSlot, getPageSlots } from "./spread-templates";
 
 // Print specs from typography
@@ -125,6 +125,112 @@ const renderTextToCanvas = (
   return canvas.toDataURL("image/png");
 };
 
+// Render speech bubble to canvas for PDF
+const renderSpeechBubbleToCanvas = (
+  bubble: SpeechBubble,
+  slotWidthMm: number,
+  slotHeightMm: number
+): { dataUrl: string; widthMm: number; heightMm: number; xMm: number; yMm: number } => {
+  // Estimate bubble size based on text
+  const textLength = bubble.text.length;
+  const minWidth = 100;
+  const minHeight = 60;
+  const padding = 12;
+  const estimatedWidth = Math.max(minWidth, Math.min(300, textLength * 8 + padding * 2));
+  const estimatedHeight = Math.max(minHeight, Math.ceil(textLength / 30) * 20 + padding * 2);
+
+  // Create high-res canvas for PDF (300 DPI equivalent)
+  const scale = 3; // 3x for better quality
+  const canvas = document.createElement("canvas");
+  canvas.width = (estimatedWidth + 20) * scale;
+  canvas.height = (estimatedHeight + 30) * scale;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return { dataUrl: "", widthMm: 0, heightMm: 0, xMm: 0, yMm: 0 };
+
+  ctx.scale(scale, scale);
+
+  // Create bubble path (ellipse + tail)
+  const cx = estimatedWidth / 2 + 10;
+  const cy = estimatedHeight / 2 + 10;
+  const rx = estimatedWidth / 2;
+  const ry = estimatedHeight / 2;
+  const kappa = 0.551915;
+  const ox = rx * kappa;
+  const oy = ry * kappa;
+
+  const getBubblePath = () => {
+    const path = new Path2D();
+    path.moveTo(cx + rx, cy);
+
+    // Top-right quadrant
+    path.bezierCurveTo(cx + rx, cy - oy, cx + ox, cy - ry, cx, cy - ry);
+
+    // Top-left quadrant
+    path.bezierCurveTo(cx - ox, cy - ry, cx - rx, cy - oy, cx - rx, cy);
+
+    // Bottom with tail
+    const direction = bubble.tailDirection || 'bottom-left';
+    if (direction === 'bottom-left') {
+      path.bezierCurveTo(cx - rx, cy + oy, cx - ox, cy + ry, cx - rx * 0.3, cy + ry);
+      path.lineTo(cx - rx * 0.5, cy + ry + 15);
+      path.lineTo(cx - rx * 0.1, cy + ry);
+      path.bezierCurveTo(cx + ox, cy + ry, cx + rx, cy + oy, cx + rx, cy);
+    } else if (direction === 'bottom-right') {
+      path.bezierCurveTo(cx - rx, cy + oy, cx - ox, cy + ry, cx + rx * 0.1, cy + ry);
+      path.lineTo(cx + rx * 0.5, cy + ry + 15);
+      path.lineTo(cx + rx * 0.3, cy + ry);
+      path.bezierCurveTo(cx + rx, cy + ry, cx + rx, cy + oy, cx + rx, cy);
+    } else if (direction === 'top-left') {
+      path.bezierCurveTo(cx - rx, cy + oy, cx - ox, cy + ry, cx, cy + ry);
+      path.bezierCurveTo(cx + ox, cy + ry, cx + rx, cy + oy, cx + rx, cy);
+    } else {
+      path.bezierCurveTo(cx - rx, cy + oy, cx - ox, cy + ry, cx, cy + ry);
+      path.bezierCurveTo(cx + ox, cy + ry, cx + rx, cy + oy, cx + rx, cy);
+    }
+
+    path.closePath();
+    return path;
+  };
+
+  const bubblePath = getBubblePath();
+
+  // Draw bubble
+  ctx.fillStyle = "white";
+  ctx.fill(bubblePath);
+  ctx.strokeStyle = "black";
+  ctx.lineWidth = 2;
+  ctx.lineJoin = "round";
+  ctx.stroke(bubblePath);
+
+  // Draw text
+  ctx.fillStyle = "black";
+  ctx.font = `bold 14px Arial, sans-serif`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+
+  const lines = bubble.text.split('\n');
+  const lineHeight = 18;
+  const startY = cy - ((lines.length - 1) * lineHeight) / 2;
+
+  lines.forEach((line, i) => {
+    ctx.fillText(line, cx, startY + i * lineHeight);
+  });
+
+  // Calculate position in mm relative to slot
+  const xMm = (bubble.x / 100) * slotWidthMm;
+  const yMm = (bubble.y / 100) * slotHeightMm;
+  const widthMm = (estimatedWidth + 20) / 10; // rough conversion
+  const heightMm = (estimatedHeight + 30) / 10;
+
+  return {
+    dataUrl: canvas.toDataURL("image/png"),
+    widthMm,
+    heightMm,
+    xMm: xMm - widthMm / 2, // Center bubble on position
+    yMm: yMm - heightMm / 2,
+  };
+};
+
 // Generate page with multiple photos according to template
 const generatePageWithSlots = async (
   pdf: jsPDF,
@@ -209,6 +315,27 @@ const generatePageWithSlots = async (
         const captionY = slotY + slotHeight - captionHeight;
         const captionImage = renderTextToCanvas(photo.caption, Math.floor(slotWidth * 18), 100);
         pdf.addImage(captionImage, "PNG", slotX + 2, captionY, slotWidth - 4, captionHeight, undefined, "FAST");
+      }
+
+      // Add speech bubbles if exist
+      if (photo.speechBubbles && photo.speechBubbles.length > 0) {
+        for (const bubble of photo.speechBubbles) {
+          const bubbleData = renderSpeechBubbleToCanvas(bubble, slotWidth, slotHeight);
+          if (bubbleData.dataUrl) {
+            const bubbleX = slotX + bubbleData.xMm;
+            const bubbleY = slotY + bubbleData.yMm;
+            pdf.addImage(
+              bubbleData.dataUrl,
+              "PNG",
+              bubbleX,
+              bubbleY,
+              bubbleData.widthMm,
+              bubbleData.heightMm,
+              undefined,
+              "FAST"
+            );
+          }
+        }
       }
     } catch (error) {
       console.error("Error adding photo to PDF:", error);
