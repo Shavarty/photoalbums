@@ -282,9 +282,9 @@ export default function SpeechBubble({ bubble, onEdit, onDelete, onMove, onResiz
         top: `${bubble.y}%`,
         transform: 'translate(-50%, -50%)',
         zIndex: 10,
-        cursor: isDragging ? 'grabbing' : (onMove && !isTextBlock ? 'grab' : 'default'),
+        cursor: isDragging ? 'grabbing' : (onMove ? 'grab' : 'default'),
       }}
-      onMouseDown={isTextBlock ? undefined : handleMouseDown}
+      onMouseDown={handleMouseDown}
     >
       <svg
         width={estimatedWidth + 20}
@@ -366,18 +366,11 @@ export default function SpeechBubble({ bubble, onEdit, onDelete, onMove, onResiz
       {isTextBlock && onResize && (
         <div
           onMouseDown={handleResizeMouseDown}
-          className="absolute -bottom-1 -right-1 w-4 h-4 bg-blue-500 border-2 border-white rounded-sm cursor-nwse-resize opacity-0 group-hover:opacity-100 transition-opacity"
+          className="absolute -bottom-1 -right-1 w-5 h-5 bg-blue-500 border-2 border-white rounded-sm cursor-nwse-resize opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
           title="Изменить размер"
-        />
-      )}
-
-      {/* Drag handle for text blocks */}
-      {isTextBlock && onMove && (
-        <div
-          onMouseDown={handleMouseDown}
-          className="absolute -top-1 -left-1 w-4 h-4 bg-green-500 border-2 border-white rounded-sm cursor-move opacity-0 group-hover:opacity-100 transition-opacity"
-          title="Переместить"
-        />
+        >
+          <div className="absolute inset-0 flex items-center justify-center text-white text-xs font-bold">⇲</div>
+        </div>
       )}
     </div>
   );
