@@ -11,38 +11,39 @@ interface SpeechBubbleProps {
 export default function SpeechBubble({ bubble, onEdit, onDelete, onMove }: SpeechBubbleProps) {
   const [isDragging, setIsDragging] = useState(false);
   const dragStartRef = useRef<{ x: number; y: number; bubbleX: number; bubbleY: number } | null>(null);
-  // Calculate bubble size based on text length
+
+  const bubbleType = bubble.type || 'speech';
+
+  // Calculate bubble size based on text length and type
   const textLength = bubble.text.length;
-  const minWidth = 100;
-  const minHeight = 60;
   const padding = 12;
 
-  // Estimate size (rough calculation, will auto-adjust with foreignObject)
-  const estimatedWidth = Math.max(minWidth, Math.min(300, textLength * 8 + padding * 2));
-  const estimatedHeight = Math.max(minHeight, Math.ceil(textLength / 30) * 20 + padding * 2);
+  // Text blocks are larger to accommodate more text
+  const isTextBlock = bubbleType === 'text-block';
+  const minWidth = isTextBlock ? 200 : 100;
+  const minHeight = isTextBlock ? 100 : 60;
+  const maxWidth = isTextBlock ? 400 : 300;
 
-  // Create complete bubble path (ellipse + tail as one shape)
-  const getBubblePath = () => {
+  // Estimate size (rough calculation, will auto-adjust with foreignObject)
+  const estimatedWidth = Math.max(minWidth, Math.min(maxWidth, textLength * 8 + padding * 2));
+  const estimatedHeight = Math.max(minHeight, Math.ceil(textLength / (isTextBlock ? 50 : 30)) * 20 + padding * 2);
+
+  // Generate bubble shapes based on type
+  const getSpeechBubblePath = () => {
     const cx = estimatedWidth / 2 + 10;
     const cy = estimatedHeight / 2 + 10;
     const rx = estimatedWidth / 2;
     const ry = estimatedHeight / 2;
 
-    // Ellipse approximation with cubic Bezier curves (magic number 0.551915 for smooth circle)
+    // Ellipse approximation with cubic Bezier curves
     const kappa = 0.551915;
-    const ox = rx * kappa; // Control point offset x
-    const oy = ry * kappa; // Control point offset y
+    const ox = rx * kappa;
+    const oy = ry * kappa;
 
-    // Start at right-middle of ellipse
     let path = `M ${cx + rx},${cy}`;
-
-    // Top-right quadrant
     path += ` C ${cx + rx},${cy - oy} ${cx + ox},${cy - ry} ${cx},${cy - ry}`;
-
-    // Top-left quadrant
     path += ` C ${cx - ox},${cy - ry} ${cx - rx},${cy - oy} ${cx - rx},${cy}`;
 
-    // Bottom-left quadrant - with tail insertion
     const direction = bubble.tailDirection || 'bottom-left';
 
     if (direction === 'bottom-left') {
@@ -54,7 +55,6 @@ export default function SpeechBubble({ bubble, onEdit, onDelete, onMove }: Speec
       path += ` L ${cx + rx * 0.5},${cy + ry + 15} L ${cx + rx * 0.3},${cy + ry}`;
       path += ` C ${cx + rx},${cy + ry} ${cx + rx},${cy + oy} ${cx + rx},${cy}`;
     } else if (direction === 'top-left') {
-      // Modify top-left quadrant to include tail
       path = `M ${cx + rx},${cy}`;
       path += ` C ${cx + rx},${cy - oy} ${cx + ox},${cy - ry} ${cx - rx * 0.1},${cy - ry}`;
       path += ` L ${cx - rx * 0.5},${cy - ry - 15} L ${cx - rx * 0.3},${cy - ry}`;
@@ -73,6 +73,98 @@ export default function SpeechBubble({ bubble, onEdit, onDelete, onMove }: Speec
 
     path += ` Z`;
     return path;
+  };
+
+  const getThoughtBubblePath = () => {
+    // Cloud-like thought bubble with multiple rounded puffs
+    const cx = estimatedWidth / 2 + 10;
+    const cy = estimatedHeight / 2 + 10;
+    const rx = estimatedWidth / 2;
+    const ry = estimatedHeight / 2;
+
+    // Create cloud shape with 5 overlapping circles
+    const numPuffs = 7;
+    const angles = [];
+    for (let i = 0; i < numPuffs; i++) {
+      angles.push((i * 2 * Math.PI) / numPuffs);
+    }
+
+    let path = '';
+    const puffRadius = Math.min(rx, ry) * 0.4;
+
+    angles.forEach((angle, i) => {
+      const puffCx = cx + Math.cos(angle) * rx * 0.6;
+      const puffCy = cy + Math.sin(angle) * ry * 0.6;
+
+      // Draw circle arc for each puff
+      if (i === 0) {
+        path += `M ${puffCx + puffRadius},${puffCy}`;
+      }
+
+      const kappa = 0.551915;
+      const ox = puffRadius * kappa;
+      const oy = puffRadius * kappa;
+
+      // Quarter arcs to form smooth cloud edge
+      path += ` C ${puffCx + puffRadius},${puffCy - oy} ${puffCx + ox},${puffCy - puffRadius} ${puffCx},${puffCy - puffRadius}`;
+      path += ` C ${puffCx - ox},${puffCy - puffRadius} ${puffCx - puffRadius},${puffCy - oy} ${puffCx - puffRadius},${puffCy}`;
+    });
+
+    path += ` Z`;
+
+    // Add small thought bubbles leading to it
+    const direction = bubble.tailDirection || 'bottom-left';
+    const smallBubbles = [];
+
+    if (direction.includes('bottom')) {
+      const baseY = cy + ry;
+      const baseX = direction.includes('left') ? cx - rx * 0.4 : cx + rx * 0.4;
+      smallBubbles.push({ cx: baseX, cy: baseY + 10, r: 4 });
+      smallBubbles.push({ cx: baseX + (direction.includes('left') ? -3 : 3), cy: baseY + 18, r: 2.5 });
+    } else {
+      const baseY = cy - ry;
+      const baseX = direction.includes('left') ? cx - rx * 0.4 : cx + rx * 0.4;
+      smallBubbles.push({ cx: baseX, cy: baseY - 10, r: 4 });
+      smallBubbles.push({ cx: baseX + (direction.includes('left') ? -3 : 3), cy: baseY - 18, r: 2.5 });
+    }
+
+    return { mainPath: path, smallBubbles };
+  };
+
+  const getAnnotationPath = () => {
+    // Simple rounded rectangle, no tail
+    const x = 10;
+    const y = 10;
+    const w = estimatedWidth;
+    const h = estimatedHeight;
+    const r = 8; // corner radius
+
+    return `M ${x + r},${y} L ${x + w - r},${y} Q ${x + w},${y} ${x + w},${y + r} L ${x + w},${y + h - r} Q ${x + w},${y + h} ${x + w - r},${y + h} L ${x + r},${y + h} Q ${x},${y + h} ${x},${y + h - r} L ${x},${y + r} Q ${x},${y} ${x + r},${y} Z`;
+  };
+
+  const getTextBlockPath = () => {
+    // Larger rectangle for text blocks
+    const x = 10;
+    const y = 10;
+    const w = estimatedWidth;
+    const h = estimatedHeight;
+    const r = 6; // smaller corner radius for more formal look
+
+    return `M ${x + r},${y} L ${x + w - r},${y} Q ${x + w},${y} ${x + w},${y + r} L ${x + w},${y + h - r} Q ${x + w},${y + h} ${x + w - r},${y + h} L ${x + r},${y + h} Q ${x},${y + h} ${x},${y + h - r} L ${x},${y + r} Q ${x},${y} ${x + r},${y} Z`;
+  };
+
+  const getBubblePath = () => {
+    switch (bubbleType) {
+      case 'thought':
+        return getThoughtBubblePath();
+      case 'annotation':
+        return getAnnotationPath();
+      case 'text-block':
+        return getTextBlockPath();
+      case 'speech':
+      default:
+        return getSpeechBubblePath();
+    }
   };
 
   // Drag handlers
@@ -130,6 +222,9 @@ export default function SpeechBubble({ bubble, onEdit, onDelete, onMove }: Speec
     }
   }, [isDragging]);
 
+  const bubblePath = getBubblePath();
+  const isThoughtBubble = bubbleType === 'thought' && typeof bubblePath === 'object';
+
   return (
     <div
       className="absolute group"
@@ -147,14 +242,37 @@ export default function SpeechBubble({ bubble, onEdit, onDelete, onMove }: Speec
         height={estimatedHeight + 30}
         className="drop-shadow-lg"
       >
-        {/* Complete bubble with tail as single path */}
-        <path
-          d={getBubblePath()}
-          fill="white"
-          stroke="black"
-          strokeWidth="2"
-          strokeLinejoin="round"
-        />
+        {/* Render bubble based on type */}
+        {isThoughtBubble ? (
+          <>
+            <path
+              d={bubblePath.mainPath}
+              fill="white"
+              stroke="black"
+              strokeWidth="2"
+              strokeLinejoin="round"
+            />
+            {bubblePath.smallBubbles.map((bubble, i) => (
+              <circle
+                key={i}
+                cx={bubble.cx}
+                cy={bubble.cy}
+                r={bubble.r}
+                fill="white"
+                stroke="black"
+                strokeWidth="2"
+              />
+            ))}
+          </>
+        ) : (
+          <path
+            d={typeof bubblePath === 'string' ? bubblePath : ''}
+            fill="white"
+            stroke="black"
+            strokeWidth="2"
+            strokeLinejoin="round"
+          />
+        )}
 
         {/* Text */}
         <foreignObject
@@ -163,7 +281,7 @@ export default function SpeechBubble({ bubble, onEdit, onDelete, onMove }: Speec
           width={estimatedWidth - padding * 2}
           height={estimatedHeight - padding * 2}
         >
-          <div className="text-sm font-bold text-center flex items-center justify-center h-full break-words whitespace-pre-wrap">
+          <div className={`text-sm font-bold ${bubbleType === 'text-block' ? 'text-left' : 'text-center'} flex items-center ${bubbleType === 'text-block' ? 'justify-start' : 'justify-center'} h-full break-words whitespace-pre-wrap`} style={{ fontFamily: 'var(--font-balsamiq-sans), sans-serif' }}>
             {bubble.text}
           </div>
         </foreignObject>

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { IBM_Plex_Sans, Playfair_Display } from "next/font/google";
+import { IBM_Plex_Sans, Playfair_Display, Balsamiq_Sans } from "next/font/google";
 import "./globals.css";
 
 const ibmPlexSans = IBM_Plex_Sans({
@@ -11,6 +11,12 @@ const ibmPlexSans = IBM_Plex_Sans({
 const playfairDisplay = Playfair_Display({
   weight: ["400", "600", "700"],
   variable: "--font-playfair-display",
+  subsets: ["latin", "cyrillic"],
+});
+
+const balsamiqSans = Balsamiq_Sans({
+  weight: ["400", "700"],
+  variable: "--font-balsamiq-sans",
   subsets: ["latin", "cyrillic"],
 });
 
@@ -27,7 +33,7 @@ export default function RootLayout({
   return (
     <html lang="ru">
       <body
-        className={`${ibmPlexSans.variable} ${playfairDisplay.variable} antialiased`}
+        className={`${ibmPlexSans.variable} ${playfairDisplay.variable} ${balsamiqSans.variable} antialiased`}
       >
         {children}
       </body>

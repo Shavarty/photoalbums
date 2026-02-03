@@ -56,6 +56,8 @@ export default function EditorPage() {
     y: number;
     bubbleId?: string; // If editing existing bubble
     initialText?: string;
+    initialType?: 'speech' | 'thought' | 'annotation' | 'text-block';
+    initialTailDirection?: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
   } | null>(null);
 
   // Add new spread
@@ -726,6 +728,8 @@ export default function EditorPage() {
         y: bubble.y,
         bubbleId: bubble.id,
         initialText: bubble.text,
+        initialType: bubble.type || 'speech',
+        initialTailDirection: bubble.tailDirection || 'bottom-left',
       });
     }
   };
@@ -795,7 +799,11 @@ export default function EditorPage() {
   };
 
   // Save speech bubble (add or edit)
-  const saveSpeechBubble = (text: string, tailDirection: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right') => {
+  const saveSpeechBubble = (
+    text: string,
+    type: 'speech' | 'thought' | 'annotation' | 'text-block',
+    tailDirection: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'
+  ) => {
     if (!speechBubbleModal) return;
 
     const { spreadId, side, photoIndex, x, y, bubbleId, initialText } = speechBubbleModal;
@@ -819,7 +827,7 @@ export default function EditorPage() {
                     ...photo,
                     speechBubbles: bubbles.map(b =>
                       b.id === bubbleId
-                        ? { ...b, text, tailDirection }
+                        ? { ...b, text, type, tailDirection }
                         : b
                     ),
                   };
@@ -835,6 +843,7 @@ export default function EditorPage() {
                       x,
                       y,
                       text,
+                      type,
                       tailDirection,
                     },
                   ],
@@ -1186,6 +1195,8 @@ export default function EditorPage() {
       {speechBubbleModal && (
         <SpeechBubbleModal
           initialText={speechBubbleModal.initialText}
+          initialType={speechBubbleModal.initialType}
+          initialTailDirection={speechBubbleModal.initialTailDirection}
           onSave={saveSpeechBubble}
           onCancel={() => setSpeechBubbleModal(null)}
         />

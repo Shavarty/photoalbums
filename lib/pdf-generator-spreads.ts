@@ -96,7 +96,7 @@ const renderTextToCanvas = (
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   ctx.fillStyle = "white";
-  ctx.font = `${Math.floor(height * 0.4)}px IBM Plex Sans, Arial, sans-serif`;
+  ctx.font = `${Math.floor(height * 0.4)}px "Balsamiq Sans", Arial, sans-serif`;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
 
@@ -131,13 +131,17 @@ const renderSpeechBubbleToCanvas = (
   slotWidthMm: number,
   slotHeightMm: number
 ): { dataUrl: string; widthMm: number; heightMm: number; xMm: number; yMm: number } => {
-  // Estimate bubble size based on text (same algorithm as in SpeechBubble.tsx)
+  const bubbleType = bubble.type || 'speech';
+
+  // Estimate bubble size based on text and type (same algorithm as in SpeechBubble.tsx)
   const textLength = bubble.text.length;
-  const minWidth = 100;
-  const minHeight = 60;
   const padding = 12;
-  const estimatedWidth = Math.max(minWidth, Math.min(300, textLength * 8 + padding * 2));
-  const estimatedHeight = Math.max(minHeight, Math.ceil(textLength / 30) * 20 + padding * 2);
+  const isTextBlock = bubbleType === 'text-block';
+  const minWidth = isTextBlock ? 200 : 100;
+  const minHeight = isTextBlock ? 100 : 60;
+  const maxWidth = isTextBlock ? 400 : 300;
+  const estimatedWidth = Math.max(minWidth, Math.min(maxWidth, textLength * 8 + padding * 2));
+  const estimatedHeight = Math.max(minHeight, Math.ceil(textLength / (isTextBlock ? 50 : 30)) * 20 + padding * 2);
 
   // Bubble SVG size in pixels (with extra space for tail) - EXACTLY as in SpeechBubble.tsx
   const bubbleWidthPx = estimatedWidth + 20;
@@ -166,7 +170,7 @@ const renderSpeechBubbleToCanvas = (
 
   ctx.scale(scale, scale);
 
-  // Create bubble path (ellipse + tail)
+  // Bubble shape helpers
   const cx = estimatedWidth / 2 + 10;
   const cy = estimatedHeight / 2 + 10;
   const rx = estimatedWidth / 2;
@@ -175,8 +179,8 @@ const renderSpeechBubbleToCanvas = (
   const ox = rx * kappa;
   const oy = ry * kappa;
 
-  // Complete bubble path matching SpeechBubble.tsx logic exactly
-  const getBubblePath = () => {
+  // Speech bubble path (ellipse + tail)
+  const getSpeechBubblePath = () => {
     const path = new Path2D();
     const direction = bubble.tailDirection || 'bottom-left';
 
@@ -219,6 +223,91 @@ const renderSpeechBubbleToCanvas = (
     return path;
   };
 
+  // Thought bubble path (cloud with small bubbles)
+  const getThoughtBubblePath = () => {
+    const mainPath = new Path2D();
+    const numPuffs = 7;
+    const puffRadius = Math.min(rx, ry) * 0.4;
+
+    for (let i = 0; i < numPuffs; i++) {
+      const angle = (i * 2 * Math.PI) / numPuffs;
+      const puffCx = cx + Math.cos(angle) * rx * 0.6;
+      const puffCy = cy + Math.sin(angle) * ry * 0.6;
+
+      if (i === 0) {
+        mainPath.moveTo(puffCx + puffRadius, puffCy);
+      }
+
+      const ox = puffRadius * kappa;
+      const oy = puffRadius * kappa;
+
+      mainPath.bezierCurveTo(puffCx + puffRadius, puffCy - oy, puffCx + ox, puffCy - puffRadius, puffCx, puffCy - puffRadius);
+      mainPath.bezierCurveTo(puffCx - ox, puffCy - puffRadius, puffCx - puffRadius, puffCy - oy, puffCx - puffRadius, puffCy);
+    }
+
+    mainPath.closePath();
+    return mainPath;
+  };
+
+  // Annotation path (rounded rectangle, no tail)
+  const getAnnotationPath = () => {
+    const path = new Path2D();
+    const x = 10;
+    const y = 10;
+    const w = estimatedWidth;
+    const h = estimatedHeight;
+    const r = 8;
+
+    path.moveTo(x + r, y);
+    path.lineTo(x + w - r, y);
+    path.quadraticCurveTo(x + w, y, x + w, y + r);
+    path.lineTo(x + w, y + h - r);
+    path.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    path.lineTo(x + r, y + h);
+    path.quadraticCurveTo(x, y + h, x, y + h - r);
+    path.lineTo(x, y + r);
+    path.quadraticCurveTo(x, y, x + r, y);
+    path.closePath();
+    return path;
+  };
+
+  // Text block path (larger rectangle for text)
+  const getTextBlockPath = () => {
+    const path = new Path2D();
+    const x = 10;
+    const y = 10;
+    const w = estimatedWidth;
+    const h = estimatedHeight;
+    const r = 6;
+
+    path.moveTo(x + r, y);
+    path.lineTo(x + w - r, y);
+    path.quadraticCurveTo(x + w, y, x + w, y + r);
+    path.lineTo(x + w, y + h - r);
+    path.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    path.lineTo(x + r, y + h);
+    path.quadraticCurveTo(x, y + h, x, y + h - r);
+    path.lineTo(x, y + r);
+    path.quadraticCurveTo(x, y, x + r, y);
+    path.closePath();
+    return path;
+  };
+
+  // Get appropriate path based on type
+  const getBubblePath = () => {
+    switch (bubbleType) {
+      case 'thought':
+        return getThoughtBubblePath();
+      case 'annotation':
+        return getAnnotationPath();
+      case 'text-block':
+        return getTextBlockPath();
+      case 'speech':
+      default:
+        return getSpeechBubblePath();
+    }
+  };
+
   const bubblePath = getBubblePath();
 
   // Draw bubble
@@ -229,18 +318,47 @@ const renderSpeechBubbleToCanvas = (
   ctx.lineJoin = "round";
   ctx.stroke(bubblePath);
 
+  // Draw small thought bubbles for thought type
+  if (bubbleType === 'thought') {
+    const direction = bubble.tailDirection || 'bottom-left';
+    const smallBubbles = [];
+
+    if (direction.includes('bottom')) {
+      const baseY = cy + ry;
+      const baseX = direction.includes('left') ? cx - rx * 0.4 : cx + rx * 0.4;
+      smallBubbles.push({ cx: baseX, cy: baseY + 10, r: 4 });
+      smallBubbles.push({ cx: baseX + (direction.includes('left') ? -3 : 3), cy: baseY + 18, r: 2.5 });
+    } else {
+      const baseY = cy - ry;
+      const baseX = direction.includes('left') ? cx - rx * 0.4 : cx + rx * 0.4;
+      smallBubbles.push({ cx: baseX, cy: baseY - 10, r: 4 });
+      smallBubbles.push({ cx: baseX + (direction.includes('left') ? -3 : 3), cy: baseY - 18, r: 2.5 });
+    }
+
+    smallBubbles.forEach(sb => {
+      ctx.beginPath();
+      ctx.arc(sb.cx, sb.cy, sb.r, 0, 2 * Math.PI);
+      ctx.fillStyle = "white";
+      ctx.fill();
+      ctx.strokeStyle = "black";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    });
+  }
+
   // Draw text
   ctx.fillStyle = "black";
-  ctx.font = `bold 14px Arial, sans-serif`;
-  ctx.textAlign = "center";
+  ctx.font = `bold 14px "Balsamiq Sans", Arial, sans-serif`;
+  ctx.textAlign = bubbleType === 'text-block' ? 'left' : 'center';
   ctx.textBaseline = "middle";
 
   const lines = bubble.text.split('\n');
   const lineHeight = 18;
   const startY = cy - ((lines.length - 1) * lineHeight) / 2;
+  const textX = bubbleType === 'text-block' ? padding + 10 : cx;
 
   lines.forEach((line, i) => {
-    ctx.fillText(line, cx, startY + i * lineHeight);
+    ctx.fillText(line, textX, startY + i * lineHeight);
   });
 
   // Calculate position in mm relative to slot

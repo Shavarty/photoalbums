@@ -14,11 +14,14 @@ export interface TokenUsage {
   modelId?: string; // Which Gemini model was used
 }
 
+export type BubbleType = 'speech' | 'thought' | 'annotation' | 'text-block';
+
 export interface SpeechBubble {
   id: string;
   x: number; // Position X in percentage (0-100)
   y: number; // Position Y in percentage (0-100)
   text: string;
+  type?: BubbleType; // Default: 'speech'
   tailDirection?: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
 }
 
