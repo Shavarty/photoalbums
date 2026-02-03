@@ -291,7 +291,7 @@ export default function SpeechBubble({ bubble, onEdit, onDelete, onMove, onResiz
     >
       <svg
         width={estimatedWidth + 20}
-        height={estimatedHeight + (isThoughtBubble ? 50 : 30)}
+        height={estimatedHeight + (isThoughtBubble ? 70 : 30)}
         className="drop-shadow-lg"
       >
         {/* Render bubble based on type */}
@@ -347,7 +347,7 @@ export default function SpeechBubble({ bubble, onEdit, onDelete, onMove, onResiz
           {onEdit && (
             <button
               onClick={onEdit}
-              className="bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-blue-600"
+              className="bg-green-700 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-green-800"
               title="Редактировать"
             >
               ✏️
@@ -356,7 +356,7 @@ export default function SpeechBubble({ bubble, onEdit, onDelete, onMove, onResiz
           {onDelete && (
             <button
               onClick={onDelete}
-              className="bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600"
+              className="bg-brand-orange text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-orange-600"
               title="Удалить"
             >
               ✕
@@ -369,7 +369,7 @@ export default function SpeechBubble({ bubble, onEdit, onDelete, onMove, onResiz
       {isTextBlock && onResize && (
         <div
           onMouseDown={handleResizeMouseDown}
-          className="absolute -bottom-1 -right-1 w-5 h-5 bg-blue-500 border-2 border-white rounded-sm cursor-nwse-resize opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+          className="absolute -bottom-1 -right-1 w-5 h-5 bg-gray-600 border-2 border-white rounded-sm cursor-nwse-resize opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
           title="Изменить размер"
         >
           <div className="absolute inset-0 flex items-center justify-center text-white text-xs font-bold">⇲</div>

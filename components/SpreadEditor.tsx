@@ -79,13 +79,24 @@ export default function SpreadEditor({
 
                     {/* Photo action buttons overlay (shown on hover) */}
                     {!photo.isStylizing && (
-                      <div className="absolute inset-0 bg-black bg-opacity-0 group-hover/photo:bg-opacity-10 transition-all flex items-center justify-center gap-2 opacity-0 group-hover/photo:opacity-100 pointer-events-none group-hover/photo:pointer-events-auto">
+                      <div
+                        className="absolute inset-0 transition-all flex items-center justify-center gap-2 opacity-0 group-hover/photo:opacity-100 pointer-events-none group-hover/photo:pointer-events-auto"
+                        style={{
+                          backgroundColor: 'rgba(0, 0, 0, 0)',
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.15)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0)';
+                        }}
+                      >
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
                             onPhotoClick(side, index);
                           }}
-                          className="px-3 py-1.5 bg-brand-orange text-white rounded-lg text-xs font-medium hover:bg-orange-600 transition shadow-lg"
+                          className="px-3 py-1.5 bg-green-700 text-white rounded-lg text-xs font-medium hover:bg-green-800 transition shadow-lg"
                           title="Заменить фото"
                         >
                           🔄 Заменить
@@ -96,7 +107,7 @@ export default function SpreadEditor({
                               e.stopPropagation();
                               onDeletePhoto(side, index);
                             }}
-                            className="px-3 py-1.5 bg-gray-600 text-white rounded-lg text-xs font-medium hover:bg-gray-700 transition shadow-lg"
+                            className="px-3 py-1.5 bg-brand-orange text-white rounded-lg text-xs font-medium hover:bg-orange-600 transition shadow-lg"
                             title="Удалить фото"
                           >
                             🗑️ Удалить

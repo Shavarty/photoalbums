@@ -366,12 +366,49 @@ const renderSpeechBubbleToCanvas = (
   ctx.textAlign = bubbleType === 'text-block' ? 'left' : 'center';
   ctx.textBaseline = "middle";
 
-  const lines = bubble.text.split('\n');
+  // Handle text wrapping
+  const maxWidth = estimatedWidth - padding * 2 - 20;
   const lineHeight = 18;
-  const startY = cy - ((lines.length - 1) * lineHeight) / 2;
+  const allLines: string[] = [];
+
+  // Split by manual line breaks first
+  const paragraphs = bubble.text.split('\n');
+
+  // For text blocks, wrap each paragraph
+  if (bubbleType === 'text-block') {
+    paragraphs.forEach(paragraph => {
+      if (!paragraph.trim()) {
+        allLines.push('');
+        return;
+      }
+      const words = paragraph.split(' ');
+      let currentLine = '';
+
+      words.forEach(word => {
+        const testLine = currentLine ? `${currentLine} ${word}` : word;
+        const metrics = ctx.measureText(testLine);
+
+        if (metrics.width > maxWidth && currentLine) {
+          allLines.push(currentLine);
+          currentLine = word;
+        } else {
+          currentLine = testLine;
+        }
+      });
+
+      if (currentLine) {
+        allLines.push(currentLine);
+      }
+    });
+  } else {
+    // For other bubble types, just use manual breaks
+    allLines.push(...paragraphs);
+  }
+
+  const startY = cy - ((allLines.length - 1) * lineHeight) / 2;
   const textX = bubbleType === 'text-block' ? padding + 10 : cx;
 
-  lines.forEach((line, i) => {
+  allLines.forEach((line, i) => {
     ctx.fillText(line, textX, startY + i * lineHeight);
   });
 
