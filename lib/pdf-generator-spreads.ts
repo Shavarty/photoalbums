@@ -228,9 +228,9 @@ const renderSpeechBubbleToCanvas = (
   const getThoughtBubblePath = () => {
     const path = new Path2D();
     const numBumps = 10;
-    const bumpSize = Math.min(rx, ry) * 0.25;
+    const bumpSize = Math.min(rx, ry) * 0.4; // Increased for more fluffiness
 
-    for (let i = 0; i <= numBumps; i++) {
+    for (let i = 0; i < numBumps; i++) { // Changed from <= to < to avoid overlap
       const angle = (i / numBumps) * 2 * Math.PI;
       const nextAngle = ((i + 1) / numBumps) * 2 * Math.PI;
 
@@ -334,19 +334,19 @@ const renderSpeechBubbleToCanvas = (
   // Draw small thought bubbles for thought type
   if (bubbleType === 'thought') {
     const direction = bubble.tailDirection || 'bottom-left';
-    const bumpSize = Math.min(rx, ry) * 0.25;
+    const bumpSize = Math.min(rx, ry) * 0.4;
     const smallBubbles = [];
 
     if (direction.includes('bottom')) {
       const baseY = cy + ry + bumpSize;
       const baseX = direction.includes('left') ? cx - rx * 0.3 : cx + rx * 0.3;
-      smallBubbles.push({ cx: baseX, cy: baseY + 10, r: 6 });
-      smallBubbles.push({ cx: baseX + (direction.includes('left') ? -8 : 8), cy: baseY + 22, r: 4 });
+      smallBubbles.push({ cx: baseX, cy: baseY + 12, r: 7 });
+      smallBubbles.push({ cx: baseX + (direction.includes('left') ? -10 : 10), cy: baseY + 28, r: 4 });
     } else {
       const baseY = cy - ry - bumpSize;
       const baseX = direction.includes('left') ? cx - rx * 0.3 : cx + rx * 0.3;
-      smallBubbles.push({ cx: baseX, cy: baseY - 10, r: 6 });
-      smallBubbles.push({ cx: baseX + (direction.includes('left') ? -8 : 8), cy: baseY - 22, r: 4 });
+      smallBubbles.push({ cx: baseX, cy: baseY - 12, r: 7 });
+      smallBubbles.push({ cx: baseX + (direction.includes('left') ? -10 : 10), cy: baseY - 28, r: 4 });
     }
 
     smallBubbles.forEach(sb => {

@@ -87,11 +87,11 @@ export default function SpeechBubble({ bubble, onEdit, onDelete, onMove, onResiz
 
     // Create cloud path with bumps around perimeter
     const numBumps = 10;
-    const bumpSize = Math.min(rx, ry) * 0.25;
+    const bumpSize = Math.min(rx, ry) * 0.4; // Increased from 0.25 for more fluffiness
 
     let path = '';
 
-    for (let i = 0; i <= numBumps; i++) {
+    for (let i = 0; i < numBumps; i++) { // Changed from <= to < to avoid overlap
       const angle = (i / numBumps) * 2 * Math.PI;
       const nextAngle = ((i + 1) / numBumps) * 2 * Math.PI;
 
@@ -127,13 +127,13 @@ export default function SpeechBubble({ bubble, onEdit, onDelete, onMove, onResiz
     if (direction.includes('bottom')) {
       const baseY = cy + ry + bumpSize;
       const baseX = direction.includes('left') ? cx - rx * 0.3 : cx + rx * 0.3;
-      smallBubbles.push({ cx: baseX, cy: baseY + 10, r: 6 });
-      smallBubbles.push({ cx: baseX + (direction.includes('left') ? -8 : 8), cy: baseY + 22, r: 4 });
+      smallBubbles.push({ cx: baseX, cy: baseY + 12, r: 7 });
+      smallBubbles.push({ cx: baseX + (direction.includes('left') ? -10 : 10), cy: baseY + 28, r: 4 });
     } else {
       const baseY = cy - ry - bumpSize;
       const baseX = direction.includes('left') ? cx - rx * 0.3 : cx + rx * 0.3;
-      smallBubbles.push({ cx: baseX, cy: baseY - 10, r: 6 });
-      smallBubbles.push({ cx: baseX + (direction.includes('left') ? -8 : 8), cy: baseY - 22, r: 4 });
+      smallBubbles.push({ cx: baseX, cy: baseY - 12, r: 7 });
+      smallBubbles.push({ cx: baseX + (direction.includes('left') ? -10 : 10), cy: baseY - 28, r: 4 });
     }
 
     return { mainPath: path, smallBubbles };
@@ -291,7 +291,7 @@ export default function SpeechBubble({ bubble, onEdit, onDelete, onMove, onResiz
     >
       <svg
         width={estimatedWidth + 20}
-        height={estimatedHeight + 30}
+        height={estimatedHeight + (isThoughtBubble ? 50 : 30)}
         className="drop-shadow-lg"
       >
         {/* Render bubble based on type */}
