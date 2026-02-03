@@ -79,13 +79,13 @@ export default function SpreadEditor({
 
                     {/* Photo action buttons overlay (shown on hover) */}
                     {!photo.isStylizing && (
-                      <div className="absolute inset-0 bg-black bg-opacity-0 group-hover/photo:bg-opacity-30 transition-all flex items-center justify-center gap-2 opacity-0 group-hover/photo:opacity-100 pointer-events-none group-hover/photo:pointer-events-auto">
+                      <div className="absolute inset-0 bg-black bg-opacity-0 group-hover/photo:bg-opacity-10 transition-all flex items-center justify-center gap-2 opacity-0 group-hover/photo:opacity-100 pointer-events-none group-hover/photo:pointer-events-auto">
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
                             onPhotoClick(side, index);
                           }}
-                          className="px-3 py-1.5 bg-blue-500 text-white rounded-lg text-xs font-medium hover:bg-blue-600 transition shadow-lg"
+                          className="px-3 py-1.5 bg-brand-orange text-white rounded-lg text-xs font-medium hover:bg-orange-600 transition shadow-lg"
                           title="Заменить фото"
                         >
                           🔄 Заменить
@@ -96,7 +96,7 @@ export default function SpreadEditor({
                               e.stopPropagation();
                               onDeletePhoto(side, index);
                             }}
-                            className="px-3 py-1.5 bg-red-500 text-white rounded-lg text-xs font-medium hover:bg-red-600 transition shadow-lg"
+                            className="px-3 py-1.5 bg-gray-600 text-white rounded-lg text-xs font-medium hover:bg-gray-700 transition shadow-lg"
                             title="Удалить фото"
                           >
                             🗑️ Удалить
