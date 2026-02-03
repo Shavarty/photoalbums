@@ -205,9 +205,11 @@ export default function EditorPage() {
         ? template.leftPage.slots[photoIndex]
         : template.rightPage.slots[photoIndex];
 
-    // For full-spread template: use 2:1 aspect ratio (one photo spans both pages)
-    // User clicks left slot, we crop at 2:1, then split into left and right halves
-    const isFullSpread = template.id === "full-spread" && side === "left" && photoIndex === 0;
+    // For full-spread templates: use 2:1 aspect ratio for background slots (photoIndex 0)
+    // These templates split one 2:1 photo across both pages
+    const isFullSpreadTemplate = template.id === "full-spread" || template.id === "comic-spread-bg";
+    const isBackgroundSlot = photoIndex === 0;
+    const isFullSpread = isFullSpreadTemplate && isBackgroundSlot;
     const realAspectRatio = isFullSpread ? 2 : slot.width / slot.height;
 
     const input = document.createElement("input");
@@ -329,59 +331,244 @@ export default function EditorPage() {
     // Check if this is full-spread template (2:1 photo split across both pages)
     const spread = album.spreads.find((s) => s.id === spreadId);
     const template = spread && SPREAD_TEMPLATES.find((t) => t.id === spread.templateId);
-    const isFullSpread = template?.id === "full-spread" && side === "left" && photoIndex === 0;
+    const isFullSpreadTemplate = template?.id === "full-spread" || template?.id === "comic-spread-bg";
+    const isBackgroundSlot = photoIndex === 0;
+    const isFullSpread = isFullSpreadTemplate && isBackgroundSlot;
 
     if (isFullSpread) {
-      // Split the 2:1 image into left and right halves
-      console.log("Full-spread detected! Cropping and splitting image into two halves...");
+      // Full-spread: crop at 2:1, optionally stylize, then split into left/right halves
+      console.log("Full-spread detected! Processing 2:1 image...");
       try {
-        // First, apply crop to originalUrl (it's the uncropped original file)
+        // Step 1: Apply crop to originalUrl (it's the uncropped original file)
         const croppedOriginal = result.cropArea
           ? await applyCropToImage(result.originalUrl, result.cropArea)
           : result.originalUrl;
 
-        // Now split both preview (already cropped) and cropped original
-        const { leftUrl, rightUrl } = await splitImageInHalf(result.previewUrl);
-        const { leftUrl: leftOriginal, rightUrl: rightOriginal } = await splitImageInHalf(croppedOriginal);
+        let previewToSplit = result.previewUrl;
+        let originalToSplit = croppedOriginal;
 
-        setAlbum((prev) => ({
-          ...prev,
-          spreads: prev.spreads.map((spread) =>
-            spread.id === spreadId
-              ? {
-                  ...spread,
-                  leftPhotos: spread.leftPhotos.map((photo, idx) =>
-                    idx === 0
-                      ? {
-                          ...photo,
-                          url: leftUrl, // Left half of preview
-                          originalUrl: leftOriginal, // Left half of original
-                          cropArea: undefined, // NO crop area - image is already split/cropped
-                          file: null,
-                        }
-                      : photo
-                  ),
-                  rightPhotos: spread.rightPhotos.map((photo, idx) =>
-                    idx === 0
-                      ? {
-                          ...photo,
-                          url: rightUrl, // Right half of preview
-                          originalUrl: rightOriginal, // Right half of original
-                          cropArea: undefined, // NO crop area - image is already split/cropped
-                          file: null,
-                        }
-                      : photo
-                  ),
-                }
-              : spread
-          ),
-          updatedAt: new Date(),
-        }));
-        setCropModal(null);
-        console.log("Image split successfully!");
+        // Step 2: If stylization requested, stylize the 2:1 image BEFORE splitting
+        if (result.isStylizing && result.modelId) {
+          console.log("Stylizing 2:1 image before splitting...");
+
+          // Debug: check dimensions of original cropped image
+          const checkOriginalDimensions = await new Promise((resolve) => {
+            const img = new Image();
+            img.onload = () => {
+              console.log(`ORIGINAL 2:1 cropped dimensions: ${img.width}x${img.height}, aspect ratio: ${(img.width/img.height).toFixed(2)}`);
+              resolve(true);
+            };
+            img.src = previewToSplit;
+          });
+
+          // Save temporary split (for immediate feedback)
+          const { leftUrl: tempLeftUrl, rightUrl: tempRightUrl } = await splitImageInHalf(previewToSplit);
+          const { leftUrl: tempLeftOriginal, rightUrl: tempRightOriginal } = await splitImageInHalf(originalToSplit);
+
+          setAlbum((prev) => ({
+            ...prev,
+            spreads: prev.spreads.map((spread) =>
+              spread.id === spreadId
+                ? {
+                    ...spread,
+                    leftPhotos: spread.leftPhotos.map((photo, idx) =>
+                      idx === 0
+                        ? {
+                            ...photo,
+                            url: tempLeftUrl,
+                            originalUrl: tempLeftOriginal,
+                            cropArea: undefined,
+                            isStylizing: true, // Show loading state
+                            file: null,
+                          }
+                        : photo
+                    ),
+                    rightPhotos: spread.rightPhotos.map((photo, idx) =>
+                      idx === 0
+                        ? {
+                            ...photo,
+                            url: tempRightUrl,
+                            originalUrl: tempRightOriginal,
+                            cropArea: undefined,
+                            isStylizing: true, // Show loading state
+                            file: null,
+                          }
+                        : photo
+                    ),
+                  }
+                : spread
+            ),
+            updatedAt: new Date(),
+          }));
+          setCropModal(null);
+
+          // Trigger stylization
+          const apiResponse = await fetch('/api/stylize', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              imageBase64: previewToSplit,
+              modelId: result.modelId
+            })
+          });
+
+          const stylizeResult = await apiResponse.json();
+
+          if (stylizeResult.success) {
+            console.log("Stylization complete! Now cropping to 2:1 and splitting...");
+
+            // Gemini returns images at 16:9 or 21:9 - we need to crop to 2:1 first!
+            const cropTo2x1 = async (imageUrl: string): Promise<string> => {
+              return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.crossOrigin = "anonymous";
+                img.onload = () => {
+                  const currentAspect = img.width / img.height;
+                  console.log(`Stylized image: ${img.width}x${img.height}, aspect: ${currentAspect.toFixed(2)}`);
+
+                  // Calculate 2:1 crop from center
+                  let cropWidth, cropHeight, cropX, cropY;
+
+                  if (currentAspect > 2) {
+                    // Image is wider than 2:1 - crop width
+                    cropHeight = img.height;
+                    cropWidth = cropHeight * 2; // 2:1 aspect
+                    cropX = (img.width - cropWidth) / 2; // Center horizontally
+                    cropY = 0;
+                  } else {
+                    // Image is taller than 2:1 - crop height
+                    cropWidth = img.width;
+                    cropHeight = cropWidth / 2; // 2:1 aspect
+                    cropX = 0;
+                    cropY = (img.height - cropHeight) / 2; // Center vertically
+                  }
+
+                  console.log(`Cropping to 2:1: from ${cropX},${cropY} size ${cropWidth}x${cropHeight}`);
+
+                  // Create canvas with 2:1 aspect
+                  const canvas = document.createElement("canvas");
+                  canvas.width = cropWidth;
+                  canvas.height = cropHeight;
+                  const ctx = canvas.getContext("2d", { alpha: false });
+                  if (!ctx) {
+                    reject(new Error("Failed to get canvas context"));
+                    return;
+                  }
+                  ctx.imageSmoothingEnabled = true;
+                  ctx.imageSmoothingQuality = "high";
+                  ctx.drawImage(img, cropX, cropY, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight);
+                  resolve(canvas.toDataURL("image/jpeg", 0.92));
+                };
+                img.onerror = () => reject(new Error("Failed to load stylized image"));
+                img.src = imageUrl;
+              });
+            };
+
+            // Crop stylized result to 2:1
+            const cropped2x1 = await cropTo2x1(stylizeResult.stylizedUrl);
+            console.log("Cropped to 2:1, now splitting...");
+
+            // Split the cropped 2:1 image
+            const { leftUrl: stylizedLeftUrl, rightUrl: stylizedRightUrl } = await splitImageInHalf(cropped2x1);
+
+            // Update both slots with stylized halves
+            setAlbum((prev) => ({
+              ...prev,
+              spreads: prev.spreads.map((spread) =>
+                spread.id === spreadId
+                  ? {
+                      ...spread,
+                      leftPhotos: spread.leftPhotos.map((photo, idx) =>
+                        idx === 0
+                          ? {
+                              ...photo,
+                              url: stylizedLeftUrl,
+                              originalUrl: stylizedLeftUrl,
+                              tokens: stylizeResult.tokens,
+                              isStylizing: false,
+                            }
+                          : photo
+                      ),
+                      rightPhotos: spread.rightPhotos.map((photo, idx) =>
+                        idx === 0
+                          ? {
+                              ...photo,
+                              url: stylizedRightUrl,
+                              originalUrl: stylizedRightUrl,
+                              tokens: stylizeResult.tokens,
+                              isStylizing: false,
+                            }
+                          : photo
+                      ),
+                    }
+                  : spread
+              ),
+              updatedAt: new Date(),
+            }));
+          } else {
+            console.error("Stylization failed:", stylizeResult.error);
+            // Keep the unstyled split images, just remove loading state
+            setAlbum((prev) => ({
+              ...prev,
+              spreads: prev.spreads.map((spread) =>
+                spread.id === spreadId
+                  ? {
+                      ...spread,
+                      leftPhotos: spread.leftPhotos.map((photo, idx) =>
+                        idx === 0 ? { ...photo, isStylizing: false } : photo
+                      ),
+                      rightPhotos: spread.rightPhotos.map((photo, idx) =>
+                        idx === 0 ? { ...photo, isStylizing: false } : photo
+                      ),
+                    }
+                  : spread
+              ),
+            }));
+          }
+        } else {
+          // No stylization - just split and save
+          const { leftUrl, rightUrl } = await splitImageInHalf(previewToSplit);
+          const { leftUrl: leftOriginal, rightUrl: rightOriginal } = await splitImageInHalf(originalToSplit);
+
+          setAlbum((prev) => ({
+            ...prev,
+            spreads: prev.spreads.map((spread) =>
+              spread.id === spreadId
+                ? {
+                    ...spread,
+                    leftPhotos: spread.leftPhotos.map((photo, idx) =>
+                      idx === 0
+                        ? {
+                            ...photo,
+                            url: leftUrl,
+                            originalUrl: leftOriginal,
+                            cropArea: undefined,
+                            file: null,
+                          }
+                        : photo
+                    ),
+                    rightPhotos: spread.rightPhotos.map((photo, idx) =>
+                      idx === 0
+                        ? {
+                            ...photo,
+                            url: rightUrl,
+                            originalUrl: rightOriginal,
+                            cropArea: undefined,
+                            file: null,
+                          }
+                        : photo
+                    ),
+                  }
+                : spread
+            ),
+            updatedAt: new Date(),
+          }));
+          setCropModal(null);
+          console.log("Image split successfully!");
+        }
       } catch (error) {
-        console.error("Error splitting image:", error);
-        alert("Не удалось разделить изображение. Попробуйте еще раз.");
+        console.error("Error processing full-spread image:", error);
+        alert("Не удалось обработать изображение. Попробуйте еще раз.");
         setCropModal(null);
       }
       return;

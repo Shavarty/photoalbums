@@ -338,7 +338,7 @@ const generatePageWithSlots = async (
       const isFullPage = slot.width >= 1.0 && slot.height >= 1.0;
       if (!isFullPage) {
         pdf.setDrawColor(0, 0, 0); // Black
-        pdf.setLineWidth(1.25); // ~1.25mm thickness (similar to 5px in editor)
+        pdf.setLineWidth(0.75); // ~0.75mm thickness (similar to 3px in editor)
         pdf.rect(photoX, photoY, photoWidth, photoHeight, 'S'); // 'S' = stroke only
       }
 

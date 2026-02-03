@@ -997,7 +997,7 @@ export const TEMPLATE_SQUARES: SpreadTemplate = {
   },
 };
 
-// Template 10: Full Spread - one photo split across both pages
+// Template 10: Full Spread - one photo split across both pages (simple, no mini-scenes)
 export const TEMPLATE_FULL_SPREAD: SpreadTemplate = {
   id: "full-spread",
   name: "Панорамный разворот",
@@ -1055,6 +1055,127 @@ export const TEMPLATE_FULL_SPREAD: SpreadTemplate = {
   },
 };
 
+// Template 11: Comic Spread Background - panoramic background + mini-scenes on top
+export const TEMPLATE_COMIC_SPREAD_BG: SpreadTemplate = {
+  id: "comic-spread-bg",
+  name: "Комикс на фоне разворота",
+  description: "Фоновое фото на весь разворот + мини-сцены поверх",
+  // Background: full-page slots (will be filled with split 2:1 photo)
+  // Mini-scenes: smaller slots on top
+  leftPage: {
+    slots: [
+      {
+        id: "left-bg",
+        aspectRatio: 1,
+        width: 1.0,
+        height: 1.0,
+        x: 0,
+        y: 0,
+      },
+      {
+        id: "left-mini-1",
+        aspectRatio: 1,
+        width: 0.45,
+        height: 0.45,
+        x: 0.02,
+        y: 0.02,
+      },
+      {
+        id: "left-mini-2",
+        aspectRatio: 4 / 3,
+        width: 0.45,
+        height: 0.34,
+        x: 0.02,
+        y: 0.64,
+      },
+    ],
+  },
+  rightPage: {
+    slots: [
+      {
+        id: "right-bg",
+        aspectRatio: 1,
+        width: 1.0,
+        height: 1.0,
+        x: 0,
+        y: 0,
+      },
+      {
+        id: "right-mini-1",
+        aspectRatio: 1,
+        width: 0.45,
+        height: 0.45,
+        x: 0.53,
+        y: 0.02,
+      },
+      {
+        id: "right-mini-2",
+        aspectRatio: 4 / 3,
+        width: 0.45,
+        height: 0.34,
+        x: 0.53,
+        y: 0.53,
+      },
+    ],
+  },
+  leftPageNoGaps: {
+    slots: [
+      {
+        id: "left-bg",
+        aspectRatio: 1,
+        width: 1.0,
+        height: 1.0,
+        x: 0,
+        y: 0,
+      },
+      {
+        id: "left-mini-1",
+        aspectRatio: 1,
+        width: 0.48,
+        height: 0.48,
+        x: 0,
+        y: 0,
+      },
+      {
+        id: "left-mini-2",
+        aspectRatio: 4 / 3,
+        width: 0.48,
+        height: 0.36,
+        x: 0,
+        y: 0.64,
+      },
+    ],
+  },
+  rightPageNoGaps: {
+    slots: [
+      {
+        id: "right-bg",
+        aspectRatio: 1,
+        width: 1.0,
+        height: 1.0,
+        x: 0,
+        y: 0,
+      },
+      {
+        id: "right-mini-1",
+        aspectRatio: 1,
+        width: 0.48,
+        height: 0.48,
+        x: 0.52,
+        y: 0,
+      },
+      {
+        id: "right-mini-2",
+        aspectRatio: 4 / 3,
+        width: 0.48,
+        height: 0.36,
+        x: 0.52,
+        y: 0.52,
+      },
+    ],
+  },
+};
+
 export const SPREAD_TEMPLATES = [
   TEMPLATE_CLASSIC,
   TEMPLATE_6PHOTOS,
@@ -1066,6 +1187,7 @@ export const SPREAD_TEMPLATES = [
   TEMPLATE_FOCUS,
   TEMPLATE_MAGAZINE,
   TEMPLATE_FULL_SPREAD, // Panoramic spread - one 2:1 photo split across both pages
+  TEMPLATE_COMIC_SPREAD_BG, // Panoramic background + mini-scenes on top
 ];
 
 // Get appropriate page layout based on gaps setting

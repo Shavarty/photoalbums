@@ -70,7 +70,7 @@ export default function SpreadEditor({
                     <img
                       src={photo.url}
                       alt=""
-                      className={`w-full h-full object-cover ${slot.width < 1.0 || slot.height < 1.0 ? 'border-[5px] border-black' : ''}`}
+                      className={`w-full h-full object-cover ${slot.width < 1.0 || slot.height < 1.0 ? 'border-[3px] border-black' : ''}`}
                     />
 
                     {/* Speech Bubbles */}
@@ -122,7 +122,9 @@ export default function SpreadEditor({
 
                     {/* Text */}
                     <span className="text-gray-600 text-[8px] md:text-xs font-normal text-center leading-tight">
-                      Добавить фото
+                      {(template.id === "full-spread" || (template.id === "comic-spread-bg" && index === 0))
+                        ? "Добавить фото разворота"
+                        : "Добавить фото"}
                     </span>
                   </div>
                 )}

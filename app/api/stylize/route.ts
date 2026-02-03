@@ -26,10 +26,12 @@ IMPORTANT INSTRUCTIONS:
 6. Match the perspective, lighting, and elements from the visible background.
 7. The photo MUST MERGE seamlessly with the extended background - there should be NO separation, NO dividing lines, NO borders between the photo and the extended areas. The background from the photo should continue all the way to the outer edges of the canvas.
 8. Make people and objects recognizable but stylized as comic characters.
+9. CRITICAL: Fill the ENTIRE canvas edge-to-edge with the scene. NO white bars, NO blank spaces, NO padding at top, bottom, left, or right. The comic artwork must extend all the way to every edge of the image.
+10. If the original aspect ratio needs adjustment, extend the background scenery rather than adding white/blank bars.
 
 Transform and extend seamlessly in comic book art style. The result should look like one unified scene, not a photo placed on a background.
 
-Negative prompt: no borders, no frames, no margins, no mockup, no black border, no white border, no composite, no layered effect, no picture-in-picture.`;
+Negative prompt: no borders, no frames, no margins, no mockup, no black border, no white border, no white bars, no blank bars, no padding, no letterbox, no pillarbox, no composite, no layered effect, no picture-in-picture, no blank spaces at edges.`;
 
     // Убираем префикс data:image/jpeg;base64, если есть
     const base64Data = imageBase64.includes(',')
