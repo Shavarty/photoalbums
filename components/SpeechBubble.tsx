@@ -76,56 +76,59 @@ export default function SpeechBubble({ bubble, onEdit, onDelete, onMove }: Speec
   };
 
   const getThoughtBubblePath = () => {
-    // Cloud-like thought bubble with multiple rounded puffs
+    // Classic thought bubble: rounded cloud + small circles
     const cx = estimatedWidth / 2 + 10;
     const cy = estimatedHeight / 2 + 10;
     const rx = estimatedWidth / 2;
     const ry = estimatedHeight / 2;
 
-    // Create cloud shape with 5 overlapping circles
-    const numPuffs = 7;
-    const angles = [];
-    for (let i = 0; i < numPuffs; i++) {
-      angles.push((i * 2 * Math.PI) / numPuffs);
-    }
+    // Main cloud shape - scalloped ellipse with bumps
+    const numBumps = 8;
+    const bumpHeight = Math.min(rx, ry) * 0.15; // Height of bumps
 
     let path = '';
-    const puffRadius = Math.min(rx, ry) * 0.4;
 
-    angles.forEach((angle, i) => {
-      const puffCx = cx + Math.cos(angle) * rx * 0.6;
-      const puffCy = cy + Math.sin(angle) * ry * 0.6;
+    for (let i = 0; i <= numBumps; i++) {
+      const angle = (i / numBumps) * 2 * Math.PI;
+      const nextAngle = ((i + 1) / numBumps) * 2 * Math.PI;
 
-      // Draw circle arc for each puff
+      // Point on ellipse
+      const x1 = cx + rx * Math.cos(angle);
+      const y1 = cy + ry * Math.sin(angle);
+
+      // Next point on ellipse
+      const x2 = cx + rx * Math.cos(nextAngle);
+      const y2 = cy + ry * Math.sin(nextAngle);
+
+      // Bump outward
+      const midAngle = (angle + nextAngle) / 2;
+      const bumpX = cx + (rx + bumpHeight) * Math.cos(midAngle);
+      const bumpY = cy + (ry + bumpHeight) * Math.sin(midAngle);
+
       if (i === 0) {
-        path += `M ${puffCx + puffRadius},${puffCy}`;
+        path += `M ${x1},${y1}`;
       }
 
-      const kappa = 0.551915;
-      const ox = puffRadius * kappa;
-      const oy = puffRadius * kappa;
-
-      // Quarter arcs to form smooth cloud edge
-      path += ` C ${puffCx + puffRadius},${puffCy - oy} ${puffCx + ox},${puffCy - puffRadius} ${puffCx},${puffCy - puffRadius}`;
-      path += ` C ${puffCx - ox},${puffCy - puffRadius} ${puffCx - puffRadius},${puffCy - oy} ${puffCx - puffRadius},${puffCy}`;
-    });
+      // Quadratic curve to create bump
+      path += ` Q ${bumpX},${bumpY} ${x2},${y2}`;
+    }
 
     path += ` Z`;
 
-    // Add small thought bubbles leading to it
+    // Add small thought bubbles
     const direction = bubble.tailDirection || 'bottom-left';
     const smallBubbles = [];
 
     if (direction.includes('bottom')) {
-      const baseY = cy + ry;
-      const baseX = direction.includes('left') ? cx - rx * 0.4 : cx + rx * 0.4;
-      smallBubbles.push({ cx: baseX, cy: baseY + 10, r: 4 });
-      smallBubbles.push({ cx: baseX + (direction.includes('left') ? -3 : 3), cy: baseY + 18, r: 2.5 });
+      const baseY = cy + ry + bumpHeight;
+      const baseX = direction.includes('left') ? cx - rx * 0.3 : cx + rx * 0.3;
+      smallBubbles.push({ cx: baseX, cy: baseY + 8, r: 5 });
+      smallBubbles.push({ cx: baseX + (direction.includes('left') ? -6 : 6), cy: baseY + 18, r: 3 });
     } else {
-      const baseY = cy - ry;
-      const baseX = direction.includes('left') ? cx - rx * 0.4 : cx + rx * 0.4;
-      smallBubbles.push({ cx: baseX, cy: baseY - 10, r: 4 });
-      smallBubbles.push({ cx: baseX + (direction.includes('left') ? -3 : 3), cy: baseY - 18, r: 2.5 });
+      const baseY = cy - ry - bumpHeight;
+      const baseX = direction.includes('left') ? cx - rx * 0.3 : cx + rx * 0.3;
+      smallBubbles.push({ cx: baseX, cy: baseY - 8, r: 5 });
+      smallBubbles.push({ cx: baseX + (direction.includes('left') ? -6 : 6), cy: baseY - 18, r: 3 });
     }
 
     return { mainPath: path, smallBubbles };

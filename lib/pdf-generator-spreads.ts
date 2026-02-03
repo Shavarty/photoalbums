@@ -226,23 +226,27 @@ const renderSpeechBubbleToCanvas = (
   // Thought bubble path (cloud with small bubbles)
   const getThoughtBubblePath = () => {
     const mainPath = new Path2D();
-    const numPuffs = 7;
-    const puffRadius = Math.min(rx, ry) * 0.4;
+    const numBumps = 8;
+    const bumpHeight = Math.min(rx, ry) * 0.15;
 
-    for (let i = 0; i < numPuffs; i++) {
-      const angle = (i * 2 * Math.PI) / numPuffs;
-      const puffCx = cx + Math.cos(angle) * rx * 0.6;
-      const puffCy = cy + Math.sin(angle) * ry * 0.6;
+    for (let i = 0; i <= numBumps; i++) {
+      const angle = (i / numBumps) * 2 * Math.PI;
+      const nextAngle = ((i + 1) / numBumps) * 2 * Math.PI;
+
+      const x1 = cx + rx * Math.cos(angle);
+      const y1 = cy + ry * Math.sin(angle);
+      const x2 = cx + rx * Math.cos(nextAngle);
+      const y2 = cy + ry * Math.sin(nextAngle);
+
+      const midAngle = (angle + nextAngle) / 2;
+      const bumpX = cx + (rx + bumpHeight) * Math.cos(midAngle);
+      const bumpY = cy + (ry + bumpHeight) * Math.sin(midAngle);
 
       if (i === 0) {
-        mainPath.moveTo(puffCx + puffRadius, puffCy);
+        mainPath.moveTo(x1, y1);
       }
 
-      const ox = puffRadius * kappa;
-      const oy = puffRadius * kappa;
-
-      mainPath.bezierCurveTo(puffCx + puffRadius, puffCy - oy, puffCx + ox, puffCy - puffRadius, puffCx, puffCy - puffRadius);
-      mainPath.bezierCurveTo(puffCx - ox, puffCy - puffRadius, puffCx - puffRadius, puffCy - oy, puffCx - puffRadius, puffCy);
+      mainPath.quadraticCurveTo(bumpX, bumpY, x2, y2);
     }
 
     mainPath.closePath();
@@ -321,18 +325,19 @@ const renderSpeechBubbleToCanvas = (
   // Draw small thought bubbles for thought type
   if (bubbleType === 'thought') {
     const direction = bubble.tailDirection || 'bottom-left';
+    const bumpHeight = Math.min(rx, ry) * 0.15;
     const smallBubbles = [];
 
     if (direction.includes('bottom')) {
-      const baseY = cy + ry;
-      const baseX = direction.includes('left') ? cx - rx * 0.4 : cx + rx * 0.4;
-      smallBubbles.push({ cx: baseX, cy: baseY + 10, r: 4 });
-      smallBubbles.push({ cx: baseX + (direction.includes('left') ? -3 : 3), cy: baseY + 18, r: 2.5 });
+      const baseY = cy + ry + bumpHeight;
+      const baseX = direction.includes('left') ? cx - rx * 0.3 : cx + rx * 0.3;
+      smallBubbles.push({ cx: baseX, cy: baseY + 8, r: 5 });
+      smallBubbles.push({ cx: baseX + (direction.includes('left') ? -6 : 6), cy: baseY + 18, r: 3 });
     } else {
-      const baseY = cy - ry;
-      const baseX = direction.includes('left') ? cx - rx * 0.4 : cx + rx * 0.4;
-      smallBubbles.push({ cx: baseX, cy: baseY - 10, r: 4 });
-      smallBubbles.push({ cx: baseX + (direction.includes('left') ? -3 : 3), cy: baseY - 18, r: 2.5 });
+      const baseY = cy - ry - bumpHeight;
+      const baseX = direction.includes('left') ? cx - rx * 0.3 : cx + rx * 0.3;
+      smallBubbles.push({ cx: baseX, cy: baseY - 8, r: 5 });
+      smallBubbles.push({ cx: baseX + (direction.includes('left') ? -6 : 6), cy: baseY - 18, r: 3 });
     }
 
     smallBubbles.forEach(sb => {
