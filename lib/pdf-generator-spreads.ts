@@ -362,7 +362,8 @@ const renderSpeechBubbleToCanvas = (
 
   // Draw text
   ctx.fillStyle = "black";
-  ctx.font = `bold 14px "Balsamiq Sans", Arial, sans-serif`;
+  const fontSize = bubble.fontSize || 14;
+  ctx.font = `bold ${fontSize}px "Balsamiq Sans", Arial, sans-serif`;
   ctx.textAlign = bubbleType === 'text-block' ? 'left' : 'center';
   ctx.textBaseline = "middle";
 

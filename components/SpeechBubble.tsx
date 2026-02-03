@@ -7,9 +7,10 @@ interface SpeechBubbleProps {
   onDelete?: () => void;
   onMove?: (x: number, y: number) => void;
   onResize?: (width: number, height: number) => void;
+  onFontSizeChange?: (fontSize: number) => void;
 }
 
-export default function SpeechBubble({ bubble, onEdit, onDelete, onMove, onResize }: SpeechBubbleProps) {
+export default function SpeechBubble({ bubble, onEdit, onDelete, onMove, onResize, onFontSizeChange }: SpeechBubbleProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
   const dragStartRef = useRef<{ x: number; y: number; bubbleX: number; bubbleY: number } | null>(null);
@@ -335,7 +336,13 @@ export default function SpeechBubble({ bubble, onEdit, onDelete, onMove, onResiz
           width={estimatedWidth - padding * 2}
           height={estimatedHeight - padding * 2}
         >
-          <div className={`text-sm font-bold ${bubbleType === 'text-block' ? 'text-left' : 'text-center'} flex items-center ${bubbleType === 'text-block' ? 'justify-start' : 'justify-center'} h-full break-words whitespace-pre-wrap`} style={{ fontFamily: 'var(--font-balsamiq-sans), sans-serif' }}>
+          <div
+            className={`font-bold ${bubbleType === 'text-block' ? 'text-left' : 'text-center'} flex items-center ${bubbleType === 'text-block' ? 'justify-start' : 'justify-center'} h-full break-words whitespace-pre-wrap`}
+            style={{
+              fontFamily: 'var(--font-balsamiq-sans), sans-serif',
+              fontSize: `${bubble.fontSize || 14}px`,
+            }}
+          >
             {bubble.text}
           </div>
         </foreignObject>
@@ -373,6 +380,34 @@ export default function SpeechBubble({ bubble, onEdit, onDelete, onMove, onResiz
           title="Изменить размер"
         >
           <div className="absolute inset-0 flex items-center justify-center text-white text-xs font-bold">⇲</div>
+        </div>
+      )}
+
+      {/* Font size controls for text blocks */}
+      {isTextBlock && onFontSizeChange && (
+        <div className="absolute -top-2 -left-2 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col gap-1">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              const newSize = (bubble.fontSize || 14) + 2;
+              if (newSize <= 32) onFontSizeChange(newSize);
+            }}
+            className="bg-gray-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-gray-700"
+            title="Увеличить шрифт"
+          >
+            +
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              const newSize = (bubble.fontSize || 14) - 2;
+              if (newSize >= 8) onFontSizeChange(newSize);
+            }}
+            className="bg-gray-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-gray-700"
+            title="Уменьшить шрифт"
+          >
+            −
+          </button>
         </div>
       )}
     </div>

@@ -25,6 +25,7 @@ export interface SpeechBubble {
   tailDirection?: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
   width?: number; // Custom width in pixels (for text-block type)
   height?: number; // Custom height in pixels (for text-block type)
+  fontSize?: number; // Font size in pixels (default: 14)
 }
 
 export interface Photo {

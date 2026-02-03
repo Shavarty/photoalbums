@@ -15,6 +15,7 @@ interface SpreadEditorProps {
   onDeleteSpeechBubble?: (side: "left" | "right", photoIndex: number, bubbleId: string) => void;
   onMoveSpeechBubble?: (side: "left" | "right", photoIndex: number, bubbleId: string, x: number, y: number) => void;
   onResizeSpeechBubble?: (side: "left" | "right", photoIndex: number, bubbleId: string, width: number, height: number) => void;
+  onFontSizeChangeSpeechBubble?: (side: "left" | "right", photoIndex: number, bubbleId: string, fontSize: number) => void;
 }
 
 export default function SpreadEditor({
@@ -28,6 +29,7 @@ export default function SpreadEditor({
   onDeleteSpeechBubble,
   onMoveSpeechBubble,
   onResizeSpeechBubble,
+  onFontSizeChangeSpeechBubble,
 }: SpreadEditorProps) {
   const template = SPREAD_TEMPLATES.find((t) => t.id === spread.templateId);
   if (!template) return null;
@@ -125,6 +127,7 @@ export default function SpreadEditor({
                         onDelete={() => onDeleteSpeechBubble?.(side, index, bubble.id)}
                         onMove={(x, y) => onMoveSpeechBubble?.(side, index, bubble.id, x, y)}
                         onResize={(width, height) => onResizeSpeechBubble?.(side, index, bubble.id, width, height)}
+                        onFontSizeChange={(fontSize) => onFontSizeChangeSpeechBubble?.(side, index, bubble.id, fontSize)}
                       />
                     ))}
                     {photo.isStylizing && (
