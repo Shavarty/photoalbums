@@ -334,6 +334,14 @@ const generatePageWithSlots = async (
 
       pdf.addImage(finalImageUrl, "JPEG", photoX, photoY, photoWidth, photoHeight, undefined, "FAST");
 
+      // Add black comic-style border around photo (only for mini-scenes, not full-page backgrounds)
+      const isFullPage = slot.width >= 1.0 && slot.height >= 1.0;
+      if (!isFullPage) {
+        pdf.setDrawColor(0, 0, 0); // Black
+        pdf.setLineWidth(1.25); // ~1.25mm thickness (similar to 5px in editor)
+        pdf.rect(photoX, photoY, photoWidth, photoHeight, 'S'); // 'S' = stroke only
+      }
+
       // Add caption if exists
       if (photo.caption) {
         const captionHeight = 10;

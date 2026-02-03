@@ -997,6 +997,64 @@ export const TEMPLATE_SQUARES: SpreadTemplate = {
   },
 };
 
+// Template 10: Full Spread - one photo split across both pages
+export const TEMPLATE_FULL_SPREAD: SpreadTemplate = {
+  id: "full-spread",
+  name: "Панорамный разворот",
+  description: "Одно фото на весь разворот (2:1)",
+  // Each page has ONE full-page slot (1:1)
+  // Photo with 2:1 crop will be split: left half → left page, right half → right page
+  leftPage: {
+    slots: [
+      {
+        id: "left-1",
+        aspectRatio: 1, // Square page
+        width: 1.0,
+        height: 1.0,
+        x: 0,
+        y: 0,
+      },
+    ],
+  },
+  rightPage: {
+    slots: [
+      {
+        id: "right-1",
+        aspectRatio: 1, // Square page
+        width: 1.0,
+        height: 1.0,
+        x: 0,
+        y: 0,
+      },
+    ],
+  },
+  // No-gaps version is the same (already full page)
+  leftPageNoGaps: {
+    slots: [
+      {
+        id: "left-1",
+        aspectRatio: 1,
+        width: 1.0,
+        height: 1.0,
+        x: 0,
+        y: 0,
+      },
+    ],
+  },
+  rightPageNoGaps: {
+    slots: [
+      {
+        id: "right-1",
+        aspectRatio: 1,
+        width: 1.0,
+        height: 1.0,
+        x: 0,
+        y: 0,
+      },
+    ],
+  },
+};
+
 export const SPREAD_TEMPLATES = [
   TEMPLATE_CLASSIC,
   TEMPLATE_6PHOTOS,
@@ -1007,6 +1065,7 @@ export const SPREAD_TEMPLATES = [
   TEMPLATE_PANORAMA,
   TEMPLATE_FOCUS,
   TEMPLATE_MAGAZINE,
+  TEMPLATE_FULL_SPREAD, // Panoramic spread - one 2:1 photo split across both pages
 ];
 
 // Get appropriate page layout based on gaps setting

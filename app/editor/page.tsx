@@ -99,6 +99,99 @@ export default function EditorPage() {
     }));
   };
 
+  // Helper: Apply crop to image
+  const applyCropToImage = async (imageUrl: string, cropArea: any): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        canvas.width = cropArea.width;
+        canvas.height = cropArea.height;
+        const ctx = canvas.getContext("2d", { alpha: false });
+        if (!ctx) {
+          reject(new Error("Failed to get canvas context"));
+          return;
+        }
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = "high";
+        ctx.drawImage(
+          img,
+          cropArea.x,
+          cropArea.y,
+          cropArea.width,
+          cropArea.height,
+          0,
+          0,
+          cropArea.width,
+          cropArea.height
+        );
+        resolve(canvas.toDataURL("image/jpeg", 0.92));
+      };
+      img.onerror = () => reject(new Error("Failed to load image for cropping"));
+      img.src = imageUrl;
+    });
+  };
+
+  // Helper: Split 2:1 image into left and right halves at high resolution
+  const splitImageInHalf = async (imageUrl: string): Promise<{ leftUrl: string; rightUrl: string }> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.onload = () => {
+        const sourceWidth = img.width;
+        const sourceHeight = img.height;
+        const sourceHalfWidth = sourceWidth / 2;
+
+        // Target size for PDF: ensure high resolution (at least 2000px per half)
+        const MIN_SIZE = 2000;
+        let targetWidth = sourceHalfWidth;
+        let targetHeight = sourceHeight;
+
+        // Scale up if source is too small
+        if (targetHeight < MIN_SIZE) {
+          const scale = MIN_SIZE / targetHeight;
+          targetWidth = Math.round(sourceHalfWidth * scale);
+          targetHeight = MIN_SIZE;
+        }
+
+        console.log(`Splitting image: source ${sourceWidth}x${sourceHeight} -> each half ${targetWidth}x${targetHeight}`);
+
+        // Create canvas for left half
+        const leftCanvas = document.createElement("canvas");
+        leftCanvas.width = targetWidth;
+        leftCanvas.height = targetHeight;
+        const leftCtx = leftCanvas.getContext("2d", { alpha: false });
+        if (!leftCtx) {
+          reject(new Error("Failed to get left canvas context"));
+          return;
+        }
+        leftCtx.imageSmoothingEnabled = true;
+        leftCtx.imageSmoothingQuality = "high";
+        leftCtx.drawImage(img, 0, 0, sourceHalfWidth, sourceHeight, 0, 0, targetWidth, targetHeight);
+        const leftUrl = leftCanvas.toDataURL("image/jpeg", 0.92);
+
+        // Create canvas for right half
+        const rightCanvas = document.createElement("canvas");
+        rightCanvas.width = targetWidth;
+        rightCanvas.height = targetHeight;
+        const rightCtx = rightCanvas.getContext("2d", { alpha: false });
+        if (!rightCtx) {
+          reject(new Error("Failed to get right canvas context"));
+          return;
+        }
+        rightCtx.imageSmoothingEnabled = true;
+        rightCtx.imageSmoothingQuality = "high";
+        rightCtx.drawImage(img, sourceHalfWidth, 0, sourceHalfWidth, sourceHeight, 0, 0, targetWidth, targetHeight);
+        const rightUrl = rightCanvas.toDataURL("image/jpeg", 0.92);
+
+        resolve({ leftUrl, rightUrl });
+      };
+      img.onerror = () => reject(new Error("Failed to load image for splitting"));
+      img.src = imageUrl;
+    });
+  };
+
   // Handle photo click - open file picker
   const handlePhotoClick = (spreadId: string, side: "left" | "right", photoIndex: number) => {
     const spread = album.spreads.find((s) => s.id === spreadId);
@@ -112,8 +205,10 @@ export default function EditorPage() {
         ? template.leftPage.slots[photoIndex]
         : template.rightPage.slots[photoIndex];
 
-    // CALCULATE aspect ratio from actual slot dimensions (ignore slot.aspectRatio)
-    const realAspectRatio = slot.width / slot.height;
+    // For full-spread template: use 2:1 aspect ratio (one photo spans both pages)
+    // User clicks left slot, we crop at 2:1, then split into left and right halves
+    const isFullSpread = template.id === "full-spread" && side === "left" && photoIndex === 0;
+    const realAspectRatio = isFullSpread ? 2 : slot.width / slot.height;
 
     const input = document.createElement("input");
     input.type = "file";
@@ -230,6 +325,67 @@ export default function EditorPage() {
     if (!cropModal) return;
 
     const { spreadId, side, photoIndex } = cropModal;
+
+    // Check if this is full-spread template (2:1 photo split across both pages)
+    const spread = album.spreads.find((s) => s.id === spreadId);
+    const template = spread && SPREAD_TEMPLATES.find((t) => t.id === spread.templateId);
+    const isFullSpread = template?.id === "full-spread" && side === "left" && photoIndex === 0;
+
+    if (isFullSpread) {
+      // Split the 2:1 image into left and right halves
+      console.log("Full-spread detected! Cropping and splitting image into two halves...");
+      try {
+        // First, apply crop to originalUrl (it's the uncropped original file)
+        const croppedOriginal = result.cropArea
+          ? await applyCropToImage(result.originalUrl, result.cropArea)
+          : result.originalUrl;
+
+        // Now split both preview (already cropped) and cropped original
+        const { leftUrl, rightUrl } = await splitImageInHalf(result.previewUrl);
+        const { leftUrl: leftOriginal, rightUrl: rightOriginal } = await splitImageInHalf(croppedOriginal);
+
+        setAlbum((prev) => ({
+          ...prev,
+          spreads: prev.spreads.map((spread) =>
+            spread.id === spreadId
+              ? {
+                  ...spread,
+                  leftPhotos: spread.leftPhotos.map((photo, idx) =>
+                    idx === 0
+                      ? {
+                          ...photo,
+                          url: leftUrl, // Left half of preview
+                          originalUrl: leftOriginal, // Left half of original
+                          cropArea: undefined, // NO crop area - image is already split/cropped
+                          file: null,
+                        }
+                      : photo
+                  ),
+                  rightPhotos: spread.rightPhotos.map((photo, idx) =>
+                    idx === 0
+                      ? {
+                          ...photo,
+                          url: rightUrl, // Right half of preview
+                          originalUrl: rightOriginal, // Right half of original
+                          cropArea: undefined, // NO crop area - image is already split/cropped
+                          file: null,
+                        }
+                      : photo
+                  ),
+                }
+              : spread
+          ),
+          updatedAt: new Date(),
+        }));
+        setCropModal(null);
+        console.log("Image split successfully!");
+      } catch (error) {
+        console.error("Error splitting image:", error);
+        alert("Не удалось разделить изображение. Попробуйте еще раз.");
+        setCropModal(null);
+      }
+      return;
+    }
 
     // Сначала сохраняем обычное фото (быстро закрываем modal)
     setAlbum((prev) => ({

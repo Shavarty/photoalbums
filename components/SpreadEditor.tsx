@@ -70,7 +70,7 @@ export default function SpreadEditor({
                     <img
                       src={photo.url}
                       alt=""
-                      className="w-full h-full object-cover"
+                      className={`w-full h-full object-cover ${slot.width < 1.0 || slot.height < 1.0 ? 'border-[5px] border-black' : ''}`}
                     />
 
                     {/* Speech Bubbles */}
