@@ -224,21 +224,35 @@ const renderSpeechBubbleToCanvas = (
     return path;
   };
 
-  // Thought bubble (cloud circles)
-  const getThoughtBubbleCircles = () => {
-    const cloudCircles = [];
-    const baseRadius = Math.min(rx, ry) * 0.45;
+  // Thought bubble (scalloped cloud path)
+  const getThoughtBubblePath = () => {
+    const path = new Path2D();
+    const numBumps = 10;
+    const bumpSize = Math.min(rx, ry) * 0.25;
 
-    cloudCircles.push({ cx, cy, r: baseRadius });
-    cloudCircles.push({ cx: cx - rx * 0.4, cy: cy - ry * 0.3, r: baseRadius * 0.7 });
-    cloudCircles.push({ cx: cx + rx * 0.4, cy: cy - ry * 0.3, r: baseRadius * 0.7 });
-    cloudCircles.push({ cx, cy: cy - ry * 0.5, r: baseRadius * 0.6 });
-    cloudCircles.push({ cx: cx - rx * 0.4, cy: cy + ry * 0.3, r: baseRadius * 0.7 });
-    cloudCircles.push({ cx: cx + rx * 0.4, cy: cy + ry * 0.3, r: baseRadius * 0.7 });
-    cloudCircles.push({ cx: cx - rx * 0.6, cy, r: baseRadius * 0.6 });
-    cloudCircles.push({ cx: cx + rx * 0.6, cy, r: baseRadius * 0.6 });
+    for (let i = 0; i <= numBumps; i++) {
+      const angle = (i / numBumps) * 2 * Math.PI;
+      const nextAngle = ((i + 1) / numBumps) * 2 * Math.PI;
 
-    return cloudCircles;
+      const x1 = cx + rx * Math.cos(angle);
+      const y1 = cy + ry * Math.sin(angle);
+      const x2 = cx + rx * Math.cos(nextAngle);
+      const y2 = cy + ry * Math.sin(nextAngle);
+
+      const midAngle = (angle + nextAngle) / 2;
+      const controlDist = Math.sqrt(rx * rx + ry * ry) / 2 + bumpSize;
+      const cx1 = cx + controlDist * Math.cos(midAngle);
+      const cy1 = cy + controlDist * Math.sin(midAngle);
+
+      if (i === 0) {
+        path.moveTo(x1, y1);
+      }
+
+      path.quadraticCurveTo(cx1, cy1, x2, y2);
+    }
+
+    path.closePath();
+    return path;
   };
 
   // Annotation path (rounded rectangle, no tail)
@@ -287,17 +301,14 @@ const renderSpeechBubbleToCanvas = (
 
   // Draw bubble based on type
   if (bubbleType === 'thought') {
-    // Draw cloud circles for thought bubble
-    const cloudCircles = getThoughtBubbleCircles();
-    cloudCircles.forEach(circle => {
-      ctx.beginPath();
-      ctx.arc(circle.cx, circle.cy, circle.r, 0, 2 * Math.PI);
-      ctx.fillStyle = "white";
-      ctx.fill();
-      ctx.strokeStyle = "black";
-      ctx.lineWidth = 2;
-      ctx.stroke();
-    });
+    // Draw cloud path for thought bubble
+    const cloudPath = getThoughtBubblePath();
+    ctx.fillStyle = "white";
+    ctx.fill(cloudPath);
+    ctx.strokeStyle = "black";
+    ctx.lineWidth = 2;
+    ctx.lineJoin = "round";
+    ctx.stroke(cloudPath);
   } else {
     // Draw path for other bubble types
     const bubblePath = bubbleType === 'annotation' ? getAnnotationPath() :
@@ -321,19 +332,19 @@ const renderSpeechBubbleToCanvas = (
   // Draw small thought bubbles for thought type
   if (bubbleType === 'thought') {
     const direction = bubble.tailDirection || 'bottom-left';
-    const baseRadius = Math.min(rx, ry) * 0.45;
+    const bumpSize = Math.min(rx, ry) * 0.25;
     const smallBubbles = [];
 
     if (direction.includes('bottom')) {
-      const baseY = cy + ry * 0.6 + baseRadius * 0.7;
+      const baseY = cy + ry + bumpSize;
       const baseX = direction.includes('left') ? cx - rx * 0.3 : cx + rx * 0.3;
-      smallBubbles.push({ cx: baseX, cy: baseY + 8, r: 5 });
-      smallBubbles.push({ cx: baseX + (direction.includes('left') ? -6 : 6), cy: baseY + 18, r: 3 });
+      smallBubbles.push({ cx: baseX, cy: baseY + 10, r: 6 });
+      smallBubbles.push({ cx: baseX + (direction.includes('left') ? -8 : 8), cy: baseY + 22, r: 4 });
     } else {
-      const baseY = cy - ry * 0.6 - baseRadius * 0.7;
+      const baseY = cy - ry - bumpSize;
       const baseX = direction.includes('left') ? cx - rx * 0.3 : cx + rx * 0.3;
-      smallBubbles.push({ cx: baseX, cy: baseY - 8, r: 5 });
-      smallBubbles.push({ cx: baseX + (direction.includes('left') ? -6 : 6), cy: baseY - 18, r: 3 });
+      smallBubbles.push({ cx: baseX, cy: baseY - 10, r: 6 });
+      smallBubbles.push({ cx: baseX + (direction.includes('left') ? -8 : 8), cy: baseY - 22, r: 4 });
     }
 
     smallBubbles.forEach(sb => {

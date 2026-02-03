@@ -79,49 +79,61 @@ export default function SpeechBubble({ bubble, onEdit, onDelete, onMove, onResiz
   };
 
   const getThoughtBubblePath = () => {
-    // Cloud thought bubble made of overlapping circles
+    // Cloud thought bubble - single path with scalloped edges
     const cx = estimatedWidth / 2 + 10;
     const cy = estimatedHeight / 2 + 10;
     const rx = estimatedWidth / 2;
     const ry = estimatedHeight / 2;
 
-    // Create cloud from overlapping circles - render as separate circles
-    const cloudCircles = [];
-    const baseRadius = Math.min(rx, ry) * 0.45;
+    // Create cloud path with bumps around perimeter
+    const numBumps = 10;
+    const bumpSize = Math.min(rx, ry) * 0.25;
 
-    // Center circle
-    cloudCircles.push({ cx, cy, r: baseRadius });
+    let path = '';
 
-    // Top circles
-    cloudCircles.push({ cx: cx - rx * 0.4, cy: cy - ry * 0.3, r: baseRadius * 0.7 });
-    cloudCircles.push({ cx: cx + rx * 0.4, cy: cy - ry * 0.3, r: baseRadius * 0.7 });
-    cloudCircles.push({ cx, cy: cy - ry * 0.5, r: baseRadius * 0.6 });
+    for (let i = 0; i <= numBumps; i++) {
+      const angle = (i / numBumps) * 2 * Math.PI;
+      const nextAngle = ((i + 1) / numBumps) * 2 * Math.PI;
 
-    // Bottom circles
-    cloudCircles.push({ cx: cx - rx * 0.4, cy: cy + ry * 0.3, r: baseRadius * 0.7 });
-    cloudCircles.push({ cx: cx + rx * 0.4, cy: cy + ry * 0.3, r: baseRadius * 0.7 });
+      // Main points on ellipse
+      const x1 = cx + rx * Math.cos(angle);
+      const y1 = cy + ry * Math.sin(angle);
+      const x2 = cx + rx * Math.cos(nextAngle);
+      const y2 = cy + ry * Math.sin(nextAngle);
 
-    // Side circles
-    cloudCircles.push({ cx: cx - rx * 0.6, cy, r: baseRadius * 0.6 });
-    cloudCircles.push({ cx: cx + rx * 0.6, cy, r: baseRadius * 0.6 });
+      // Control points for scallop (bump outward)
+      const midAngle = (angle + nextAngle) / 2;
+      const controlDist = Math.sqrt(rx * rx + ry * ry) / 2 + bumpSize;
+      const cx1 = cx + controlDist * Math.cos(midAngle);
+      const cy1 = cy + controlDist * Math.sin(midAngle);
 
-    // Add small thought bubbles
+      if (i === 0) {
+        path += `M ${x1},${y1}`;
+      }
+
+      // Quadratic curve creates the bump
+      path += ` Q ${cx1},${cy1} ${x2},${y2}`;
+    }
+
+    path += ' Z';
+
+    // Small thought bubbles
     const direction = bubble.tailDirection || 'bottom-left';
     const smallBubbles = [];
 
     if (direction.includes('bottom')) {
-      const baseY = cy + ry * 0.6 + baseRadius * 0.7;
+      const baseY = cy + ry + bumpSize;
       const baseX = direction.includes('left') ? cx - rx * 0.3 : cx + rx * 0.3;
-      smallBubbles.push({ cx: baseX, cy: baseY + 8, r: 5 });
-      smallBubbles.push({ cx: baseX + (direction.includes('left') ? -6 : 6), cy: baseY + 18, r: 3 });
+      smallBubbles.push({ cx: baseX, cy: baseY + 10, r: 6 });
+      smallBubbles.push({ cx: baseX + (direction.includes('left') ? -8 : 8), cy: baseY + 22, r: 4 });
     } else {
-      const baseY = cy - ry * 0.6 - baseRadius * 0.7;
+      const baseY = cy - ry - bumpSize;
       const baseX = direction.includes('left') ? cx - rx * 0.3 : cx + rx * 0.3;
-      smallBubbles.push({ cx: baseX, cy: baseY - 8, r: 5 });
-      smallBubbles.push({ cx: baseX + (direction.includes('left') ? -6 : 6), cy: baseY - 18, r: 3 });
+      smallBubbles.push({ cx: baseX, cy: baseY - 10, r: 6 });
+      smallBubbles.push({ cx: baseX + (direction.includes('left') ? -8 : 8), cy: baseY - 22, r: 4 });
     }
 
-    return { cloudCircles, smallBubbles };
+    return { mainPath: path, smallBubbles };
   };
 
   const getAnnotationPath = () => {
@@ -282,18 +294,14 @@ export default function SpeechBubble({ bubble, onEdit, onDelete, onMove, onResiz
         {/* Render bubble based on type */}
         {isThoughtBubble ? (
           <>
-            {/* Main cloud circles */}
-            {bubblePath.cloudCircles.map((circle, i) => (
-              <circle
-                key={`cloud-${i}`}
-                cx={circle.cx}
-                cy={circle.cy}
-                r={circle.r}
-                fill="white"
-                stroke="black"
-                strokeWidth="2"
-              />
-            ))}
+            {/* Main cloud shape */}
+            <path
+              d={bubblePath.mainPath}
+              fill="white"
+              stroke="black"
+              strokeWidth="2"
+              strokeLinejoin="round"
+            />
             {/* Small thought bubbles */}
             {bubblePath.smallBubbles.map((bubble, i) => (
               <circle
