@@ -9,6 +9,7 @@ interface SpreadEditorProps {
   withGaps: boolean;
   onPhotoClick: (side: "left" | "right", index: number) => void;
   onCaptionChange: (side: "left" | "right", index: number, caption: string) => void;
+  onDeletePhoto?: (side: "left" | "right", index: number) => void;
   onAddSpeechBubble?: (side: "left" | "right", index: number, x: number, y: number) => void;
   onEditSpeechBubble?: (side: "left" | "right", photoIndex: number, bubbleId: string) => void;
   onDeleteSpeechBubble?: (side: "left" | "right", photoIndex: number, bubbleId: string) => void;
@@ -20,6 +21,7 @@ export default function SpreadEditor({
   withGaps,
   onPhotoClick,
   onCaptionChange,
+  onDeletePhoto,
   onAddSpeechBubble,
   onEditSpeechBubble,
   onDeleteSpeechBubble,
@@ -64,7 +66,7 @@ export default function SpreadEditor({
                 }
               }}
             >
-              <div className={`relative w-full h-full flex flex-col items-center justify-center overflow-visible transition-all ${!photo?.url ? 'bg-gray-200 border border-gray-400 hover:bg-gray-300 hover:border-brand-orange' : ''}`}>
+              <div className={`relative w-full h-full flex flex-col items-center justify-center overflow-visible transition-all group/photo ${!photo?.url ? 'bg-gray-200 border border-gray-400 hover:bg-gray-300 hover:border-brand-orange' : ''}`}>
                 {photo?.url ? (
                   <>
                     <img
@@ -72,6 +74,34 @@ export default function SpreadEditor({
                       alt=""
                       className={`w-full h-full object-cover ${slot.width < 1.0 || slot.height < 1.0 ? 'border-[3px] border-black' : ''}`}
                     />
+
+                    {/* Photo action buttons overlay (shown on hover) */}
+                    {!photo.isStylizing && (
+                      <div className="absolute inset-0 bg-black bg-opacity-0 group-hover/photo:bg-opacity-30 transition-all flex items-center justify-center gap-2 opacity-0 group-hover/photo:opacity-100 pointer-events-none group-hover/photo:pointer-events-auto">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onPhotoClick(side, index);
+                          }}
+                          className="px-3 py-1.5 bg-blue-500 text-white rounded-lg text-xs font-medium hover:bg-blue-600 transition shadow-lg"
+                          title="Заменить фото"
+                        >
+                          🔄 Заменить
+                        </button>
+                        {onDeletePhoto && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onDeletePhoto(side, index);
+                            }}
+                            className="px-3 py-1.5 bg-red-500 text-white rounded-lg text-xs font-medium hover:bg-red-600 transition shadow-lg"
+                            title="Удалить фото"
+                          >
+                            🗑️ Удалить
+                          </button>
+                        )}
+                      </div>
+                    )}
 
                     {/* Speech Bubbles */}
                     {photo.speechBubbles?.map((bubble) => (

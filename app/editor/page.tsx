@@ -688,6 +688,40 @@ export default function EditorPage() {
     }));
   };
 
+  // Handle delete photo
+  const handleDeletePhoto = (
+    spreadId: string,
+    side: "left" | "right",
+    photoIndex: number
+  ) => {
+    if (!confirm("Удалить это фото?")) return;
+
+    setAlbum((prev) => ({
+      ...prev,
+      spreads: prev.spreads.map((spread) =>
+        spread.id === spreadId
+          ? {
+              ...spread,
+              [side === "left" ? "leftPhotos" : "rightPhotos"]: (
+                side === "left" ? spread.leftPhotos : spread.rightPhotos
+              ).map((photo, idx) =>
+                idx === photoIndex
+                  ? {
+                      id: generateId(),
+                      file: null,
+                      url: "",
+                      caption: "",
+                      speechBubbles: [],
+                    }
+                  : photo
+              ),
+            }
+          : spread
+      ),
+      updatedAt: new Date(),
+    }));
+  };
+
   // Handle speech bubble addition
   const handleAddSpeechBubble = (
     spreadId: string,
@@ -1145,6 +1179,9 @@ export default function EditorPage() {
                     }
                     onCaptionChange={(side, idx, caption) =>
                       handleCaptionChange(spread.id, side, idx, caption)
+                    }
+                    onDeletePhoto={(side, idx) =>
+                      handleDeletePhoto(spread.id, side, idx)
                     }
                     onAddSpeechBubble={(side, idx, x, y) =>
                       handleAddSpeechBubble(spread.id, side, idx, x, y)
