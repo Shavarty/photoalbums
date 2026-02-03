@@ -139,20 +139,22 @@ const renderSpeechBubbleToCanvas = (
   const estimatedWidth = Math.max(minWidth, Math.min(300, textLength * 8 + padding * 2));
   const estimatedHeight = Math.max(minHeight, Math.ceil(textLength / 30) * 20 + padding * 2);
 
-  // Bubble size in pixels (with extra space for tail)
+  // Bubble SVG size in pixels (with extra space for tail) - EXACTLY as in SpeechBubble.tsx
   const bubbleWidthPx = estimatedWidth + 20;
   const bubbleHeightPx = estimatedHeight + 30;
 
-  // Reference slot size in editor (assume 800px as standard preview size)
-  const EDITOR_SLOT_SIZE_PX = 800;
+  // Calculate bubble size in mm to match editor appearance EXACTLY
+  // In editor: bubbles have FIXED pixel sizes (estimatedWidth + 20/30)
+  // displayed within a page container (w-full aspect-square, grid-cols-2)
+  //
+  // The editor page is typically rendered at ~400-500px (responsive)
+  // PDF page is 206mm
+  // We scale bubbles to match visual proportion
+  const EDITOR_PAGE_WIDTH_PX = 450; // Typical rendered page width in editor
+  const pixelToMmScale = PAGE_SIZE / EDITOR_PAGE_WIDTH_PX; // ~0.458 mm/px
 
-  // Calculate bubble size as percentage of slot
-  const bubbleWidthPercent = (bubbleWidthPx / EDITOR_SLOT_SIZE_PX) * 100;
-  const bubbleHeightPercent = (bubbleHeightPx / EDITOR_SLOT_SIZE_PX) * 100;
-
-  // Convert to mm based on actual slot size in PDF
-  const bubbleWidthMm = (bubbleWidthPercent / 100) * slotWidthMm;
-  const bubbleHeightMm = (bubbleHeightPercent / 100) * slotHeightMm;
+  const bubbleWidthMm = bubbleWidthPx * pixelToMmScale;
+  const bubbleHeightMm = bubbleHeightPx * pixelToMmScale;
 
   // Create high-res canvas for PDF (300 DPI equivalent)
   const scale = 3; // 3x for better quality
@@ -173,32 +175,42 @@ const renderSpeechBubbleToCanvas = (
   const ox = rx * kappa;
   const oy = ry * kappa;
 
+  // Complete bubble path matching SpeechBubble.tsx logic exactly
   const getBubblePath = () => {
     const path = new Path2D();
-    path.moveTo(cx + rx, cy);
-
-    // Top-right quadrant
-    path.bezierCurveTo(cx + rx, cy - oy, cx + ox, cy - ry, cx, cy - ry);
-
-    // Top-left quadrant
-    path.bezierCurveTo(cx - ox, cy - ry, cx - rx, cy - oy, cx - rx, cy);
-
-    // Bottom with tail
     const direction = bubble.tailDirection || 'bottom-left';
+
     if (direction === 'bottom-left') {
+      path.moveTo(cx + rx, cy);
+      path.bezierCurveTo(cx + rx, cy - oy, cx + ox, cy - ry, cx, cy - ry);
+      path.bezierCurveTo(cx - ox, cy - ry, cx - rx, cy - oy, cx - rx, cy);
       path.bezierCurveTo(cx - rx, cy + oy, cx - ox, cy + ry, cx - rx * 0.3, cy + ry);
       path.lineTo(cx - rx * 0.5, cy + ry + 15);
       path.lineTo(cx - rx * 0.1, cy + ry);
       path.bezierCurveTo(cx + ox, cy + ry, cx + rx, cy + oy, cx + rx, cy);
     } else if (direction === 'bottom-right') {
+      path.moveTo(cx + rx, cy);
+      path.bezierCurveTo(cx + rx, cy - oy, cx + ox, cy - ry, cx, cy - ry);
+      path.bezierCurveTo(cx - ox, cy - ry, cx - rx, cy - oy, cx - rx, cy);
       path.bezierCurveTo(cx - rx, cy + oy, cx - ox, cy + ry, cx + rx * 0.1, cy + ry);
       path.lineTo(cx + rx * 0.5, cy + ry + 15);
       path.lineTo(cx + rx * 0.3, cy + ry);
       path.bezierCurveTo(cx + rx, cy + ry, cx + rx, cy + oy, cx + rx, cy);
     } else if (direction === 'top-left') {
+      path.moveTo(cx + rx, cy);
+      path.bezierCurveTo(cx + rx, cy - oy, cx + ox, cy - ry, cx - rx * 0.1, cy - ry);
+      path.lineTo(cx - rx * 0.5, cy - ry - 15);
+      path.lineTo(cx - rx * 0.3, cy - ry);
+      path.bezierCurveTo(cx - rx, cy - ry, cx - rx, cy - oy, cx - rx, cy);
       path.bezierCurveTo(cx - rx, cy + oy, cx - ox, cy + ry, cx, cy + ry);
       path.bezierCurveTo(cx + ox, cy + ry, cx + rx, cy + oy, cx + rx, cy);
-    } else {
+    } else if (direction === 'top-right') {
+      path.moveTo(cx + rx, cy);
+      path.bezierCurveTo(cx + rx, cy - oy, cx + ox, cy - ry, cx + rx * 0.3, cy - ry);
+      path.lineTo(cx + rx * 0.5, cy - ry - 15);
+      path.lineTo(cx + rx * 0.1, cy - ry);
+      path.bezierCurveTo(cx, cy - ry, cx - ox, cy - ry, cx - rx, cy - oy);
+      path.lineTo(cx - rx, cy);
       path.bezierCurveTo(cx - rx, cy + oy, cx - ox, cy + ry, cx, cy + ry);
       path.bezierCurveTo(cx + ox, cy + ry, cx + rx, cy + oy, cx + rx, cy);
     }
