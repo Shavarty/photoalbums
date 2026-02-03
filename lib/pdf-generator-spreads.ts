@@ -139,9 +139,10 @@ const renderSpeechBubbleToCanvas = (
   const isTextBlock = bubbleType === 'text-block';
   const minWidth = isTextBlock ? 200 : 100;
   const minHeight = isTextBlock ? 100 : 60;
-  const maxWidth = isTextBlock ? 400 : 300;
-  const estimatedWidth = Math.max(minWidth, Math.min(maxWidth, textLength * 8 + padding * 2));
-  const estimatedHeight = Math.max(minHeight, Math.ceil(textLength / (isTextBlock ? 50 : 30)) * 20 + padding * 2);
+  const maxWidth = isTextBlock ? 600 : 300;
+  // Use custom size if provided (for text-block), otherwise estimate
+  const estimatedWidth = bubble.width || Math.max(minWidth, Math.min(maxWidth, textLength * 8 + padding * 2));
+  const estimatedHeight = bubble.height || Math.max(minHeight, Math.ceil(textLength / (isTextBlock ? 50 : 30)) * 20 + padding * 2);
 
   // Bubble SVG size in pixels (with extra space for tail) - EXACTLY as in SpeechBubble.tsx
   const bubbleWidthPx = estimatedWidth + 20;
@@ -223,34 +224,21 @@ const renderSpeechBubbleToCanvas = (
     return path;
   };
 
-  // Thought bubble path (cloud with small bubbles)
-  const getThoughtBubblePath = () => {
-    const mainPath = new Path2D();
-    const numBumps = 8;
-    const bumpHeight = Math.min(rx, ry) * 0.15;
+  // Thought bubble (cloud circles)
+  const getThoughtBubbleCircles = () => {
+    const cloudCircles = [];
+    const baseRadius = Math.min(rx, ry) * 0.45;
 
-    for (let i = 0; i <= numBumps; i++) {
-      const angle = (i / numBumps) * 2 * Math.PI;
-      const nextAngle = ((i + 1) / numBumps) * 2 * Math.PI;
+    cloudCircles.push({ cx, cy, r: baseRadius });
+    cloudCircles.push({ cx: cx - rx * 0.4, cy: cy - ry * 0.3, r: baseRadius * 0.7 });
+    cloudCircles.push({ cx: cx + rx * 0.4, cy: cy - ry * 0.3, r: baseRadius * 0.7 });
+    cloudCircles.push({ cx, cy: cy - ry * 0.5, r: baseRadius * 0.6 });
+    cloudCircles.push({ cx: cx - rx * 0.4, cy: cy + ry * 0.3, r: baseRadius * 0.7 });
+    cloudCircles.push({ cx: cx + rx * 0.4, cy: cy + ry * 0.3, r: baseRadius * 0.7 });
+    cloudCircles.push({ cx: cx - rx * 0.6, cy, r: baseRadius * 0.6 });
+    cloudCircles.push({ cx: cx + rx * 0.6, cy, r: baseRadius * 0.6 });
 
-      const x1 = cx + rx * Math.cos(angle);
-      const y1 = cy + ry * Math.sin(angle);
-      const x2 = cx + rx * Math.cos(nextAngle);
-      const y2 = cy + ry * Math.sin(nextAngle);
-
-      const midAngle = (angle + nextAngle) / 2;
-      const bumpX = cx + (rx + bumpHeight) * Math.cos(midAngle);
-      const bumpY = cy + (ry + bumpHeight) * Math.sin(midAngle);
-
-      if (i === 0) {
-        mainPath.moveTo(x1, y1);
-      }
-
-      mainPath.quadraticCurveTo(bumpX, bumpY, x2, y2);
-    }
-
-    mainPath.closePath();
-    return mainPath;
+    return cloudCircles;
   };
 
   // Annotation path (rounded rectangle, no tail)
@@ -297,44 +285,52 @@ const renderSpeechBubbleToCanvas = (
     return path;
   };
 
-  // Get appropriate path based on type
-  const getBubblePath = () => {
-    switch (bubbleType) {
-      case 'thought':
-        return getThoughtBubblePath();
-      case 'annotation':
-        return getAnnotationPath();
-      case 'text-block':
-        return getTextBlockPath();
-      case 'speech':
-      default:
-        return getSpeechBubblePath();
+  // Draw bubble based on type
+  if (bubbleType === 'thought') {
+    // Draw cloud circles for thought bubble
+    const cloudCircles = getThoughtBubbleCircles();
+    cloudCircles.forEach(circle => {
+      ctx.beginPath();
+      ctx.arc(circle.cx, circle.cy, circle.r, 0, 2 * Math.PI);
+      ctx.fillStyle = "white";
+      ctx.fill();
+      ctx.strokeStyle = "black";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    });
+  } else {
+    // Draw path for other bubble types
+    const bubblePath = bubbleType === 'annotation' ? getAnnotationPath() :
+                       bubbleType === 'text-block' ? getTextBlockPath() :
+                       getSpeechBubblePath();
+
+    if (bubbleType === 'text-block') {
+      ctx.fillStyle = "rgba(255, 255, 255, 0.5)";
+      ctx.fill(bubblePath);
+      // No stroke for text blocks
+    } else {
+      ctx.fillStyle = "white";
+      ctx.fill(bubblePath);
+      ctx.strokeStyle = "black";
+      ctx.lineWidth = 2;
+      ctx.lineJoin = "round";
+      ctx.stroke(bubblePath);
     }
-  };
-
-  const bubblePath = getBubblePath();
-
-  // Draw bubble
-  ctx.fillStyle = "white";
-  ctx.fill(bubblePath);
-  ctx.strokeStyle = "black";
-  ctx.lineWidth = 2;
-  ctx.lineJoin = "round";
-  ctx.stroke(bubblePath);
+  }
 
   // Draw small thought bubbles for thought type
   if (bubbleType === 'thought') {
     const direction = bubble.tailDirection || 'bottom-left';
-    const bumpHeight = Math.min(rx, ry) * 0.15;
+    const baseRadius = Math.min(rx, ry) * 0.45;
     const smallBubbles = [];
 
     if (direction.includes('bottom')) {
-      const baseY = cy + ry + bumpHeight;
+      const baseY = cy + ry * 0.6 + baseRadius * 0.7;
       const baseX = direction.includes('left') ? cx - rx * 0.3 : cx + rx * 0.3;
       smallBubbles.push({ cx: baseX, cy: baseY + 8, r: 5 });
       smallBubbles.push({ cx: baseX + (direction.includes('left') ? -6 : 6), cy: baseY + 18, r: 3 });
     } else {
-      const baseY = cy - ry - bumpHeight;
+      const baseY = cy - ry * 0.6 - baseRadius * 0.7;
       const baseX = direction.includes('left') ? cx - rx * 0.3 : cx + rx * 0.3;
       smallBubbles.push({ cx: baseX, cy: baseY - 8, r: 5 });
       smallBubbles.push({ cx: baseX + (direction.includes('left') ? -6 : 6), cy: baseY - 18, r: 3 });

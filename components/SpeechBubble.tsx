@@ -6,11 +6,14 @@ interface SpeechBubbleProps {
   onEdit?: () => void;
   onDelete?: () => void;
   onMove?: (x: number, y: number) => void;
+  onResize?: (width: number, height: number) => void;
 }
 
-export default function SpeechBubble({ bubble, onEdit, onDelete, onMove }: SpeechBubbleProps) {
+export default function SpeechBubble({ bubble, onEdit, onDelete, onMove, onResize }: SpeechBubbleProps) {
   const [isDragging, setIsDragging] = useState(false);
+  const [isResizing, setIsResizing] = useState(false);
   const dragStartRef = useRef<{ x: number; y: number; bubbleX: number; bubbleY: number } | null>(null);
+  const resizeStartRef = useRef<{ x: number; y: number; startWidth: number; startHeight: number } | null>(null);
 
   const bubbleType = bubble.type || 'speech';
 
@@ -22,11 +25,11 @@ export default function SpeechBubble({ bubble, onEdit, onDelete, onMove }: Speec
   const isTextBlock = bubbleType === 'text-block';
   const minWidth = isTextBlock ? 200 : 100;
   const minHeight = isTextBlock ? 100 : 60;
-  const maxWidth = isTextBlock ? 400 : 300;
+  const maxWidth = isTextBlock ? 600 : 300;
 
-  // Estimate size (rough calculation, will auto-adjust with foreignObject)
-  const estimatedWidth = Math.max(minWidth, Math.min(maxWidth, textLength * 8 + padding * 2));
-  const estimatedHeight = Math.max(minHeight, Math.ceil(textLength / (isTextBlock ? 50 : 30)) * 20 + padding * 2);
+  // Use custom size if provided (for text-block), otherwise estimate
+  const estimatedWidth = bubble.width || Math.max(minWidth, Math.min(maxWidth, textLength * 8 + padding * 2));
+  const estimatedHeight = bubble.height || Math.max(minHeight, Math.ceil(textLength / (isTextBlock ? 50 : 30)) * 20 + padding * 2);
 
   // Generate bubble shapes based on type
   const getSpeechBubblePath = () => {
@@ -76,62 +79,49 @@ export default function SpeechBubble({ bubble, onEdit, onDelete, onMove }: Speec
   };
 
   const getThoughtBubblePath = () => {
-    // Classic thought bubble: rounded cloud + small circles
+    // Cloud thought bubble made of overlapping circles
     const cx = estimatedWidth / 2 + 10;
     const cy = estimatedHeight / 2 + 10;
     const rx = estimatedWidth / 2;
     const ry = estimatedHeight / 2;
 
-    // Main cloud shape - scalloped ellipse with bumps
-    const numBumps = 8;
-    const bumpHeight = Math.min(rx, ry) * 0.15; // Height of bumps
+    // Create cloud from overlapping circles - render as separate circles
+    const cloudCircles = [];
+    const baseRadius = Math.min(rx, ry) * 0.45;
 
-    let path = '';
+    // Center circle
+    cloudCircles.push({ cx, cy, r: baseRadius });
 
-    for (let i = 0; i <= numBumps; i++) {
-      const angle = (i / numBumps) * 2 * Math.PI;
-      const nextAngle = ((i + 1) / numBumps) * 2 * Math.PI;
+    // Top circles
+    cloudCircles.push({ cx: cx - rx * 0.4, cy: cy - ry * 0.3, r: baseRadius * 0.7 });
+    cloudCircles.push({ cx: cx + rx * 0.4, cy: cy - ry * 0.3, r: baseRadius * 0.7 });
+    cloudCircles.push({ cx, cy: cy - ry * 0.5, r: baseRadius * 0.6 });
 
-      // Point on ellipse
-      const x1 = cx + rx * Math.cos(angle);
-      const y1 = cy + ry * Math.sin(angle);
+    // Bottom circles
+    cloudCircles.push({ cx: cx - rx * 0.4, cy: cy + ry * 0.3, r: baseRadius * 0.7 });
+    cloudCircles.push({ cx: cx + rx * 0.4, cy: cy + ry * 0.3, r: baseRadius * 0.7 });
 
-      // Next point on ellipse
-      const x2 = cx + rx * Math.cos(nextAngle);
-      const y2 = cy + ry * Math.sin(nextAngle);
-
-      // Bump outward
-      const midAngle = (angle + nextAngle) / 2;
-      const bumpX = cx + (rx + bumpHeight) * Math.cos(midAngle);
-      const bumpY = cy + (ry + bumpHeight) * Math.sin(midAngle);
-
-      if (i === 0) {
-        path += `M ${x1},${y1}`;
-      }
-
-      // Quadratic curve to create bump
-      path += ` Q ${bumpX},${bumpY} ${x2},${y2}`;
-    }
-
-    path += ` Z`;
+    // Side circles
+    cloudCircles.push({ cx: cx - rx * 0.6, cy, r: baseRadius * 0.6 });
+    cloudCircles.push({ cx: cx + rx * 0.6, cy, r: baseRadius * 0.6 });
 
     // Add small thought bubbles
     const direction = bubble.tailDirection || 'bottom-left';
     const smallBubbles = [];
 
     if (direction.includes('bottom')) {
-      const baseY = cy + ry + bumpHeight;
+      const baseY = cy + ry * 0.6 + baseRadius * 0.7;
       const baseX = direction.includes('left') ? cx - rx * 0.3 : cx + rx * 0.3;
       smallBubbles.push({ cx: baseX, cy: baseY + 8, r: 5 });
       smallBubbles.push({ cx: baseX + (direction.includes('left') ? -6 : 6), cy: baseY + 18, r: 3 });
     } else {
-      const baseY = cy - ry - bumpHeight;
+      const baseY = cy - ry * 0.6 - baseRadius * 0.7;
       const baseX = direction.includes('left') ? cx - rx * 0.3 : cx + rx * 0.3;
       smallBubbles.push({ cx: baseX, cy: baseY - 8, r: 5 });
       smallBubbles.push({ cx: baseX + (direction.includes('left') ? -6 : 6), cy: baseY - 18, r: 3 });
     }
 
-    return { mainPath: path, smallBubbles };
+    return { cloudCircles, smallBubbles };
   };
 
   const getAnnotationPath = () => {
@@ -228,6 +218,50 @@ export default function SpeechBubble({ bubble, onEdit, onDelete, onMove }: Speec
   const bubblePath = getBubblePath();
   const isThoughtBubble = bubbleType === 'thought' && typeof bubblePath === 'object';
 
+  // Resize handlers
+  const handleResizeMouseDown = (e: React.MouseEvent) => {
+    if (!onResize || bubbleType !== 'text-block') return;
+    e.preventDefault();
+    e.stopPropagation();
+
+    setIsResizing(true);
+    resizeStartRef.current = {
+      x: e.clientX,
+      y: e.clientY,
+      startWidth: estimatedWidth,
+      startHeight: estimatedHeight,
+    };
+  };
+
+  const handleResizeMouseMove = (e: MouseEvent) => {
+    if (!isResizing || !resizeStartRef.current || !onResize) return;
+
+    const deltaX = e.clientX - resizeStartRef.current.x;
+    const deltaY = e.clientY - resizeStartRef.current.y;
+
+    const newWidth = Math.max(minWidth, Math.min(maxWidth, resizeStartRef.current.startWidth + deltaX));
+    const newHeight = Math.max(minHeight, resizeStartRef.current.startHeight + deltaY);
+
+    onResize(newWidth, newHeight);
+  };
+
+  const handleResizeMouseUp = () => {
+    setIsResizing(false);
+    resizeStartRef.current = null;
+  };
+
+  // Add resize event listeners
+  useEffect(() => {
+    if (isResizing) {
+      document.addEventListener('mousemove', handleResizeMouseMove);
+      document.addEventListener('mouseup', handleResizeMouseUp);
+      return () => {
+        document.removeEventListener('mousemove', handleResizeMouseMove);
+        document.removeEventListener('mouseup', handleResizeMouseUp);
+      };
+    }
+  }, [isResizing]);
+
   return (
     <div
       className="absolute group"
@@ -236,9 +270,9 @@ export default function SpeechBubble({ bubble, onEdit, onDelete, onMove }: Speec
         top: `${bubble.y}%`,
         transform: 'translate(-50%, -50%)',
         zIndex: 10,
-        cursor: isDragging ? 'grabbing' : (onMove ? 'grab' : 'default'),
+        cursor: isDragging ? 'grabbing' : (onMove && !isTextBlock ? 'grab' : 'default'),
       }}
-      onMouseDown={handleMouseDown}
+      onMouseDown={isTextBlock ? undefined : handleMouseDown}
     >
       <svg
         width={estimatedWidth + 20}
@@ -248,16 +282,22 @@ export default function SpeechBubble({ bubble, onEdit, onDelete, onMove }: Speec
         {/* Render bubble based on type */}
         {isThoughtBubble ? (
           <>
-            <path
-              d={bubblePath.mainPath}
-              fill="white"
-              stroke="black"
-              strokeWidth="2"
-              strokeLinejoin="round"
-            />
+            {/* Main cloud circles */}
+            {bubblePath.cloudCircles.map((circle, i) => (
+              <circle
+                key={`cloud-${i}`}
+                cx={circle.cx}
+                cy={circle.cy}
+                r={circle.r}
+                fill="white"
+                stroke="black"
+                strokeWidth="2"
+              />
+            ))}
+            {/* Small thought bubbles */}
             {bubblePath.smallBubbles.map((bubble, i) => (
               <circle
-                key={i}
+                key={`small-${i}`}
                 cx={bubble.cx}
                 cy={bubble.cy}
                 r={bubble.r}
@@ -270,9 +310,9 @@ export default function SpeechBubble({ bubble, onEdit, onDelete, onMove }: Speec
         ) : (
           <path
             d={typeof bubblePath === 'string' ? bubblePath : ''}
-            fill="white"
-            stroke="black"
-            strokeWidth="2"
+            fill={isTextBlock ? 'rgba(255, 255, 255, 0.5)' : 'white'}
+            stroke={isTextBlock ? 'none' : 'black'}
+            strokeWidth={isTextBlock ? 0 : 2}
             strokeLinejoin="round"
           />
         )}
@@ -312,6 +352,24 @@ export default function SpeechBubble({ bubble, onEdit, onDelete, onMove }: Speec
             </button>
           )}
         </div>
+      )}
+
+      {/* Resize handle for text blocks */}
+      {isTextBlock && onResize && (
+        <div
+          onMouseDown={handleResizeMouseDown}
+          className="absolute -bottom-1 -right-1 w-4 h-4 bg-blue-500 border-2 border-white rounded-sm cursor-nwse-resize opacity-0 group-hover:opacity-100 transition-opacity"
+          title="Изменить размер"
+        />
+      )}
+
+      {/* Drag handle for text blocks */}
+      {isTextBlock && onMove && (
+        <div
+          onMouseDown={handleMouseDown}
+          className="absolute -top-1 -left-1 w-4 h-4 bg-green-500 border-2 border-white rounded-sm cursor-move opacity-0 group-hover:opacity-100 transition-opacity"
+          title="Переместить"
+        />
       )}
     </div>
   );

@@ -23,6 +23,8 @@ export interface SpeechBubble {
   text: string;
   type?: BubbleType; // Default: 'speech'
   tailDirection?: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
+  width?: number; // Custom width in pixels (for text-block type)
+  height?: number; // Custom height in pixels (for text-block type)
 }
 
 export interface Photo {
