@@ -240,9 +240,11 @@ const renderSpeechBubbleToCanvas = (
       const y2 = cy + ry * Math.sin(nextAngle);
 
       const midAngle = (angle + nextAngle) / 2;
-      const controlDist = Math.sqrt(rx * rx + ry * ry) / 2 + bumpSize;
-      const cx1 = cx + controlDist * Math.cos(midAngle);
-      const cy1 = cy + controlDist * Math.sin(midAngle);
+      // Point on ellipse at midAngle, then push outward
+      const midX = cx + rx * Math.cos(midAngle);
+      const midY = cy + ry * Math.sin(midAngle);
+      const cx1 = midX + bumpSize * Math.cos(midAngle);
+      const cy1 = midY + bumpSize * Math.sin(midAngle);
 
       if (i === 0) {
         path.moveTo(x1, y1);

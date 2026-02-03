@@ -101,11 +101,14 @@ export default function SpeechBubble({ bubble, onEdit, onDelete, onMove, onResiz
       const x2 = cx + rx * Math.cos(nextAngle);
       const y2 = cy + ry * Math.sin(nextAngle);
 
-      // Control points for scallop (bump outward)
+      // Control point for scallop (bump outward)
       const midAngle = (angle + nextAngle) / 2;
-      const controlDist = Math.sqrt(rx * rx + ry * ry) / 2 + bumpSize;
-      const cx1 = cx + controlDist * Math.cos(midAngle);
-      const cy1 = cy + controlDist * Math.sin(midAngle);
+      // Point on ellipse at midAngle
+      const midX = cx + rx * Math.cos(midAngle);
+      const midY = cy + ry * Math.sin(midAngle);
+      // Push outward from ellipse
+      const cx1 = midX + bumpSize * Math.cos(midAngle);
+      const cy1 = midY + bumpSize * Math.sin(midAngle);
 
       if (i === 0) {
         path += `M ${x1},${y1}`;
