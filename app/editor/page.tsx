@@ -497,7 +497,7 @@ export default function EditorPage() {
                               ...photo,
                               url: stylizedRightUrl,
                               originalUrl: stylizedRightUrl,
-                              tokens: stylizeResult.tokens,
+                              tokens: undefined, // Токены считаются только на левой половине
                               isStylizing: false,
                             }
                           : photo
