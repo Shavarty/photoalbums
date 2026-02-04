@@ -368,7 +368,7 @@ const renderSpeechBubbleToCanvas = (
   ctx.textBaseline = "middle";
 
   // Handle text wrapping
-  const maxWidth = estimatedWidth - padding * 2 - 20;
+  const textMaxWidth = estimatedWidth - padding * 2 - 20;
   const lineHeight = 18;
   const allLines: string[] = [];
 
@@ -389,7 +389,7 @@ const renderSpeechBubbleToCanvas = (
         const testLine = currentLine ? `${currentLine} ${word}` : word;
         const metrics = ctx.measureText(testLine);
 
-        if (metrics.width > maxWidth && currentLine) {
+        if (metrics.width > textMaxWidth && currentLine) {
           allLines.push(currentLine);
           currentLine = word;
         } else {
