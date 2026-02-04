@@ -145,75 +145,183 @@ export default function Home() {
         </>
       )}
 
-      {/* Hero Section - Two Products */}
-      <main className="flex-1 py-12 md:py-20 px-6 md:px-24" style={{ background: 'linear-gradient(180deg, rgba(119,145,74,0.07) 0%, #FAF8FB 60%)' }}>
-        <div className="max-w-[1100px] mx-auto">
-          <div className="text-center mb-10 md:mb-14">
-            <h1 className="text-3xl md:text-[3rem] font-serif font-bold leading-tight mb-4 text-foreground">
-              Создайте свою <span className="text-brand-green">историю</span>
-            </h1>
-            <p className="text-gray-500 text-base md:text-lg max-w-xl mx-auto font-light leading-relaxed">
-              Превратите любые фотографии в красивые альбомы или яркие стилизованные комиксы
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-2 gap-5 lg:gap-8">
-            {/* Photo Album Card */}
-            <Link href="/editor" className="group block bg-white rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 border border-gray-200 overflow-hidden">
-              <div className="h-1.5 bg-brand-olive"></div>
-              <div className="p-6 md:p-7">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-11 h-11 rounded-xl flex items-center justify-center" style={{ backgroundColor: 'rgba(119,145,74,0.09)' }}>
-                    <svg className="w-5 h-5 text-brand-olive" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
-                  </div>
-                  <div>
-                    <h2 className="text-lg font-serif font-bold text-foreground">Фотоальбом</h2>
-                    <span className="text-xs text-brand-olive font-semibold uppercase tracking-wider">Классическое оформление</span>
-                  </div>
-                </div>
-                <p className="text-gray-500 text-sm leading-relaxed mb-6">
-                  Профессиональные фотокниги для семейных историй. Настраиваемые шаблоны разворотов, подписи и красивая вёстка.
+      <main className="flex-1">
+        {/* Photo Albums Section */}
+        <section className="px-6 py-8 md:px-24 md:py-16">
+          <div className="max-w-[1400px] mx-auto">
+            {/* Mobile Layout */}
+            <div className="md:hidden">
+              {/* Text Section */}
+              <div className="mb-8">
+                <h2 className="text-2xl font-serif font-bold leading-tight mb-5">
+                  <span className="block uppercase text-left">ФОТОАЛЬБОМ, КОТОРЫЙ СОХРАНИТ</span>
+                  <span className="block text-brand-green uppercase text-right">— ВАШИ ИСТОРИИ</span>
+                </h2>
+                <p className="text-sm text-gray-600 mb-5 leading-relaxed max-w-xl font-light">
+                  Создаём профессиональные фотокниги, отображающие историю вашей семьи.
+                  Подарок, который тронет сердце и сохранится на всю жизнь.
                 </p>
-                <div className="flex items-center justify-between">
-                  <span className="inline-block btn-gradient px-6 py-2 text-white text-sm font-semibold group-hover:opacity-90 transition">
+                <p className="text-sm font-bold mb-6 text-foreground text-center">
+                  PDF за 10 минут, печатный альбом за 5-7 дней
+                </p>
+                <div className="text-center">
+                  <Link
+                    href="/editor"
+                    className="btn-gradient inline-block px-12 py-3 text-base text-white font-semibold"
+                  >
                     Создать альбом
-                  </span>
-                  <span className="text-xs text-gray-400">PDF + печать</span>
+                  </Link>
                 </div>
               </div>
-            </Link>
 
-            {/* Stylized Comics Card */}
-            <Link href="/comics" className="group block bg-white rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 border border-gray-200 overflow-hidden">
-              <div className="h-1.5 bg-brand-orange"></div>
-              <div className="p-6 md:p-7">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-11 h-11 rounded-xl flex items-center justify-center" style={{ backgroundColor: 'rgba(241,146,13,0.09)' }}>
-                    <svg className="w-5 h-5 text-brand-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
-                    </svg>
+              {/* Album Examples Grid */}
+              <div className="grid grid-cols-2 gap-3 max-w-2xl">
+                {[1, 2, 3, 4].map((i) => (
+                  <div
+                    key={i}
+                    className="aspect-square bg-brand-gray rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+                  >
+                    <img
+                      src={`/examples/example-${i}.jpg`}
+                      alt={`Пример фотоальбома ${i}`}
+                      className="w-full h-full object-cover"
+                    />
                   </div>
-                  <div>
-                    <h2 className="text-lg font-serif font-bold text-foreground">Стилизованные комиксы</h2>
-                    <span className="text-xs text-brand-orange font-semibold uppercase tracking-wider">С поддержкой ИИ</span>
-                  </div>
-                </div>
-                <p className="text-gray-500 text-sm leading-relaxed mb-6">
-                  Превратите фотографии в комиксы с помощью ИИ. Облачки мыслей, текстовые блоки и стилизация сцен.
+                ))}
+              </div>
+            </div>
+
+            {/* Desktop Layout - Two Columns */}
+            <div className="hidden md:grid md:grid-cols-2 md:gap-12 lg:gap-16 items-start">
+              {/* Left Column - Text */}
+              <div>
+                <h2 className="text-3xl lg:text-[2.2rem] font-serif font-bold leading-tight mb-6">
+                  <span className="block uppercase text-left">ФОТОАЛЬБОМ,</span>
+                  <span className="block uppercase text-right">КОТОРЫЙ СОХРАНИТ</span>
+                  <span className="block text-brand-green uppercase text-right">— ВАШИ ИСТОРИИ</span>
+                </h2>
+                <p className="text-base lg:text-[17px] text-gray-600 mb-6 leading-relaxed font-light">
+                  Создаём профессиональные фотокниги, отображающие историю вашей семьи. Подарок, который тронет сердце и сохранится на всю жизнь.
                 </p>
-                <div className="flex items-center justify-between">
-                  <span className="inline-block btn-gradient px-6 py-2 text-white text-sm font-semibold group-hover:opacity-90 transition">
+                <p className="text-sm lg:text-base font-bold mb-8 text-foreground">
+                  PDF за 10 минут, печатный альбом за 5-7 дней
+                </p>
+                <Link
+                  href="/editor"
+                  className="btn-gradient inline-block px-10 py-3 text-base text-white font-semibold"
+                >
+                  Создать альбом
+                </Link>
+              </div>
+
+              {/* Right Column - Examples 3x2 Grid with offset */}
+              <div className="grid grid-cols-3 gap-3 lg:gap-4">
+                {[1, 2, 3, 4, 5, 6].map((i) => (
+                  <div
+                    key={i}
+                    className={`aspect-[3/4] bg-brand-gray rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow ${
+                      i <= 3 ? 'transform translate-y-[-8px]' : ''
+                    }`}
+                  >
+                    <img
+                      src={`/examples/example-${i <= 4 ? i : i - 4}.jpg`}
+                      alt={`Пример фотоальбома ${i}`}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Stylized Comics Section */}
+        <section className="px-6 py-12 md:px-24 md:py-16 bg-white">
+          <div className="max-w-[1400px] mx-auto">
+            {/* Mobile Layout */}
+            <div className="md:hidden">
+              <div className="mb-8">
+                <h2 className="text-2xl font-serif font-bold leading-tight mb-5">
+                  <span className="block uppercase text-left">СТИЛИЗОВАННЫЕ КОМИКСЫ ИЗ</span>
+                  <span className="block text-brand-orange uppercase text-right">— ВАШИХ ФОТОГРАФИЙ</span>
+                </h2>
+                <p className="text-sm text-gray-600 mb-5 leading-relaxed max-w-xl font-light">
+                  Превращаем фотографии в яркие комиксы с помощью искусственного интеллекта.
+                  Облачки мыслей, текстовые блоки и стилизация сцен — всё в одном месте.
+                </p>
+                <p className="text-sm font-bold mb-6 text-foreground text-center">
+                  Стилизация за минуту, комикс-PDF — мгновенно
+                </p>
+                <div className="text-center">
+                  <Link
+                    href="/comics"
+                    className="btn-gradient inline-block px-12 py-3 text-base text-white font-semibold"
+                  >
                     Создать комикс
-                  </span>
-                  <span className="text-xs text-gray-400">Генерация ИИ</span>
+                  </Link>
                 </div>
               </div>
-            </Link>
+
+              {/* Comics Examples Grid */}
+              <div className="grid grid-cols-2 gap-3 max-w-2xl">
+                {[1, 2, 3, 4].map((i) => (
+                  <div
+                    key={i}
+                    className="aspect-square bg-brand-gray rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+                  >
+                    <img
+                      src={`/examples/example-${i}.jpg`}
+                      alt={`Пример комикса ${i}`}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Desktop Layout - Two Columns */}
+            <div className="hidden md:grid md:grid-cols-2 md:gap-12 lg:gap-16 items-start">
+              {/* Left Column - Text */}
+              <div>
+                <h2 className="text-3xl lg:text-[2.2rem] font-serif font-bold leading-tight mb-6">
+                  <span className="block uppercase text-left">СТИЛИЗОВАННЫЕ</span>
+                  <span className="block uppercase text-right">КОМИКСЫ ИЗ ВАШИХ</span>
+                  <span className="block text-brand-orange uppercase text-right">— ФОТОГРАФИЙ</span>
+                </h2>
+                <p className="text-base lg:text-[17px] text-gray-600 mb-6 leading-relaxed font-light">
+                  Превращаем фотографии в яркие комиксы с помощью искусственного интеллекта. Облачки мыслей, текстовые блоки и стилизация сцен — всё в одном месте.
+                </p>
+                <p className="text-sm lg:text-base font-bold mb-8 text-foreground">
+                  Стилизация за минуту, комикс-PDF — мгновенно
+                </p>
+                <Link
+                  href="/comics"
+                  className="btn-gradient inline-block px-10 py-3 text-base text-white font-semibold"
+                >
+                  Создать комикс
+                </Link>
+              </div>
+
+              {/* Right Column - Examples 3x2 Grid with offset */}
+              <div className="grid grid-cols-3 gap-3 lg:gap-4">
+                {[1, 2, 3, 4, 5, 6].map((i) => (
+                  <div
+                    key={i}
+                    className={`aspect-[3/4] bg-brand-gray rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow ${
+                      i <= 3 ? 'transform translate-y-[-8px]' : ''
+                    }`}
+                  >
+                    <img
+                      src={`/examples/example-${i <= 4 ? i : i - 4}.jpg`}
+                      alt={`Пример комикса ${i}`}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
-        </div>
+        </section>
       </main>
 
       {/* Placeholder sections */}
