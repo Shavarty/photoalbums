@@ -38,6 +38,7 @@ export interface Photo {
   tokens?: TokenUsage; // AI stylization token usage
   isStylizing?: boolean; // Currently being stylized
   speechBubbles?: SpeechBubble[]; // Comic speech bubbles
+  hidden?: boolean; // Slot hidden by user (not rendered in editor or PDF)
 }
 
 export interface Spread {

@@ -145,8 +145,9 @@ const renderSpeechBubbleToCanvas = (
   const estimatedHeight = bubble.height || Math.max(minHeight, Math.ceil(textLength / (isTextBlock ? 50 : 30)) * 20 + padding * 2);
 
   // Bubble SVG size in pixels (with extra space for tail) - EXACTLY as in SpeechBubble.tsx
+  // Thought bubbles need +70 for the small trailing circles (matches SVG in SpeechBubble.tsx)
   const bubbleWidthPx = estimatedWidth + 20;
-  const bubbleHeightPx = estimatedHeight + 30;
+  const bubbleHeightPx = estimatedHeight + (bubbleType === 'thought' ? 70 : 30);
 
   // Calculate bubble size in mm to match editor appearance EXACTLY
   // In editor: bubbles have FIXED pixel sizes (estimatedWidth + 20/30)
@@ -164,8 +165,8 @@ const renderSpeechBubbleToCanvas = (
   // Create high-res canvas for PDF (300 DPI equivalent)
   const scale = 3; // 3x for better quality
   const canvas = document.createElement("canvas");
-  canvas.width = (estimatedWidth + 20) * scale;
-  canvas.height = (estimatedHeight + 30) * scale;
+  canvas.width = bubbleWidthPx * scale;
+  canvas.height = bubbleHeightPx * scale;
   const ctx = canvas.getContext("2d");
   if (!ctx) return { dataUrl: "", widthMm: 0, heightMm: 0, xMm: 0, yMm: 0 };
 
@@ -438,7 +439,7 @@ const generatePageWithSlots = async (
     const photo = photos[i];
     const slot = slots[i];
 
-    if (!photo?.url) continue;
+    if (!photo?.url || photo?.hidden) continue;
 
     try {
       // Use original high-res image if available, fallback to preview

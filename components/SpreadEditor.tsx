@@ -16,6 +16,7 @@ interface SpreadEditorProps {
   onMoveSpeechBubble?: (side: "left" | "right", photoIndex: number, bubbleId: string, x: number, y: number) => void;
   onResizeSpeechBubble?: (side: "left" | "right", photoIndex: number, bubbleId: string, width: number, height: number) => void;
   onFontSizeChangeSpeechBubble?: (side: "left" | "right", photoIndex: number, bubbleId: string, fontSize: number) => void;
+  onToggleSlot?: (side: "left" | "right", index: number) => void;
 }
 
 export default function SpreadEditor({
@@ -30,6 +31,7 @@ export default function SpreadEditor({
   onMoveSpeechBubble,
   onResizeSpeechBubble,
   onFontSizeChangeSpeechBubble,
+  onToggleSlot,
 }: SpreadEditorProps) {
   const template = SPREAD_TEMPLATES.find((t) => t.id === spread.templateId);
   if (!template) return null;
@@ -44,6 +46,7 @@ export default function SpreadEditor({
       <div className={`relative w-full aspect-square bg-gray-100 border-gray-300 ${borderClass} ${roundedClass} overflow-hidden`}>
         {slots.map((slot, index) => {
           const photo = photos[index];
+          const isBackground = PANORAMIC_BG_TEMPLATE_IDS.includes(template.id) && index === 0;
           return (
             <div
               key={slot.id}
@@ -55,6 +58,11 @@ export default function SpreadEditor({
                 height: `${slot.height * 100}%`,
               }}
               onClick={(e) => {
+                if (photo?.hidden) {
+                  e.stopPropagation();
+                  onToggleSlot?.(side, index);
+                  return;
+                }
                 // If clicking on photo (not bubbles), allow adding speech bubble
                 if (photo?.url && onAddSpeechBubble && e.target instanceof HTMLElement) {
                   const rect = e.currentTarget.getBoundingClientRect();
@@ -70,8 +78,14 @@ export default function SpreadEditor({
                 }
               }}
             >
-              <div className={`relative w-full h-full flex flex-col items-center justify-center overflow-visible transition-all group/photo ${!photo?.url ? 'bg-gray-200 border border-gray-400 hover:bg-gray-300 hover:border-brand-orange' : ''}`}>
-                {photo?.url ? (
+              <div className={`relative w-full h-full flex flex-col items-center justify-center overflow-visible transition-all group/photo ${photo?.hidden ? 'border border-dashed border-gray-400 bg-gray-50' : !photo?.url ? 'bg-gray-200 border border-gray-400 hover:bg-gray-300 hover:border-brand-orange' : ''}`}>
+                {photo?.hidden ? (
+                  <div className="flex items-center justify-center opacity-40 cursor-pointer">
+                    <div className="w-7 h-7 bg-gray-300 rounded-full flex items-center justify-center text-gray-600 text-base hover:bg-gray-400">
+                      +
+                    </div>
+                  </div>
+                ) : photo?.url ? (
                   <>
                     <img
                       src={photo.url}
@@ -175,6 +189,21 @@ export default function SpreadEditor({
                     </span>
                   </div>
                 )}
+                {/* Toggle slot visibility (hide) — not for background slots */}
+                {!isBackground && onToggleSlot && !photo?.hidden && (
+                  <div className="absolute top-0.5 right-0.5 z-30 opacity-0 group-hover/photo:opacity-100 transition-opacity">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onToggleSlot(side, index);
+                      }}
+                      className="w-5 h-5 bg-gray-700 bg-opacity-80 text-white rounded-full flex items-center justify-center text-[10px] hover:bg-gray-900 shadow"
+                      title="Скрыть слот"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           );
@@ -216,7 +245,7 @@ export default function SpreadEditor({
       {/* Captions */}
       <div className="mt-4 space-y-2">
         {[...spread.leftPhotos, ...spread.rightPhotos].map((photo, idx) => {
-          if (!photo?.url) return null;
+          if (!photo?.url || photo?.hidden) return null;
           const isLeft = idx < spread.leftPhotos.length;
           const photoIndex = isLeft ? idx : idx - spread.leftPhotos.length;
           return (

@@ -777,6 +777,30 @@ export default function EditorPage() {
     }));
   };
 
+  // Toggle slot visibility (hide / show)
+  const handleToggleSlot = (
+    spreadId: string,
+    side: "left" | "right",
+    photoIndex: number
+  ) => {
+    setAlbum((prev) => ({
+      ...prev,
+      spreads: prev.spreads.map((spread) =>
+        spread.id === spreadId
+          ? {
+              ...spread,
+              [side === "left" ? "leftPhotos" : "rightPhotos"]: (
+                side === "left" ? spread.leftPhotos : spread.rightPhotos
+              ).map((photo, idx) =>
+                idx === photoIndex ? { ...photo, hidden: !photo.hidden } : photo
+              ),
+            }
+          : spread
+      ),
+      updatedAt: new Date(),
+    }));
+  };
+
   // Handle speech bubble addition
   const handleAddSpeechBubble = (
     spreadId: string,
@@ -1333,6 +1357,9 @@ export default function EditorPage() {
                     }
                     onFontSizeChangeSpeechBubble={(side, idx, bubbleId, fontSize) =>
                       handleFontSizeChangeSpeechBubble(spread.id, side, idx, bubbleId, fontSize)
+                    }
+                    onToggleSlot={(side, idx) =>
+                      handleToggleSlot(spread.id, side, idx)
                     }
                   />
                   <TokenSummary
