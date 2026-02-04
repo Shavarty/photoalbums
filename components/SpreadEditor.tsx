@@ -1,6 +1,7 @@
 "use client";
 
-import { Spread, Photo, SpeechBubble as SpeechBubbleType } from "@/lib/types";
+import { useRef } from "react";
+import { Spread, Photo } from "@/lib/types";
 import { SPREAD_TEMPLATES, PhotoSlot, getPageSlots, PANORAMIC_BG_TEMPLATE_IDS } from "@/lib/spread-templates";
 import SpeechBubble from "./SpeechBubble";
 
@@ -8,31 +9,30 @@ interface SpreadEditorProps {
   spread: Spread;
   withGaps: boolean;
   onPhotoClick: (side: "left" | "right", index: number) => void;
-  onCaptionChange: (side: "left" | "right", index: number, caption: string) => void;
   onDeletePhoto?: (side: "left" | "right", index: number) => void;
-  onAddSpeechBubble?: (side: "left" | "right", index: number, x: number, y: number) => void;
-  onEditSpeechBubble?: (side: "left" | "right", photoIndex: number, bubbleId: string) => void;
-  onDeleteSpeechBubble?: (side: "left" | "right", photoIndex: number, bubbleId: string) => void;
-  onMoveSpeechBubble?: (side: "left" | "right", photoIndex: number, bubbleId: string, x: number, y: number) => void;
-  onResizeSpeechBubble?: (side: "left" | "right", photoIndex: number, bubbleId: string, width: number, height: number) => void;
-  onFontSizeChangeSpeechBubble?: (side: "left" | "right", photoIndex: number, bubbleId: string, fontSize: number) => void;
   onToggleSlot?: (side: "left" | "right", index: number) => void;
+  onAddBubble?: (x: number, y: number) => void;
+  onEditBubble?: (bubbleId: string) => void;
+  onDeleteBubble?: (bubbleId: string) => void;
+  onMoveBubble?: (bubbleId: string, x: number, y: number) => void;
+  onResizeBubble?: (bubbleId: string, width: number, height: number) => void;
+  onFontSizeBubble?: (bubbleId: string, fontSize: number) => void;
 }
 
 export default function SpreadEditor({
   spread,
   withGaps,
   onPhotoClick,
-  onCaptionChange,
   onDeletePhoto,
-  onAddSpeechBubble,
-  onEditSpeechBubble,
-  onDeleteSpeechBubble,
-  onMoveSpeechBubble,
-  onResizeSpeechBubble,
-  onFontSizeChangeSpeechBubble,
   onToggleSlot,
+  onAddBubble,
+  onEditBubble,
+  onDeleteBubble,
+  onMoveBubble,
+  onResizeBubble,
+  onFontSizeBubble,
 }: SpreadEditorProps) {
+  const spreadRef = useRef<HTMLDivElement>(null);
   const template = SPREAD_TEMPLATES.find((t) => t.id === spread.templateId);
   if (!template) return null;
 
@@ -63,15 +63,17 @@ export default function SpreadEditor({
                   onToggleSlot?.(side, index);
                   return;
                 }
-                // If clicking on photo (not bubbles), allow adding speech bubble
-                if (photo?.url && onAddSpeechBubble && e.target instanceof HTMLElement) {
-                  const rect = e.currentTarget.getBoundingClientRect();
-                  const x = ((e.clientX - rect.left) / rect.width) * 100;
-                  const y = ((e.clientY - rect.top) / rect.height) * 100;
-
-                  // Only trigger if clicking directly on image area (not buttons)
+                // Click on photo → add bubble at spread-relative coords
+                if (photo?.url && onAddBubble && e.target instanceof HTMLElement) {
                   if (!e.target.closest('button')) {
-                    onAddSpeechBubble(side, index, x, y);
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    const clickX = ((e.clientX - rect.left) / rect.width) * 100;
+                    const clickY = ((e.clientY - rect.top) / rect.height) * 100;
+                    // Convert slot-local click to spread coords (left page = 0–50%, right = 50–100%)
+                    const pageOffset = side === 'left' ? 0 : 50;
+                    const spreadX = pageOffset + (slot.x + clickX / 100 * slot.width) * 50;
+                    const spreadY = (slot.y + clickY / 100 * slot.height) * 100;
+                    onAddBubble(spreadX, spreadY);
                   }
                 } else if (!photo?.url) {
                   onPhotoClick(side, index);
@@ -132,29 +134,12 @@ export default function SpreadEditor({
                       </div>
                     )}
 
-                    {/* Speech Bubbles */}
-                    {photo.speechBubbles?.map((bubble) => (
-                      <SpeechBubble
-                        key={bubble.id}
-                        bubble={bubble}
-                        onEdit={() => onEditSpeechBubble?.(side, index, bubble.id)}
-                        onDelete={() => onDeleteSpeechBubble?.(side, index, bubble.id)}
-                        onMove={(x, y) => onMoveSpeechBubble?.(side, index, bubble.id, x, y)}
-                        onResize={(width, height) => onResizeSpeechBubble?.(side, index, bubble.id, width, height)}
-                        onFontSizeChange={(fontSize) => onFontSizeChangeSpeechBubble?.(side, index, bubble.id, fontSize)}
-                      />
-                    ))}
                     {photo.isStylizing && (
                       <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
                         <div className="flex flex-col items-center gap-2">
                           <div className="animate-spin rounded-full h-8 w-8 border-4 border-purple-500 border-t-transparent"></div>
                           <div className="text-white text-xs font-medium">🎨 Стилизация...</div>
                         </div>
-                      </div>
-                    )}
-                    {photo.caption && (
-                      <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-60 text-white text-xs p-1 text-center">
-                        {photo.caption}
                       </div>
                     )}
                   </>
@@ -219,17 +204,37 @@ export default function SpreadEditor({
         <p className="text-sm text-gray-600">{template.description}</p>
       </div>
 
-      <div className="grid grid-cols-2 gap-0">
-        {/* Left Page */}
-        <div>
+      {/* Page labels */}
+      <div className="flex">
+        <div className="w-1/2">
           <p className="text-xs text-gray-500 mb-2">Левая страница</p>
+        </div>
+        <div className="w-1/2">
+          <p className="text-xs text-gray-500 mb-2">Правая страница</p>
+        </div>
+      </div>
+
+      {/* Pages + spread-level bubble overlay */}
+      <div className="relative" ref={spreadRef}>
+        <div className="grid grid-cols-2 gap-0">
           {renderPage(spread.leftPhotos, "left")}
+          {renderPage(spread.rightPhotos, "right")}
         </div>
 
-        {/* Right Page */}
-        <div>
-          <p className="text-xs text-gray-500 mb-2">Правая страница</p>
-          {renderPage(spread.rightPhotos, "right")}
+        {/* Bubble overlay — floats over entire spread */}
+        <div className="absolute inset-0 pointer-events-none">
+          {(spread.bubbles || []).map((bubble) => (
+            <SpeechBubble
+              key={bubble.id}
+              bubble={bubble}
+              containerRef={spreadRef}
+              onEdit={() => onEditBubble?.(bubble.id)}
+              onDelete={() => onDeleteBubble?.(bubble.id)}
+              onMove={(x, y) => onMoveBubble?.(bubble.id, x, y)}
+              onResize={(width, height) => onResizeBubble?.(bubble.id, width, height)}
+              onFontSizeChange={(fontSize) => onFontSizeBubble?.(bubble.id, fontSize)}
+            />
+          ))}
         </div>
       </div>
 
@@ -241,31 +246,6 @@ export default function SpreadEditor({
           </p>
         </div>
       )}
-
-      {/* Captions */}
-      <div className="mt-4 space-y-2">
-        {[...spread.leftPhotos, ...spread.rightPhotos].map((photo, idx) => {
-          if (!photo?.url || photo?.hidden) return null;
-          const isLeft = idx < spread.leftPhotos.length;
-          const photoIndex = isLeft ? idx : idx - spread.leftPhotos.length;
-          return (
-            <input
-              key={`caption-${idx}`}
-              type="text"
-              placeholder={`Подпись к фото ${idx + 1}...`}
-              value={photo.caption || ""}
-              onChange={(e) =>
-                onCaptionChange(
-                  isLeft ? "left" : "right",
-                  photoIndex,
-                  e.target.value
-                )
-              }
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-orange"
-            />
-          );
-        })}
-      </div>
     </div>
   );
 }

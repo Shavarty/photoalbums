@@ -513,34 +513,7 @@ const generatePageWithSlots = async (
         pdf.rect(photoX, photoY, photoWidth, photoHeight, 'S'); // 'S' = stroke only
       }
 
-      // Add caption if exists
-      if (photo.caption) {
-        const captionHeight = 10;
-        const captionY = slotY + slotHeight - captionHeight;
-        const captionImage = renderTextToCanvas(photo.caption, Math.floor(slotWidth * 18), 100);
-        pdf.addImage(captionImage, "PNG", slotX + 2, captionY, slotWidth - 4, captionHeight, undefined, "FAST");
-      }
-
-      // Add speech bubbles if exist
-      if (photo.speechBubbles && photo.speechBubbles.length > 0) {
-        for (const bubble of photo.speechBubbles) {
-          const bubbleData = renderSpeechBubbleToCanvas(bubble, slotWidth, slotHeight);
-          if (bubbleData.dataUrl) {
-            const bubbleX = slotX + bubbleData.xMm;
-            const bubbleY = slotY + bubbleData.yMm;
-            pdf.addImage(
-              bubbleData.dataUrl,
-              "PNG",
-              bubbleX,
-              bubbleY,
-              bubbleData.widthMm,
-              bubbleData.heightMm,
-              undefined,
-              "FAST"
-            );
-          }
-        }
-      }
+      // (captions and per-slot bubbles removed — bubbles are now spread-level)
     } catch (error) {
       console.error("Error adding photo to PDF:", error);
     }
@@ -604,6 +577,27 @@ export async function generateAlbumPDF(album: Album): Promise<Blob> {
     // RIGHT PAGE (x: PAGE_SIZE to SPREAD_WIDTH)
     const rightSlots = getPageSlots(template, 'right', album.withGaps);
     await generatePageWithSlots(pdf, spread.rightPhotos, rightSlots, PAGE_SIZE);
+
+    // SPREAD-LEVEL BUBBLES — single pass on top of all photos
+    if (spread.bubbles && spread.bubbles.length > 0) {
+      const spreadWidthMm = PAGE_SIZE * 2; // 412mm
+      const spreadHeightMm = PAGE_SIZE;    // 206mm
+      for (const bubble of spread.bubbles) {
+        const bubbleData = renderSpeechBubbleToCanvas(bubble, spreadWidthMm, spreadHeightMm);
+        if (bubbleData.dataUrl) {
+          pdf.addImage(
+            bubbleData.dataUrl,
+            "PNG",
+            bubbleData.xMm,
+            bubbleData.yMm,
+            bubbleData.widthMm,
+            bubbleData.heightMm,
+            undefined,
+            "FAST"
+          );
+        }
+      }
+    }
   }
 
   return pdf.output("blob");

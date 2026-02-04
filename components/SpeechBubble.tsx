@@ -3,6 +3,7 @@ import { SpeechBubble as SpeechBubbleType } from "@/lib/types";
 
 interface SpeechBubbleProps {
   bubble: SpeechBubbleType;
+  containerRef?: React.RefObject<HTMLDivElement | null>; // Positioning container for drag (spread overlay)
   onEdit?: () => void;
   onDelete?: () => void;
   onMove?: (x: number, y: number) => void;
@@ -10,7 +11,7 @@ interface SpeechBubbleProps {
   onFontSizeChange?: (fontSize: number) => void;
 }
 
-export default function SpeechBubble({ bubble, onEdit, onDelete, onMove, onResize, onFontSizeChange }: SpeechBubbleProps) {
+export default function SpeechBubble({ bubble, containerRef, onEdit, onDelete, onMove, onResize, onFontSizeChange }: SpeechBubbleProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
   const dragStartRef = useRef<{ x: number; y: number; bubbleX: number; bubbleY: number } | null>(null);
@@ -199,7 +200,7 @@ export default function SpeechBubble({ bubble, onEdit, onDelete, onMove, onResiz
   const handleMouseMove = (e: MouseEvent) => {
     if (!isDragging || !dragStartRef.current || !onMove) return;
 
-    const parentRect = document.querySelector('.relative.w-full.aspect-square')?.getBoundingClientRect();
+    const parentRect = containerRef?.current?.getBoundingClientRect();
     if (!parentRect) return;
 
     const deltaX = e.clientX - dragStartRef.current.x;
@@ -294,7 +295,7 @@ export default function SpeechBubble({ bubble, onEdit, onDelete, onMove, onResiz
 
   return (
     <div
-      className="absolute group"
+      className="absolute group pointer-events-auto"
       style={{
         left: `${bubble.x}%`,
         top: `${bubble.y}%`,

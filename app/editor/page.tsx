@@ -57,11 +57,9 @@ export default function EditorPage() {
     slotHeight: number;
   } | null>(null);
 
-  // Speech bubble modal state
+  // Speech bubble modal state (spread-level — no side/photoIndex)
   const [speechBubbleModal, setSpeechBubbleModal] = useState<{
     spreadId: string;
-    side: "left" | "right";
-    photoIndex: number;
     x: number;
     y: number;
     bubbleId?: string; // If editing existing bubble
@@ -719,30 +717,6 @@ export default function EditorPage() {
   };
 
   // Handle caption change
-  const handleCaptionChange = (
-    spreadId: string,
-    side: "left" | "right",
-    photoIndex: number,
-    caption: string
-  ) => {
-    setAlbum((prev) => ({
-      ...prev,
-      spreads: prev.spreads.map((spread) =>
-        spread.id === spreadId
-          ? {
-              ...spread,
-              [side === "left" ? "leftPhotos" : "rightPhotos"]: (
-                side === "left" ? spread.leftPhotos : spread.rightPhotos
-              ).map((photo, idx) =>
-                idx === photoIndex ? { ...photo, caption } : photo
-              ),
-            }
-          : spread
-      ),
-      updatedAt: new Date(),
-    }));
-  };
-
   // Handle delete photo
   const handleDeletePhoto = (
     spreadId: string,
@@ -765,8 +739,6 @@ export default function EditorPage() {
                       id: generateId(),
                       file: null,
                       url: "",
-                      caption: "",
-                      speechBubbles: [],
                     }
                   : photo
               ),
@@ -801,42 +773,18 @@ export default function EditorPage() {
     }));
   };
 
-  // Handle speech bubble addition
-  const handleAddSpeechBubble = (
-    spreadId: string,
-    side: "left" | "right",
-    photoIndex: number,
-    x: number,
-    y: number
-  ) => {
-    setSpeechBubbleModal({
-      spreadId,
-      side,
-      photoIndex,
-      x,
-      y,
-    });
+  // --- Spread-level bubble handlers ---
+
+  const handleAddBubble = (spreadId: string, x: number, y: number) => {
+    setSpeechBubbleModal({ spreadId, x, y });
   };
 
-  // Handle speech bubble edit
-  const handleEditSpeechBubble = (
-    spreadId: string,
-    side: "left" | "right",
-    photoIndex: number,
-    bubbleId: string
-  ) => {
+  const handleEditBubble = (spreadId: string, bubbleId: string) => {
     const spread = album.spreads.find(s => s.id === spreadId);
-    if (!spread) return;
-
-    const photos = side === "left" ? spread.leftPhotos : spread.rightPhotos;
-    const photo = photos[photoIndex];
-    const bubble = photo?.speechBubbles?.find(b => b.id === bubbleId);
-
+    const bubble = spread?.bubbles?.find(b => b.id === bubbleId);
     if (bubble) {
       setSpeechBubbleModal({
         spreadId,
-        side,
-        photoIndex,
         x: bubble.x,
         y: bubble.y,
         bubbleId: bubble.id,
@@ -847,146 +795,62 @@ export default function EditorPage() {
     }
   };
 
-  // Handle speech bubble delete
-  const handleDeleteSpeechBubble = (
-    spreadId: string,
-    side: "left" | "right",
-    photoIndex: number,
-    bubbleId: string
-  ) => {
+  const handleDeleteBubble = (spreadId: string, bubbleId: string) => {
     setAlbum((prev) => ({
       ...prev,
       spreads: prev.spreads.map((spread) =>
         spread.id === spreadId
-          ? {
-              ...spread,
-              [side === "left" ? "leftPhotos" : "rightPhotos"]: (
-                side === "left" ? spread.leftPhotos : spread.rightPhotos
-              ).map((photo, idx) =>
-                idx === photoIndex
-                  ? {
-                      ...photo,
-                      speechBubbles: photo.speechBubbles?.filter(b => b.id !== bubbleId) || [],
-                    }
-                  : photo
-              ),
-            }
+          ? { ...spread, bubbles: (spread.bubbles || []).filter(b => b.id !== bubbleId) }
           : spread
       ),
       updatedAt: new Date(),
     }));
   };
 
-  // Handle speech bubble move (drag)
-  const handleMoveSpeechBubble = (
-    spreadId: string,
-    side: "left" | "right",
-    photoIndex: number,
-    bubbleId: string,
-    x: number,
-    y: number
-  ) => {
+  const handleMoveBubble = (spreadId: string, bubbleId: string, x: number, y: number) => {
     setAlbum((prev) => ({
       ...prev,
       spreads: prev.spreads.map((spread) =>
         spread.id === spreadId
-          ? {
-              ...spread,
-              [side === "left" ? "leftPhotos" : "rightPhotos"]: (
-                side === "left" ? spread.leftPhotos : spread.rightPhotos
-              ).map((photo, idx) =>
-                idx === photoIndex
-                  ? {
-                      ...photo,
-                      speechBubbles: photo.speechBubbles?.map(b =>
-                        b.id === bubbleId ? { ...b, x, y } : b
-                      ) || [],
-                    }
-                  : photo
-              ),
-            }
+          ? { ...spread, bubbles: (spread.bubbles || []).map(b => b.id === bubbleId ? { ...b, x, y } : b) }
           : spread
       ),
       updatedAt: new Date(),
     }));
   };
 
-  // Handle speech bubble resize (for text blocks)
-  const handleResizeSpeechBubble = (
-    spreadId: string,
-    side: "left" | "right",
-    photoIndex: number,
-    bubbleId: string,
-    width: number,
-    height: number
-  ) => {
+  const handleResizeBubble = (spreadId: string, bubbleId: string, width: number, height: number) => {
     setAlbum((prev) => ({
       ...prev,
       spreads: prev.spreads.map((spread) =>
         spread.id === spreadId
-          ? {
-              ...spread,
-              [side === "left" ? "leftPhotos" : "rightPhotos"]: (
-                side === "left" ? spread.leftPhotos : spread.rightPhotos
-              ).map((photo, idx) =>
-                idx === photoIndex
-                  ? {
-                      ...photo,
-                      speechBubbles: photo.speechBubbles?.map(b =>
-                        b.id === bubbleId ? { ...b, width, height } : b
-                      ) || [],
-                    }
-                  : photo
-              ),
-            }
+          ? { ...spread, bubbles: (spread.bubbles || []).map(b => b.id === bubbleId ? { ...b, width, height } : b) }
           : spread
       ),
       updatedAt: new Date(),
     }));
   };
 
-  // Handle speech bubble font size change (for text blocks)
-  const handleFontSizeChangeSpeechBubble = (
-    spreadId: string,
-    side: "left" | "right",
-    photoIndex: number,
-    bubbleId: string,
-    fontSize: number
-  ) => {
+  const handleFontSizeBubble = (spreadId: string, bubbleId: string, fontSize: number) => {
     setAlbum((prev) => ({
       ...prev,
       spreads: prev.spreads.map((spread) =>
         spread.id === spreadId
-          ? {
-              ...spread,
-              [side === "left" ? "leftPhotos" : "rightPhotos"]: (
-                side === "left" ? spread.leftPhotos : spread.rightPhotos
-              ).map((photo, idx) =>
-                idx === photoIndex
-                  ? {
-                      ...photo,
-                      speechBubbles: photo.speechBubbles?.map(b =>
-                        b.id === bubbleId ? { ...b, fontSize } : b
-                      ) || [],
-                    }
-                  : photo
-              ),
-            }
+          ? { ...spread, bubbles: (spread.bubbles || []).map(b => b.id === bubbleId ? { ...b, fontSize } : b) }
           : spread
       ),
       updatedAt: new Date(),
     }));
   };
 
-  // Save speech bubble (add or edit)
+  // Save speech bubble (add or edit) — spread-level
   const saveSpeechBubble = (
     text: string,
     type: 'speech' | 'thought' | 'annotation' | 'text-block',
     tailDirection: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'
   ) => {
     if (!speechBubbleModal) return;
-
-    const { spreadId, side, photoIndex, x, y, bubbleId, initialText } = speechBubbleModal;
+    const { spreadId, x, y, bubbleId } = speechBubbleModal;
 
     setAlbum((prev) => ({
       ...prev,
@@ -994,41 +858,14 @@ export default function EditorPage() {
         spread.id === spreadId
           ? {
               ...spread,
-              [side === "left" ? "leftPhotos" : "rightPhotos"]: (
-                side === "left" ? spread.leftPhotos : spread.rightPhotos
-              ).map((photo, idx) => {
-                if (idx !== photoIndex) return photo;
-
-                const bubbles = photo.speechBubbles || [];
-
-                // Edit existing bubble
-                if (bubbleId) {
-                  return {
-                    ...photo,
-                    speechBubbles: bubbles.map(b =>
-                      b.id === bubbleId
-                        ? { ...b, text, type, tailDirection }
-                        : b
-                    ),
-                  };
-                }
-
-                // Add new bubble
-                return {
-                  ...photo,
-                  speechBubbles: [
-                    ...bubbles,
-                    {
-                      id: generateId(),
-                      x,
-                      y,
-                      text,
-                      type,
-                      tailDirection,
-                    },
+              bubbles: bubbleId
+                ? (spread.bubbles || []).map(b =>
+                    b.id === bubbleId ? { ...b, text, type, tailDirection } : b
+                  )
+                : [
+                    ...(spread.bubbles || []),
+                    { id: generateId(), x, y, text, type, tailDirection },
                   ],
-                };
-              }),
             }
           : spread
       ),
@@ -1334,32 +1171,29 @@ export default function EditorPage() {
                     onPhotoClick={(side, idx) =>
                       handlePhotoClick(spread.id, side, idx)
                     }
-                    onCaptionChange={(side, idx, caption) =>
-                      handleCaptionChange(spread.id, side, idx, caption)
-                    }
                     onDeletePhoto={(side, idx) =>
                       handleDeletePhoto(spread.id, side, idx)
                     }
-                    onAddSpeechBubble={(side, idx, x, y) =>
-                      handleAddSpeechBubble(spread.id, side, idx, x, y)
-                    }
-                    onEditSpeechBubble={(side, idx, bubbleId) =>
-                      handleEditSpeechBubble(spread.id, side, idx, bubbleId)
-                    }
-                    onDeleteSpeechBubble={(side, idx, bubbleId) =>
-                      handleDeleteSpeechBubble(spread.id, side, idx, bubbleId)
-                    }
-                    onMoveSpeechBubble={(side, idx, bubbleId, x, y) =>
-                      handleMoveSpeechBubble(spread.id, side, idx, bubbleId, x, y)
-                    }
-                    onResizeSpeechBubble={(side, idx, bubbleId, width, height) =>
-                      handleResizeSpeechBubble(spread.id, side, idx, bubbleId, width, height)
-                    }
-                    onFontSizeChangeSpeechBubble={(side, idx, bubbleId, fontSize) =>
-                      handleFontSizeChangeSpeechBubble(spread.id, side, idx, bubbleId, fontSize)
-                    }
                     onToggleSlot={(side, idx) =>
                       handleToggleSlot(spread.id, side, idx)
+                    }
+                    onAddBubble={(x, y) =>
+                      handleAddBubble(spread.id, x, y)
+                    }
+                    onEditBubble={(bubbleId) =>
+                      handleEditBubble(spread.id, bubbleId)
+                    }
+                    onDeleteBubble={(bubbleId) =>
+                      handleDeleteBubble(spread.id, bubbleId)
+                    }
+                    onMoveBubble={(bubbleId, x, y) =>
+                      handleMoveBubble(spread.id, bubbleId, x, y)
+                    }
+                    onResizeBubble={(bubbleId, width, height) =>
+                      handleResizeBubble(spread.id, bubbleId, width, height)
+                    }
+                    onFontSizeBubble={(bubbleId, fontSize) =>
+                      handleFontSizeBubble(spread.id, bubbleId, fontSize)
                     }
                   />
                   <TokenSummary

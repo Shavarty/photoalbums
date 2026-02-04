@@ -34,10 +34,8 @@ export interface Photo {
   url: string; // Preview URL (low-res for editor display)
   originalUrl?: string; // Original high-res URL for PDF generation
   cropArea?: CropArea; // Crop coordinates in pixels on original image
-  caption?: string;
   tokens?: TokenUsage; // AI stylization token usage
   isStylizing?: boolean; // Currently being stylized
-  speechBubbles?: SpeechBubble[]; // Comic speech bubbles
   hidden?: boolean; // Slot hidden by user (not rendered in editor or PDF)
 }
 
@@ -46,6 +44,7 @@ export interface Spread {
   templateId: string; // reference to spread template
   leftPhotos: Photo[]; // photos for left page
   rightPhotos: Photo[]; // photos for right page
+  bubbles?: SpeechBubble[]; // Spread-level bubbles (float freely over all slots)
 }
 
 export interface Cover {
