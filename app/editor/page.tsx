@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Album, Spread, Photo } from "@/lib/types";
-import { SPREAD_TEMPLATES } from "@/lib/spread-templates";
+import { SPREAD_TEMPLATES, PANORAMIC_BG_TEMPLATE_IDS } from "@/lib/spread-templates";
 import { generateAlbumPDF, downloadPDF } from "@/lib/pdf-generator-spreads";
 import ImageCropModal from "@/components/ImageCropModal";
 import SpreadEditor from "@/components/SpreadEditor";
@@ -219,7 +219,7 @@ export default function EditorPage() {
 
     // For full-spread templates: use 2:1 aspect ratio for background slots (photoIndex 0)
     // These templates split one 2:1 photo across both pages
-    const isFullSpreadTemplate = template.id === "full-spread" || template.id === "comic-spread-bg";
+    const isFullSpreadTemplate = PANORAMIC_BG_TEMPLATE_IDS.includes(template.id);
     const isBackgroundSlot = photoIndex === 0;
     const isFullSpread = isFullSpreadTemplate && isBackgroundSlot;
     const realAspectRatio = isFullSpread ? 2 : slot.width / slot.height;
@@ -343,7 +343,7 @@ export default function EditorPage() {
     // Check if this is full-spread template (2:1 photo split across both pages)
     const spread = album.spreads.find((s) => s.id === spreadId);
     const template = spread && SPREAD_TEMPLATES.find((t) => t.id === spread.templateId);
-    const isFullSpreadTemplate = template?.id === "full-spread" || template?.id === "comic-spread-bg";
+    const isFullSpreadTemplate = template ? PANORAMIC_BG_TEMPLATE_IDS.includes(template.id) : false;
     const isBackgroundSlot = photoIndex === 0;
     const isFullSpread = isFullSpreadTemplate && isBackgroundSlot;
 
@@ -1047,7 +1047,7 @@ export default function EditorPage() {
   // In comics mode, show comic-specific templates first
   const orderedTemplates = mode === 'comics'
     ? [...SPREAD_TEMPLATES].sort((a, b) => {
-        const comicIds = ['comic-spread-bg', 'full-spread'];
+        const comicIds = ['comic-spread-bg', 'comic-strips', 'comic-quartet', 'comic-asymmetric', 'full-spread'];
         return (comicIds.includes(b.id) ? 1 : 0) - (comicIds.includes(a.id) ? 1 : 0);
       })
     : SPREAD_TEMPLATES;

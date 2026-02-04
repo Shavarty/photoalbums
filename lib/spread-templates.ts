@@ -1176,6 +1176,128 @@ export const TEMPLATE_COMIC_SPREAD_BG: SpreadTemplate = {
   },
 };
 
+// Template 12: Comic Strips - panoramic BG + square+portrait left, strips+pair right
+export const TEMPLATE_COMIC_STRIPS: SpreadTemplate = {
+  id: "comic-strips",
+  name: "Комикс: полосы",
+  description: "Фоновая панорама + полосы",
+  leftPage: {
+    slots: [
+      { id: "left-bg",     aspectRatio: 1,     width: 1.0,  height: 1.0,   x: 0,    y: 0 },
+      { id: "left-mini-1", aspectRatio: 1,     width: 0.42, height: 0.42,  x: 0.02, y: 0.02 },
+      { id: "left-mini-2", aspectRatio: 4 / 5, width: 0.42, height: 0.525, x: 0.02, y: 0.46 },
+    ],
+  },
+  rightPage: {
+    slots: [
+      { id: "right-bg",     aspectRatio: 1,            width: 1.0,  height: 1.0,   x: 0,    y: 0    },
+      { id: "right-mini-1", aspectRatio: 0.96 / 0.23,  width: 0.96, height: 0.23,  x: 0.02, y: 0.02 }, // верхняя полоса
+      { id: "right-mini-2", aspectRatio: 0.96 / 0.43,  width: 0.96, height: 0.43,  x: 0.02, y: 0.27 }, // средняя полоса
+      { id: "right-mini-3", aspectRatio: 16 / 9,       width: 0.47, height: 0.264, x: 0.02, y: 0.72 }, // пара снизу
+      { id: "right-mini-4", aspectRatio: 16 / 9,       width: 0.47, height: 0.264, x: 0.51, y: 0.72 },
+    ],
+  },
+  leftPageNoGaps: {
+    slots: [
+      { id: "left-bg",     aspectRatio: 1,     width: 1.0,  height: 1.0,  x: 0, y: 0    },
+      { id: "left-mini-1", aspectRatio: 1,     width: 0.44, height: 0.44, x: 0, y: 0    },
+      { id: "left-mini-2", aspectRatio: 4 / 5, width: 0.44, height: 0.55, x: 0, y: 0.45 },
+    ],
+  },
+  rightPageNoGaps: {
+    slots: [
+      { id: "right-bg",     aspectRatio: 1,            width: 1.0,  height: 1.0,  x: 0,    y: 0    },
+      { id: "right-mini-1", aspectRatio: 1.0 / 0.24,   width: 1.0,  height: 0.24, x: 0,    y: 0    },
+      { id: "right-mini-2", aspectRatio: 1.0 / 0.44,   width: 1.0,  height: 0.44, x: 0,    y: 0.25 },
+      { id: "right-mini-3", aspectRatio: 0.50 / 0.30,  width: 0.50, height: 0.30, x: 0,    y: 0.70 },
+      { id: "right-mini-4", aspectRatio: 0.50 / 0.30,  width: 0.50, height: 0.30, x: 0.50, y: 0.70 },
+    ],
+  },
+};
+
+// Template 13: Comic Quartet - panoramic BG + 4 symmetric scenes (2 per page)
+export const TEMPLATE_COMIC_QUARTET: SpreadTemplate = {
+  id: "comic-quartet",
+  name: "Комикс: квартет",
+  description: "Фоновая панорама + 4 сцены симметрично",
+  leftPage: {
+    slots: [
+      { id: "left-bg",     aspectRatio: 1,      width: 1.0,  height: 1.0,   x: 0,    y: 0     },
+      { id: "left-mini-1", aspectRatio: 16 / 9, width: 0.68, height: 0.382, x: 0.16, y: 0.03  },
+      { id: "left-mini-2", aspectRatio: 5 / 4,  width: 0.68, height: 0.544, x: 0.16, y: 0.452 },
+    ],
+  },
+  rightPage: {
+    slots: [
+      { id: "right-bg",     aspectRatio: 1,      width: 1.0,  height: 1.0,   x: 0,    y: 0     },
+      { id: "right-mini-1", aspectRatio: 16 / 9, width: 0.68, height: 0.382, x: 0.16, y: 0.03  },
+      { id: "right-mini-2", aspectRatio: 5 / 4,  width: 0.68, height: 0.544, x: 0.16, y: 0.452 },
+    ],
+  },
+  leftPageNoGaps: {
+    slots: [
+      { id: "left-bg",     aspectRatio: 1,      width: 1.0,  height: 1.0,   x: 0,    y: 0     },
+      { id: "left-mini-1", aspectRatio: 16 / 9, width: 0.68, height: 0.383, x: 0.16, y: 0.026 },
+      { id: "left-mini-2", aspectRatio: 5 / 4,  width: 0.68, height: 0.544, x: 0.16, y: 0.429 },
+    ],
+  },
+  rightPageNoGaps: {
+    slots: [
+      { id: "right-bg",     aspectRatio: 1,      width: 1.0,  height: 1.0,   x: 0,    y: 0     },
+      { id: "right-mini-1", aspectRatio: 16 / 9, width: 0.68, height: 0.383, x: 0.16, y: 0.026 },
+      { id: "right-mini-2", aspectRatio: 5 / 4,  width: 0.68, height: 0.544, x: 0.16, y: 0.429 },
+    ],
+  },
+};
+
+// Template 14: Comic Asymmetric - panoramic BG + 3 stacked + tall portrait left, 2 right
+export const TEMPLATE_COMIC_ASYMMETRIC: SpreadTemplate = {
+  id: "comic-asymmetric",
+  name: "Комикс: асимметрия",
+  description: "Фоновая панорама + асимметричная раскладка",
+  leftPage: {
+    slots: [
+      { id: "left-bg",     aspectRatio: 1,      width: 1.0,  height: 1.0,  x: 0,    y: 0     },
+      { id: "left-mini-1", aspectRatio: 5 / 4,  width: 0.38, height: 0.304, x: 0.02, y: 0.02  }, // 3 в столбик
+      { id: "left-mini-2", aspectRatio: 5 / 4,  width: 0.38, height: 0.304, x: 0.02, y: 0.344 },
+      { id: "left-mini-3", aspectRatio: 5 / 4,  width: 0.38, height: 0.304, x: 0.02, y: 0.668 },
+      { id: "left-mini-4", aspectRatio: 9 / 16, width: 0.54, height: 0.96,  x: 0.42, y: 0.02  }, // высокий портрет
+    ],
+  },
+  rightPage: {
+    slots: [
+      { id: "right-bg",     aspectRatio: 1,     width: 1.0,  height: 1.0,   x: 0,    y: 0     },
+      { id: "right-mini-1", aspectRatio: 4 / 3, width: 0.57, height: 0.428, x: 0.41, y: 0.02  }, // 4:3 сверху
+      { id: "right-mini-2", aspectRatio: 4 / 5, width: 0.41, height: 0.513, x: 0.57, y: 0.468 }, // 4:5 снизу
+    ],
+  },
+  leftPageNoGaps: {
+    slots: [
+      { id: "left-bg",     aspectRatio: 1,      width: 1.0,  height: 1.0,  x: 0,    y: 0     },
+      { id: "left-mini-1", aspectRatio: 5 / 4,  width: 0.40, height: 0.32, x: 0,    y: 0     },
+      { id: "left-mini-2", aspectRatio: 5 / 4,  width: 0.40, height: 0.32, x: 0,    y: 0.335 },
+      { id: "left-mini-3", aspectRatio: 5 / 4,  width: 0.40, height: 0.32, x: 0,    y: 0.67  },
+      { id: "left-mini-4", aspectRatio: 9 / 16, width: 0.56, height: 1.0,  x: 0.41, y: 0     },
+    ],
+  },
+  rightPageNoGaps: {
+    slots: [
+      { id: "right-bg",     aspectRatio: 1,     width: 1.0,  height: 1.0,   x: 0,    y: 0    },
+      { id: "right-mini-1", aspectRatio: 4 / 3, width: 0.57, height: 0.428, x: 0.41, y: 0    },
+      { id: "right-mini-2", aspectRatio: 4 / 5, width: 0.41, height: 0.513, x: 0.57, y: 0.45 },
+    ],
+  },
+};
+
+// IDs шаблонов с panoramic 2:1 фоном, развёрнутым на две страницы
+export const PANORAMIC_BG_TEMPLATE_IDS = [
+  'full-spread',
+  'comic-spread-bg',
+  'comic-strips',
+  'comic-quartet',
+  'comic-asymmetric',
+];
+
 export const SPREAD_TEMPLATES = [
   TEMPLATE_CLASSIC,
   TEMPLATE_6PHOTOS,
@@ -1188,6 +1310,9 @@ export const SPREAD_TEMPLATES = [
   TEMPLATE_MAGAZINE,
   TEMPLATE_FULL_SPREAD, // Panoramic spread - one 2:1 photo split across both pages
   TEMPLATE_COMIC_SPREAD_BG, // Panoramic background + mini-scenes on top
+  TEMPLATE_COMIC_STRIPS,     // Panoramic BG + strips layout
+  TEMPLATE_COMIC_QUARTET,    // Panoramic BG + 4 symmetric scenes
+  TEMPLATE_COMIC_ASYMMETRIC, // Panoramic BG + asymmetric layout
 ];
 
 // Get appropriate page layout based on gaps setting

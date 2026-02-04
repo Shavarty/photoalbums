@@ -1,7 +1,7 @@
 "use client";
 
 import { Spread, Photo, SpeechBubble as SpeechBubbleType } from "@/lib/types";
-import { SPREAD_TEMPLATES, PhotoSlot, getPageSlots } from "@/lib/spread-templates";
+import { SPREAD_TEMPLATES, PhotoSlot, getPageSlots, PANORAMIC_BG_TEMPLATE_IDS } from "@/lib/spread-templates";
 import SpeechBubble from "./SpeechBubble";
 
 interface SpreadEditorProps {
@@ -169,7 +169,7 @@ export default function SpreadEditor({
 
                     {/* Text */}
                     <span className="text-gray-600 text-[8px] md:text-xs font-normal text-center leading-tight">
-                      {(template.id === "full-spread" || (template.id === "comic-spread-bg" && index === 0))
+                      {(PANORAMIC_BG_TEMPLATE_IDS.includes(template.id) && index === 0)
                         ? "Добавить фото разворота"
                         : "Добавить фото"}
                     </span>
