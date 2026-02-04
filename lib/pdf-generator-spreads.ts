@@ -159,8 +159,9 @@ const renderSpeechBubbleToCanvas = (
   const EDITOR_PAGE_WIDTH_PX = 450; // Typical rendered page width in editor
   const pixelToMmScale = PAGE_SIZE / EDITOR_PAGE_WIDTH_PX; // ~0.458 mm/px
 
-  const bubbleWidthMm = bubbleWidthPx * pixelToMmScale;
-  const bubbleHeightMm = bubbleHeightPx * pixelToMmScale;
+  const bubbleScale = bubble.scale || 1;
+  const bubbleWidthMm = bubbleWidthPx * pixelToMmScale * bubbleScale;
+  const bubbleHeightMm = bubbleHeightPx * pixelToMmScale * bubbleScale;
 
   // Create high-res canvas for PDF (300 DPI equivalent)
   const scale = 3; // 3x for better quality
@@ -369,8 +370,8 @@ const renderSpeechBubbleToCanvas = (
   ctx.textBaseline = "middle";
 
   // Handle text wrapping
-  const textMaxWidth = estimatedWidth - padding * 2 - 20;
-  const lineHeight = 18;
+  const textMaxWidth = estimatedWidth - padding * 2; // Match editor foreignObject width exactly
+  const lineHeight = fontSize * 1.2; // Match CSS line-height: normal
   const allLines: string[] = [];
 
   // Split by manual line breaks first

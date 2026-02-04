@@ -819,12 +819,12 @@ export default function EditorPage() {
     }));
   };
 
-  const handleResizeBubble = (spreadId: string, bubbleId: string, width: number, height: number) => {
+  const handleScaleBubble = (spreadId: string, bubbleId: string, scale: number) => {
     setAlbum((prev) => ({
       ...prev,
       spreads: prev.spreads.map((spread) =>
         spread.id === spreadId
-          ? { ...spread, bubbles: (spread.bubbles || []).map(b => b.id === bubbleId ? { ...b, width, height } : b) }
+          ? { ...spread, bubbles: (spread.bubbles || []).map(b => b.id === bubbleId ? { ...b, scale } : b) }
           : spread
       ),
       updatedAt: new Date(),
@@ -1189,8 +1189,8 @@ export default function EditorPage() {
                     onMoveBubble={(bubbleId, x, y) =>
                       handleMoveBubble(spread.id, bubbleId, x, y)
                     }
-                    onResizeBubble={(bubbleId, width, height) =>
-                      handleResizeBubble(spread.id, bubbleId, width, height)
+                    onScaleBubble={(bubbleId, scale) =>
+                      handleScaleBubble(spread.id, bubbleId, scale)
                     }
                     onFontSizeBubble={(bubbleId, fontSize) =>
                       handleFontSizeBubble(spread.id, bubbleId, fontSize)

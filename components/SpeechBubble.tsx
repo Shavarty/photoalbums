@@ -7,15 +7,15 @@ interface SpeechBubbleProps {
   onEdit?: () => void;
   onDelete?: () => void;
   onMove?: (x: number, y: number) => void;
-  onResize?: (width: number, height: number) => void;
+  onScale?: (scale: number) => void;
   onFontSizeChange?: (fontSize: number) => void;
 }
 
-export default function SpeechBubble({ bubble, containerRef, onEdit, onDelete, onMove, onResize, onFontSizeChange }: SpeechBubbleProps) {
+export default function SpeechBubble({ bubble, containerRef, onEdit, onDelete, onMove, onScale, onFontSizeChange }: SpeechBubbleProps) {
   const [isDragging, setIsDragging] = useState(false);
-  const [isResizing, setIsResizing] = useState(false);
+  const [isScaling, setIsScaling] = useState(false);
   const dragStartRef = useRef<{ x: number; y: number; bubbleX: number; bubbleY: number } | null>(null);
-  const resizeStartRef = useRef<{ x: number; y: number; startWidth: number; startHeight: number; startBubbleX: number; startBubbleY: number; slotRect: DOMRect | null } | null>(null);
+  const scaleStartRef = useRef<{ centerX: number; centerY: number; initialDist: number; initialScale: number } | null>(null);
 
   const bubbleType = bubble.type || 'speech';
 
@@ -235,63 +235,58 @@ export default function SpeechBubble({ bubble, containerRef, onEdit, onDelete, o
   const bubblePath = getBubblePath();
   const isThoughtBubble = bubbleType === 'thought' && typeof bubblePath === 'object';
 
-  // Resize handlers
-  const handleResizeMouseDown = (e: React.MouseEvent) => {
-    if (!onResize || bubbleType !== 'text-block') return;
+  // Scale handlers (uniform resize for all bubble types)
+  const handleScaleMouseDown = (e: React.MouseEvent) => {
+    if (!onScale) return;
     e.preventDefault();
     e.stopPropagation();
 
-    setIsResizing(true);
-    // Capture slot container rect for position adjustment during resize
-    const slotContainer = (e.currentTarget as HTMLElement).parentElement?.parentElement;
-    resizeStartRef.current = {
-      x: e.clientX,
-      y: e.clientY,
-      startWidth: estimatedWidth,
-      startHeight: estimatedHeight,
-      startBubbleX: bubble.x,
-      startBubbleY: bubble.y,
-      slotRect: slotContainer?.getBoundingClientRect() || null,
+    setIsScaling(true);
+    const container = containerRef?.current;
+    if (!container) return;
+    const containerRect = container.getBoundingClientRect();
+    const centerX = containerRect.left + (bubble.x / 100) * containerRect.width;
+    const centerY = containerRect.top + (bubble.y / 100) * containerRect.height;
+
+    const dx = e.clientX - centerX;
+    const dy = e.clientY - centerY;
+
+    scaleStartRef.current = {
+      centerX,
+      centerY,
+      initialDist: Math.sqrt(dx * dx + dy * dy),
+      initialScale: bubble.scale || 1,
     };
   };
 
-  const handleResizeMouseMove = (e: MouseEvent) => {
-    if (!isResizing || !resizeStartRef.current || !onResize) return;
+  const handleScaleMouseMove = (e: MouseEvent) => {
+    if (!isScaling || !scaleStartRef.current || !onScale) return;
 
-    const deltaX = e.clientX - resizeStartRef.current.x;
-    const deltaY = e.clientY - resizeStartRef.current.y;
+    const dx = e.clientX - scaleStartRef.current.centerX;
+    const dy = e.clientY - scaleStartRef.current.centerY;
+    const currentDist = Math.sqrt(dx * dx + dy * dy);
 
-    const newWidth = Math.max(minWidth, Math.min(maxWidth, resizeStartRef.current.startWidth + deltaX));
-    const newHeight = Math.max(minHeight, resizeStartRef.current.startHeight + deltaY);
-
-    onResize(newWidth, newHeight);
-
-    // Shift position so top-left corner stays fixed (resize anchored to bottom-right)
-    if (onMove && resizeStartRef.current.slotRect) {
-      const widthChange = newWidth - resizeStartRef.current.startWidth;
-      const heightChange = newHeight - resizeStartRef.current.startHeight;
-      const newX = resizeStartRef.current.startBubbleX + (widthChange / 2 / resizeStartRef.current.slotRect.width) * 100;
-      const newY = resizeStartRef.current.startBubbleY + (heightChange / 2 / resizeStartRef.current.slotRect.height) * 100;
-      onMove(newX, newY);
-    }
+    const ratio = currentDist / scaleStartRef.current.initialDist;
+    const newScale = Math.max(0.3, Math.min(3, scaleStartRef.current.initialScale * ratio));
+    onScale(Math.round(newScale * 100) / 100);
   };
 
-  const handleResizeMouseUp = () => {
-    setIsResizing(false);
-    resizeStartRef.current = null;
+  const handleScaleMouseUp = () => {
+    setIsScaling(false);
+    scaleStartRef.current = null;
   };
 
-  // Add resize event listeners
+  // Add scale event listeners
   useEffect(() => {
-    if (isResizing) {
-      document.addEventListener('mousemove', handleResizeMouseMove);
-      document.addEventListener('mouseup', handleResizeMouseUp);
+    if (isScaling) {
+      document.addEventListener('mousemove', handleScaleMouseMove);
+      document.addEventListener('mouseup', handleScaleMouseUp);
       return () => {
-        document.removeEventListener('mousemove', handleResizeMouseMove);
-        document.removeEventListener('mouseup', handleResizeMouseUp);
+        document.removeEventListener('mousemove', handleScaleMouseMove);
+        document.removeEventListener('mouseup', handleScaleMouseUp);
       };
     }
-  }, [isResizing]);
+  }, [isScaling]);
 
   return (
     <div
@@ -299,9 +294,9 @@ export default function SpeechBubble({ bubble, containerRef, onEdit, onDelete, o
       style={{
         left: `${bubble.x}%`,
         top: `${bubble.y}%`,
-        transform: 'translate(-50%, -50%)',
+        transform: `translate(-50%, -50%) scale(${bubble.scale || 1})`,
         zIndex: 10,
-        cursor: isDragging ? 'grabbing' : (onMove ? 'grab' : 'default'),
+        cursor: isScaling ? 'nwse-resize' : isDragging ? 'grabbing' : (onMove ? 'grab' : 'default'),
       }}
       onMouseDown={handleMouseDown}
       onClick={(e) => e.stopPropagation()}
@@ -388,12 +383,12 @@ export default function SpeechBubble({ bubble, containerRef, onEdit, onDelete, o
         </div>
       )}
 
-      {/* Resize handle for text blocks */}
-      {isTextBlock && onResize && (
+      {/* Scale handle (all bubble types) */}
+      {onScale && (
         <div
-          onMouseDown={handleResizeMouseDown}
+          onMouseDown={handleScaleMouseDown}
           className="absolute -bottom-1 -right-1 w-5 h-5 bg-gray-600 border-2 border-white rounded-sm cursor-nwse-resize opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
-          title="Изменить размер"
+          title="Масштаб"
         >
           <div className="absolute inset-0 flex items-center justify-center text-white text-xs font-bold">⇲</div>
         </div>

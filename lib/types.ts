@@ -26,6 +26,7 @@ export interface SpeechBubble {
   width?: number; // Custom width in pixels (for text-block type)
   height?: number; // Custom height in pixels (for text-block type)
   fontSize?: number; // Font size in pixels (default: 14)
+  scale?: number; // Uniform scale factor (default: 1.0)
 }
 
 export interface Photo {
