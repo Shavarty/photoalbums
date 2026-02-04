@@ -1176,46 +1176,52 @@ export const TEMPLATE_COMIC_SPREAD_BG: SpreadTemplate = {
   },
 };
 
-// Template 12: Comic Strips - panoramic BG + square+portrait left, strips+pair right
+// Template 12: Comic Strips - panoramic BG + 1:1 + 4:5 left; 21:9 + 21:9 + 2×16:9 right
+// Left: слоты в левой части страницы, фон виден справа
+// Right: верхняя 21:9 маленькая и правее, средняя 21:9 шире, пара 16:9 выровнена по ширине средней
+// Все правая — правовыровнены (правый край = 0.918)
 export const TEMPLATE_COMIC_STRIPS: SpreadTemplate = {
   id: "comic-strips",
   name: "Комикс: полосы",
   description: "Фоновая панорама + полосы",
   leftPage: {
     slots: [
-      { id: "left-bg",     aspectRatio: 1,     width: 1.0,  height: 1.0,   x: 0,    y: 0 },
-      { id: "left-mini-1", aspectRatio: 1,     width: 0.42, height: 0.42,  x: 0.02, y: 0.02 },
-      { id: "left-mini-2", aspectRatio: 4 / 5, width: 0.42, height: 0.525, x: 0.02, y: 0.46 },
+      { id: "left-bg",     aspectRatio: 1,     width: 1.0,  height: 1.0,  x: 0,    y: 0    },
+      { id: "left-mini-1", aspectRatio: 1,     width: 0.36, height: 0.36, x: 0.07, y: 0.07 }, // 1:1 квадрат
+      { id: "left-mini-2", aspectRatio: 4 / 5, width: 0.36, height: 0.45, x: 0.07, y: 0.47 }, // 4:5 портрет
     ],
   },
   rightPage: {
     slots: [
-      { id: "right-bg",     aspectRatio: 1,            width: 1.0,  height: 1.0,   x: 0,    y: 0    },
-      { id: "right-mini-1", aspectRatio: 0.96 / 0.23,  width: 0.96, height: 0.23,  x: 0.02, y: 0.02 }, // верхняя полоса
-      { id: "right-mini-2", aspectRatio: 0.96 / 0.43,  width: 0.96, height: 0.43,  x: 0.02, y: 0.27 }, // средняя полоса
-      { id: "right-mini-3", aspectRatio: 16 / 9,       width: 0.47, height: 0.264, x: 0.02, y: 0.72 }, // пара снизу
-      { id: "right-mini-4", aspectRatio: 16 / 9,       width: 0.47, height: 0.264, x: 0.51, y: 0.72 },
+      // Все слоты правовыровнены: правый край = 0.918, зазор между рядами = 0.030
+      { id: "right-bg",     aspectRatio: 1,      width: 1.0,  height: 1.0,   x: 0,     y: 0     },
+      { id: "right-mini-1", aspectRatio: 21 / 9, width: 0.50, height: 0.214, x: 0.418, y: 0.082 }, // малая 21:9 полоса
+      { id: "right-mini-2", aspectRatio: 21 / 9, width: 0.80, height: 0.343, x: 0.118, y: 0.326 }, // большая 21:9 полоса
+      { id: "right-mini-3", aspectRatio: 16 / 9, width: 0.39, height: 0.219, x: 0.118, y: 0.699 }, // пара 16:9
+      { id: "right-mini-4", aspectRatio: 16 / 9, width: 0.39, height: 0.219, x: 0.528, y: 0.699 },
     ],
   },
   leftPageNoGaps: {
     slots: [
       { id: "left-bg",     aspectRatio: 1,     width: 1.0,  height: 1.0,  x: 0, y: 0    },
-      { id: "left-mini-1", aspectRatio: 1,     width: 0.44, height: 0.44, x: 0, y: 0    },
-      { id: "left-mini-2", aspectRatio: 4 / 5, width: 0.44, height: 0.55, x: 0, y: 0.45 },
+      { id: "left-mini-1", aspectRatio: 1,     width: 0.40, height: 0.40, x: 0, y: 0    },
+      { id: "left-mini-2", aspectRatio: 4 / 5, width: 0.40, height: 0.50, x: 0, y: 0.42 },
     ],
   },
   rightPageNoGaps: {
     slots: [
-      { id: "right-bg",     aspectRatio: 1,            width: 1.0,  height: 1.0,  x: 0,    y: 0    },
-      { id: "right-mini-1", aspectRatio: 1.0 / 0.24,   width: 1.0,  height: 0.24, x: 0,    y: 0    },
-      { id: "right-mini-2", aspectRatio: 1.0 / 0.44,   width: 1.0,  height: 0.44, x: 0,    y: 0.25 },
-      { id: "right-mini-3", aspectRatio: 0.50 / 0.30,  width: 0.50, height: 0.30, x: 0,    y: 0.70 },
-      { id: "right-mini-4", aspectRatio: 0.50 / 0.30,  width: 0.50, height: 0.30, x: 0.50, y: 0.70 },
+      // Правовыровнены: правый край = 1.0
+      { id: "right-bg",     aspectRatio: 1,      width: 1.0,  height: 1.0,   x: 0,    y: 0     },
+      { id: "right-mini-1", aspectRatio: 21 / 9, width: 0.55, height: 0.236, x: 0.45,  y: 0     },
+      { id: "right-mini-2", aspectRatio: 21 / 9, width: 0.85, height: 0.364, x: 0.15,  y: 0.246 },
+      { id: "right-mini-3", aspectRatio: 16 / 9, width: 0.415, height: 0.233, x: 0.15,  y: 0.620 },
+      { id: "right-mini-4", aspectRatio: 16 / 9, width: 0.415, height: 0.233, x: 0.585, y: 0.620 },
     ],
   },
 };
 
-// Template 13: Comic Quartet - panoramic BG + 4 symmetric scenes (2 per page)
+// Template 13: Comic Quartet - panoramic BG + 16:9 сверху + 5:4 снизу на каждой странице (симметрично)
+// Слоты центрированы по ширине с ~7% маргином
 export const TEMPLATE_COMIC_QUARTET: SpreadTemplate = {
   id: "comic-quartet",
   name: "Комикс: квартет",
@@ -1223,68 +1229,72 @@ export const TEMPLATE_COMIC_QUARTET: SpreadTemplate = {
   leftPage: {
     slots: [
       { id: "left-bg",     aspectRatio: 1,      width: 1.0,  height: 1.0,   x: 0,    y: 0     },
-      { id: "left-mini-1", aspectRatio: 16 / 9, width: 0.68, height: 0.382, x: 0.16, y: 0.03  },
-      { id: "left-mini-2", aspectRatio: 5 / 4,  width: 0.68, height: 0.544, x: 0.16, y: 0.452 },
+      { id: "left-mini-1", aspectRatio: 16 / 9, width: 0.60, height: 0.338, x: 0.20, y: 0.071 }, // 16:9
+      { id: "left-mini-2", aspectRatio: 5 / 4,  width: 0.60, height: 0.480, x: 0.20, y: 0.449 }, // 5:4
     ],
   },
   rightPage: {
     slots: [
       { id: "right-bg",     aspectRatio: 1,      width: 1.0,  height: 1.0,   x: 0,    y: 0     },
-      { id: "right-mini-1", aspectRatio: 16 / 9, width: 0.68, height: 0.382, x: 0.16, y: 0.03  },
-      { id: "right-mini-2", aspectRatio: 5 / 4,  width: 0.68, height: 0.544, x: 0.16, y: 0.452 },
+      { id: "right-mini-1", aspectRatio: 16 / 9, width: 0.60, height: 0.338, x: 0.20, y: 0.071 },
+      { id: "right-mini-2", aspectRatio: 5 / 4,  width: 0.60, height: 0.480, x: 0.20, y: 0.449 },
     ],
   },
   leftPageNoGaps: {
     slots: [
-      { id: "left-bg",     aspectRatio: 1,      width: 1.0,  height: 1.0,   x: 0,    y: 0     },
-      { id: "left-mini-1", aspectRatio: 16 / 9, width: 0.68, height: 0.383, x: 0.16, y: 0.026 },
-      { id: "left-mini-2", aspectRatio: 5 / 4,  width: 0.68, height: 0.544, x: 0.16, y: 0.429 },
+      { id: "left-bg",     aspectRatio: 1,      width: 1.0,  height: 1.0,   x: 0,    y: 0    },
+      { id: "left-mini-1", aspectRatio: 16 / 9, width: 0.60, height: 0.338, x: 0.20, y: 0.03 },
+      { id: "left-mini-2", aspectRatio: 5 / 4,  width: 0.60, height: 0.480, x: 0.20, y: 0.39 },
     ],
   },
   rightPageNoGaps: {
     slots: [
-      { id: "right-bg",     aspectRatio: 1,      width: 1.0,  height: 1.0,   x: 0,    y: 0     },
-      { id: "right-mini-1", aspectRatio: 16 / 9, width: 0.68, height: 0.383, x: 0.16, y: 0.026 },
-      { id: "right-mini-2", aspectRatio: 5 / 4,  width: 0.68, height: 0.544, x: 0.16, y: 0.429 },
+      { id: "right-bg",     aspectRatio: 1,      width: 1.0,  height: 1.0,   x: 0,    y: 0    },
+      { id: "right-mini-1", aspectRatio: 16 / 9, width: 0.60, height: 0.338, x: 0.20, y: 0.03 },
+      { id: "right-mini-2", aspectRatio: 5 / 4,  width: 0.60, height: 0.480, x: 0.20, y: 0.39 },
     ],
   },
 };
 
-// Template 14: Comic Asymmetric - panoramic BG + 3 stacked + tall portrait left, 2 right
+// Template 14: Comic Asymmetric - panoramic BG + 3×5:4 столбик + 9:16 (от 2-го слота) left; 4:3 + 4:5 right
+// Left: 9:16 начинается с уровня 2-го слота 5:4 и заканчивается на уровне 3-го
+// Right: оба слота правовыровнены, фон виден слева
 export const TEMPLATE_COMIC_ASYMMETRIC: SpreadTemplate = {
   id: "comic-asymmetric",
   name: "Комикс: асимметрия",
   description: "Фоновая панорама + асимметричная раскладка",
   leftPage: {
     slots: [
-      { id: "left-bg",     aspectRatio: 1,      width: 1.0,  height: 1.0,  x: 0,    y: 0     },
-      { id: "left-mini-1", aspectRatio: 5 / 4,  width: 0.38, height: 0.304, x: 0.02, y: 0.02  }, // 3 в столбик
-      { id: "left-mini-2", aspectRatio: 5 / 4,  width: 0.38, height: 0.304, x: 0.02, y: 0.344 },
-      { id: "left-mini-3", aspectRatio: 5 / 4,  width: 0.38, height: 0.304, x: 0.02, y: 0.668 },
-      { id: "left-mini-4", aspectRatio: 9 / 16, width: 0.54, height: 0.96,  x: 0.42, y: 0.02  }, // высокий портрет
+      { id: "left-bg",     aspectRatio: 1,      width: 1.0,   height: 1.0,   x: 0,    y: 0     },
+      { id: "left-mini-1", aspectRatio: 5 / 4,  width: 0.33,  height: 0.264, x: 0.07, y: 0.07  }, // 5:4 #1
+      { id: "left-mini-2", aspectRatio: 5 / 4,  width: 0.33,  height: 0.264, x: 0.07, y: 0.364 }, // 5:4 #2
+      { id: "left-mini-3", aspectRatio: 5 / 4,  width: 0.33,  height: 0.264, x: 0.07, y: 0.658 }, // 5:4 #3
+      { id: "left-mini-4", aspectRatio: 9 / 16, width: 0.314, height: 0.558, x: 0.43, y: 0.364 }, // 9:16 от 2-го до 3-го
     ],
   },
   rightPage: {
     slots: [
+      // Правовыровнены: правый край = 0.92
       { id: "right-bg",     aspectRatio: 1,     width: 1.0,  height: 1.0,   x: 0,    y: 0     },
-      { id: "right-mini-1", aspectRatio: 4 / 3, width: 0.57, height: 0.428, x: 0.41, y: 0.02  }, // 4:3 сверху
-      { id: "right-mini-2", aspectRatio: 4 / 5, width: 0.41, height: 0.513, x: 0.57, y: 0.468 }, // 4:5 снизу
+      { id: "right-mini-1", aspectRatio: 4 / 3, width: 0.45, height: 0.338, x: 0.47, y: 0.092 }, // 4:3 сверху
+      { id: "right-mini-2", aspectRatio: 4 / 5, width: 0.35, height: 0.438, x: 0.57, y: 0.470 }, // 4:5 снизу
     ],
   },
   leftPageNoGaps: {
     slots: [
-      { id: "left-bg",     aspectRatio: 1,      width: 1.0,  height: 1.0,  x: 0,    y: 0     },
-      { id: "left-mini-1", aspectRatio: 5 / 4,  width: 0.40, height: 0.32, x: 0,    y: 0     },
-      { id: "left-mini-2", aspectRatio: 5 / 4,  width: 0.40, height: 0.32, x: 0,    y: 0.335 },
-      { id: "left-mini-3", aspectRatio: 5 / 4,  width: 0.40, height: 0.32, x: 0,    y: 0.67  },
-      { id: "left-mini-4", aspectRatio: 9 / 16, width: 0.56, height: 1.0,  x: 0.41, y: 0     },
+      { id: "left-bg",     aspectRatio: 1,      width: 1.0,   height: 1.0,   x: 0,    y: 0    },
+      { id: "left-mini-1", aspectRatio: 5 / 4,  width: 0.35,  height: 0.280, x: 0,    y: 0    },
+      { id: "left-mini-2", aspectRatio: 5 / 4,  width: 0.35,  height: 0.280, x: 0,    y: 0.30 },
+      { id: "left-mini-3", aspectRatio: 5 / 4,  width: 0.35,  height: 0.280, x: 0,    y: 0.60 },
+      { id: "left-mini-4", aspectRatio: 9 / 16, width: 0.326, height: 0.580, x: 0.36, y: 0.30 }, // от 2-го слота
     ],
   },
   rightPageNoGaps: {
     slots: [
+      // Правовыровнены: правый край = 0.95
       { id: "right-bg",     aspectRatio: 1,     width: 1.0,  height: 1.0,   x: 0,    y: 0    },
-      { id: "right-mini-1", aspectRatio: 4 / 3, width: 0.57, height: 0.428, x: 0.41, y: 0    },
-      { id: "right-mini-2", aspectRatio: 4 / 5, width: 0.41, height: 0.513, x: 0.57, y: 0.45 },
+      { id: "right-mini-1", aspectRatio: 4 / 3, width: 0.45, height: 0.338, x: 0.50, y: 0    },
+      { id: "right-mini-2", aspectRatio: 4 / 5, width: 0.35, height: 0.438, x: 0.60, y: 0.36 },
     ],
   },
 };
