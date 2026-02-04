@@ -7,14 +7,17 @@ interface SpeechBubbleProps {
   onEdit?: () => void;
   onDelete?: () => void;
   onMove?: (x: number, y: number) => void;
+  onResize?: (width: number, height: number) => void;
   onScale?: (scale: number) => void;
   onFontSizeChange?: (fontSize: number) => void;
 }
 
-export default function SpeechBubble({ bubble, containerRef, onEdit, onDelete, onMove, onScale, onFontSizeChange }: SpeechBubbleProps) {
+export default function SpeechBubble({ bubble, containerRef, onEdit, onDelete, onMove, onResize, onScale, onFontSizeChange }: SpeechBubbleProps) {
   const [isDragging, setIsDragging] = useState(false);
+  const [isResizing, setIsResizing] = useState(false);
   const [isScaling, setIsScaling] = useState(false);
   const dragStartRef = useRef<{ x: number; y: number; bubbleX: number; bubbleY: number } | null>(null);
+  const resizeStartRef = useRef<{ x: number; y: number; startWidth: number; startHeight: number; startBubbleX: number; startBubbleY: number; slotRect: DOMRect | null } | null>(null);
   const scaleStartRef = useRef<{ centerX: number; centerY: number; initialDist: number; initialScale: number } | null>(null);
 
   const bubbleType = bubble.type || 'speech';
@@ -235,7 +238,63 @@ export default function SpeechBubble({ bubble, containerRef, onEdit, onDelete, o
   const bubblePath = getBubblePath();
   const isThoughtBubble = bubbleType === 'thought' && typeof bubblePath === 'object';
 
-  // Scale handlers (uniform resize for all bubble types)
+  // Resize handlers (text-block only — changes width/height, top-left anchored)
+  const handleResizeMouseDown = (e: React.MouseEvent) => {
+    if (!onResize || bubbleType !== 'text-block') return;
+    e.preventDefault();
+    e.stopPropagation();
+
+    setIsResizing(true);
+    resizeStartRef.current = {
+      x: e.clientX,
+      y: e.clientY,
+      startWidth: estimatedWidth,
+      startHeight: estimatedHeight,
+      startBubbleX: bubble.x,
+      startBubbleY: bubble.y,
+      slotRect: containerRef?.current?.getBoundingClientRect() || null,
+    };
+  };
+
+  const handleResizeMouseMove = (e: MouseEvent) => {
+    if (!isResizing || !resizeStartRef.current || !onResize) return;
+
+    const deltaX = e.clientX - resizeStartRef.current.x;
+    const deltaY = e.clientY - resizeStartRef.current.y;
+
+    const newWidth = Math.max(minWidth, Math.min(maxWidth, resizeStartRef.current.startWidth + deltaX));
+    const newHeight = Math.max(minHeight, resizeStartRef.current.startHeight + deltaY);
+
+    onResize(newWidth, newHeight);
+
+    // Shift position so top-left corner stays fixed (resize anchored to bottom-right)
+    if (onMove && resizeStartRef.current.slotRect) {
+      const widthChange = newWidth - resizeStartRef.current.startWidth;
+      const heightChange = newHeight - resizeStartRef.current.startHeight;
+      const newX = resizeStartRef.current.startBubbleX + (widthChange / 2 / resizeStartRef.current.slotRect.width) * 100;
+      const newY = resizeStartRef.current.startBubbleY + (heightChange / 2 / resizeStartRef.current.slotRect.height) * 100;
+      onMove(newX, newY);
+    }
+  };
+
+  const handleResizeMouseUp = () => {
+    setIsResizing(false);
+    resizeStartRef.current = null;
+  };
+
+  // Add resize event listeners
+  useEffect(() => {
+    if (isResizing) {
+      document.addEventListener('mousemove', handleResizeMouseMove);
+      document.addEventListener('mouseup', handleResizeMouseUp);
+      return () => {
+        document.removeEventListener('mousemove', handleResizeMouseMove);
+        document.removeEventListener('mouseup', handleResizeMouseUp);
+      };
+    }
+  }, [isResizing]);
+
+  // Scale handlers (uniform resize for non-text-block types)
   const handleScaleMouseDown = (e: React.MouseEvent) => {
     if (!onScale) return;
     e.preventDefault();
@@ -296,7 +355,7 @@ export default function SpeechBubble({ bubble, containerRef, onEdit, onDelete, o
         top: `${bubble.y}%`,
         transform: `translate(-50%, -50%) scale(${bubble.scale || 1})`,
         zIndex: 10,
-        cursor: isScaling ? 'nwse-resize' : isDragging ? 'grabbing' : (onMove ? 'grab' : 'default'),
+        cursor: (isResizing || isScaling) ? 'nwse-resize' : isDragging ? 'grabbing' : (onMove ? 'grab' : 'default'),
       }}
       onMouseDown={handleMouseDown}
       onClick={(e) => e.stopPropagation()}
@@ -383,8 +442,19 @@ export default function SpeechBubble({ bubble, containerRef, onEdit, onDelete, o
         </div>
       )}
 
-      {/* Scale handle (all bubble types) */}
-      {onScale && (
+      {/* Resize handle for text blocks — changes width/height, top-left anchored */}
+      {isTextBlock && onResize && (
+        <div
+          onMouseDown={handleResizeMouseDown}
+          className="absolute -bottom-1 -right-1 w-5 h-5 bg-gray-600 border-2 border-white rounded-sm cursor-nwse-resize opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+          title="Изменить размер"
+        >
+          <div className="absolute inset-0 flex items-center justify-center text-white text-xs font-bold">⇲</div>
+        </div>
+      )}
+
+      {/* Scale handle for non-text-block types — uniform scale from center */}
+      {!isTextBlock && onScale && (
         <div
           onMouseDown={handleScaleMouseDown}
           className="absolute -bottom-1 -right-1 w-5 h-5 bg-gray-600 border-2 border-white rounded-sm cursor-nwse-resize opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"

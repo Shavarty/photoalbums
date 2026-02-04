@@ -15,6 +15,7 @@ interface SpreadEditorProps {
   onEditBubble?: (bubbleId: string) => void;
   onDeleteBubble?: (bubbleId: string) => void;
   onMoveBubble?: (bubbleId: string, x: number, y: number) => void;
+  onResizeBubble?: (bubbleId: string, width: number, height: number) => void;
   onScaleBubble?: (bubbleId: string, scale: number) => void;
   onFontSizeBubble?: (bubbleId: string, fontSize: number) => void;
 }
@@ -29,6 +30,7 @@ export default function SpreadEditor({
   onEditBubble,
   onDeleteBubble,
   onMoveBubble,
+  onResizeBubble,
   onScaleBubble,
   onFontSizeBubble,
 }: SpreadEditorProps) {
@@ -231,6 +233,7 @@ export default function SpreadEditor({
               onEdit={() => onEditBubble?.(bubble.id)}
               onDelete={() => onDeleteBubble?.(bubble.id)}
               onMove={(x, y) => onMoveBubble?.(bubble.id, x, y)}
+              onResize={(width, height) => onResizeBubble?.(bubble.id, width, height)}
               onScale={(scale) => onScaleBubble?.(bubble.id, scale)}
               onFontSizeChange={(fontSize) => onFontSizeBubble?.(bubble.id, fontSize)}
             />
