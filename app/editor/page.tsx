@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Album, Spread, Photo } from "@/lib/types";
 import { SPREAD_TEMPLATES } from "@/lib/spread-templates";
@@ -17,6 +17,8 @@ const generateId = () => {
 };
 
 export default function EditorPage() {
+  const [mode, setMode] = useState<'album' | 'comics'>('album');
+
   const [album, setAlbum] = useState<Album>({
     id: generateId(),
     title: "Название альбома",
@@ -29,6 +31,14 @@ export default function EditorPage() {
     createdAt: new Date(),
     updatedAt: new Date(),
   });
+
+  // Detect comics mode from URL on client mount
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get('mode') === 'comics') {
+      setMode('comics');
+      setAlbum(prev => prev.title === 'Название альбома' ? { ...prev, title: 'Название комикса' } : prev);
+    }
+  }, []);
 
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -989,6 +999,14 @@ export default function EditorPage() {
     }
   };
 
+  // In comics mode, show comic-specific templates first
+  const orderedTemplates = mode === 'comics'
+    ? [...SPREAD_TEMPLATES].sort((a, b) => {
+        const comicIds = ['comic-spread-bg', 'full-spread'];
+        return (comicIds.includes(b.id) ? 1 : 0) - (comicIds.includes(a.id) ? 1 : 0);
+      })
+    : SPREAD_TEMPLATES;
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -1013,6 +1031,9 @@ export default function EditorPage() {
                 className="h-7 md:h-8 w-auto"
               />
             </Link>
+            <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${mode === 'comics' ? 'bg-brand-orange/15 text-brand-orange' : 'bg-brand-olive/15 text-brand-olive'}`}>
+              {mode === 'comics' ? 'Комикс' : 'Альбом'}
+            </span>
           </div>
           <button
             onClick={handleGeneratePDF}
@@ -1033,7 +1054,7 @@ export default function EditorPage() {
             onChange={(e) =>
               setAlbum((prev) => ({ ...prev, title: e.target.value }))
             }
-            placeholder="Название альбома"
+            placeholder={mode === 'comics' ? "Название комикса" : "Название альбома"}
             className="text-xl md:text-3xl font-sans font-semibold border-none focus:outline-none focus:ring-2 focus:ring-brand-olive rounded px-2 w-full text-foreground placeholder-gray-400 text-center"
           />
         </div>
@@ -1080,7 +1101,7 @@ export default function EditorPage() {
 
                 {/* Add spread buttons */}
                 <div className="space-y-2 mb-4">
-                  {SPREAD_TEMPLATES.map((template) => {
+                  {orderedTemplates.map((template) => {
                     const isDisabled = disabledTemplates.includes(template.id);
                     return (
                       <button
@@ -1163,7 +1184,7 @@ export default function EditorPage() {
 
             {/* Add spread buttons */}
             <div className="space-y-2 mb-4">
-              {SPREAD_TEMPLATES.map((template) => {
+              {orderedTemplates.map((template) => {
                 const isDisabled = disabledTemplates.includes(template.id);
                 return (
                   <button
@@ -1225,7 +1246,7 @@ export default function EditorPage() {
           {album.spreads.length === 0 ? (
             <div className="bg-white rounded-xl shadow-sm p-8 md:p-12 text-center">
               <p className="text-gray-500 mb-4">
-                Альбом пустой. Добавьте первый разворот!
+                {mode === 'comics' ? "Комикс пустой. Добавьте первый разворот!" : "Альбом пустой. Добавьте первый разворот!"}
               </p>
               <button
                 onClick={() => setSidebarOpen(true)}
