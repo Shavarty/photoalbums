@@ -289,6 +289,7 @@ export default function SpeechBubble({ bubble, onEdit, onDelete, onMove, onResiz
         cursor: isDragging ? 'grabbing' : (onMove ? 'grab' : 'default'),
       }}
       onMouseDown={handleMouseDown}
+      onClick={(e) => e.stopPropagation()}
     >
       <svg
         width={estimatedWidth + 20}
