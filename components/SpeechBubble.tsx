@@ -14,7 +14,7 @@ export default function SpeechBubble({ bubble, onEdit, onDelete, onMove, onResiz
   const [isDragging, setIsDragging] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
   const dragStartRef = useRef<{ x: number; y: number; bubbleX: number; bubbleY: number } | null>(null);
-  const resizeStartRef = useRef<{ x: number; y: number; startWidth: number; startHeight: number } | null>(null);
+  const resizeStartRef = useRef<{ x: number; y: number; startWidth: number; startHeight: number; startBubbleX: number; startBubbleY: number; slotRect: DOMRect | null } | null>(null);
 
   const bubbleType = bubble.type || 'speech';
 
@@ -241,11 +241,16 @@ export default function SpeechBubble({ bubble, onEdit, onDelete, onMove, onResiz
     e.stopPropagation();
 
     setIsResizing(true);
+    // Capture slot container rect for position adjustment during resize
+    const slotContainer = (e.currentTarget as HTMLElement).parentElement?.parentElement;
     resizeStartRef.current = {
       x: e.clientX,
       y: e.clientY,
       startWidth: estimatedWidth,
       startHeight: estimatedHeight,
+      startBubbleX: bubble.x,
+      startBubbleY: bubble.y,
+      slotRect: slotContainer?.getBoundingClientRect() || null,
     };
   };
 
@@ -259,6 +264,15 @@ export default function SpeechBubble({ bubble, onEdit, onDelete, onMove, onResiz
     const newHeight = Math.max(minHeight, resizeStartRef.current.startHeight + deltaY);
 
     onResize(newWidth, newHeight);
+
+    // Shift position so top-left corner stays fixed (resize anchored to bottom-right)
+    if (onMove && resizeStartRef.current.slotRect) {
+      const widthChange = newWidth - resizeStartRef.current.startWidth;
+      const heightChange = newHeight - resizeStartRef.current.startHeight;
+      const newX = resizeStartRef.current.startBubbleX + (widthChange / 2 / resizeStartRef.current.slotRect.width) * 100;
+      const newY = resizeStartRef.current.startBubbleY + (heightChange / 2 / resizeStartRef.current.slotRect.height) * 100;
+      onMove(newX, newY);
+    }
   };
 
   const handleResizeMouseUp = () => {

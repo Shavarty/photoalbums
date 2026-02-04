@@ -379,17 +379,17 @@ export default function ImageCropModal({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] flex flex-col">
+      <div className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] flex flex-col overflow-hidden">
         {/* Header */}
-        <div className="p-6 border-b border-gray-200">
-          <h2 className="text-2xl font-serif font-bold">Обрезка изображения</h2>
-          <p className="text-gray-600 mt-1">
+        <div className="p-3 md:p-6 border-b border-gray-200 flex-shrink-0">
+          <h2 className="text-xl md:text-2xl font-serif font-bold">Обрезка изображения</h2>
+          <p className="text-sm text-gray-600 mt-0.5">
             Выберите область изображения для размещения в альбоме
           </p>
         </div>
 
         {/* Crop Area */}
-        <div className="relative flex-1 bg-gray-900" style={{ minHeight: "400px" }}>
+        <div className="relative flex-1 bg-gray-900 min-h-[120px] md:min-h-[300px]">
           <Cropper
             key={`${imageUrl}-${aspectRatio}`}
             image={imageUrl}
@@ -403,10 +403,10 @@ export default function ImageCropModal({
           />
         </div>
 
-        {/* Controls */}
-        <div className="p-6 border-t border-gray-200">
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+        {/* Controls (scrollable on mobile if overflow) */}
+        <div className="p-3 md:p-6 border-t border-gray-200 flex-shrink-0 overflow-y-auto" style={{ maxHeight: '40vh' }}>
+          <div className="mb-3 md:mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">
               Масштаб
             </label>
             <input
@@ -426,8 +426,8 @@ export default function ImageCropModal({
           </div>
 
           {/* Model Selection */}
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">
               Модель AI стилизации
             </label>
             <select
@@ -446,30 +446,31 @@ export default function ImageCropModal({
               {GEMINI_MODELS[selectedModel]?.description}
             </p>
           </div>
+        </div>
 
-          <div className="flex gap-3 justify-end">
-            <button
-              onClick={onCancel}
-              disabled={isProcessing}
-              className="px-6 py-2 border border-gray-300 rounded-full hover:bg-gray-50 transition font-medium disabled:opacity-50"
-            >
-              Отмена
-            </button>
-            <button
-              onClick={handleSaveWithoutStylization}
-              disabled={isProcessing}
-              className="px-6 py-2 border border-purple-500 text-purple-600 rounded-full hover:bg-purple-50 transition font-medium disabled:opacity-50"
-            >
-              Применить
-            </button>
-            <button
-              onClick={handleStylizeAndSave}
-              disabled={isProcessing}
-              className="btn-gradient px-8 py-2 text-white font-semibold disabled:opacity-50"
-            >
-              {isProcessing ? "Обработка..." : "🎨 Стилизовать"}
-            </button>
-          </div>
+        {/* Buttons — always visible at bottom */}
+        <div className="p-3 md:p-4 border-t border-gray-100 flex-shrink-0 flex gap-2 sm:gap-3 justify-end">
+          <button
+            onClick={onCancel}
+            disabled={isProcessing}
+            className="px-4 py-2 border border-gray-300 rounded-full hover:bg-gray-50 transition font-medium text-sm disabled:opacity-50"
+          >
+            Отмена
+          </button>
+          <button
+            onClick={handleSaveWithoutStylization}
+            disabled={isProcessing}
+            className="px-4 py-2 bg-purple-100 border border-purple-500 text-purple-600 rounded-full hover:bg-purple-200 transition font-medium text-sm disabled:opacity-50"
+          >
+            Применить
+          </button>
+          <button
+            onClick={handleStylizeAndSave}
+            disabled={isProcessing}
+            className="btn-gradient px-5 py-2 text-white font-semibold text-sm disabled:opacity-50"
+          >
+            {isProcessing ? "Обработка..." : "🎨 Стилизовать"}
+          </button>
         </div>
       </div>
     </div>
