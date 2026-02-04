@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { DEFAULT_MODEL } from "@/lib/geminiModels";
 
+// Gemini image generation берёт 20-60 секунд
+export const maxDuration = 60;
+
 export async function POST(request: Request) {
   try {
     const { imageBase64, modelId = DEFAULT_MODEL } = await request.json();

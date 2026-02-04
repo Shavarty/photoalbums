@@ -580,6 +580,23 @@ export default function EditorPage() {
         }
       } catch (error) {
         console.error("Error processing full-spread image:", error);
+        // Убираем spinner на обоих слотах panoramic
+        setAlbum((prev) => ({
+          ...prev,
+          spreads: prev.spreads.map((s) =>
+            s.id === spreadId
+              ? {
+                  ...s,
+                  leftPhotos: s.leftPhotos.map((photo, idx) =>
+                    idx === 0 ? { ...photo, isStylizing: false } : photo
+                  ),
+                  rightPhotos: s.rightPhotos.map((photo, idx) =>
+                    idx === 0 ? { ...photo, isStylizing: false } : photo
+                  ),
+                }
+              : s
+          ),
+        }));
         alert("Не удалось обработать изображение. Попробуйте еще раз.");
         setCropModal(null);
       }
@@ -662,13 +679,41 @@ export default function EditorPage() {
           console.log("Stylization complete!");
         } else {
           console.error("Stylization failed:", stylizeResult.error);
-          // Не показываем alert, просто логируем - чтобы не мешать пользователю
-          console.error("User will see original photo instead");
+          // Убираем spinner, оставляем оригинальное фото
+          setAlbum((prev) => ({
+            ...prev,
+            spreads: prev.spreads.map((spread) =>
+              spread.id === spreadId
+                ? {
+                    ...spread,
+                    [side === "left" ? "leftPhotos" : "rightPhotos"]: (
+                      side === "left" ? spread.leftPhotos : spread.rightPhotos
+                    ).map((photo, idx) =>
+                      idx === photoIndex ? { ...photo, isStylizing: false } : photo
+                    ),
+                  }
+                : spread
+            ),
+          }));
         }
       } catch (error: any) {
         console.error("Background stylization error:", error);
-        // Не показываем alert, просто логируем
-        console.error("User will see original photo instead");
+        // Убираем spinner, оставляем оригинальное фото
+        setAlbum((prev) => ({
+          ...prev,
+          spreads: prev.spreads.map((spread) =>
+            spread.id === spreadId
+              ? {
+                  ...spread,
+                  [side === "left" ? "leftPhotos" : "rightPhotos"]: (
+                    side === "left" ? spread.leftPhotos : spread.rightPhotos
+                  ).map((photo, idx) =>
+                    idx === photoIndex ? { ...photo, isStylizing: false } : photo
+                  ),
+                }
+              : spread
+          ),
+        }));
       }
     }
   };
