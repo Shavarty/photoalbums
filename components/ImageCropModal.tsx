@@ -234,7 +234,7 @@ const createPreviewImage = async (
       console.log(`Retrying image processing (attempt ${retryCount + 2}/6) after ${delay}ms...`);
       console.log(`Error was:`, error?.message || error);
       await new Promise(resolve => setTimeout(resolve, delay));
-      return createPreviewImage(imageSrc, crop, targetAspectRatio, retryCount + 1);
+      return createPreviewImage(imageSrc, crop, targetAspectRatio, expansionMode, retryCount + 1);
     }
     console.error("Final error after 6 attempts:", error);
     throw error;
