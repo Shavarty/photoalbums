@@ -78,9 +78,9 @@ export default function SpreadEditor({
                 }
               }}
             >
-              <div className={`relative w-full h-full flex flex-col items-center justify-center overflow-visible transition-all group/photo ${photo?.hidden ? 'border border-dashed border-gray-400 bg-gray-50' : !photo?.url ? 'bg-gray-200 border border-gray-400 hover:bg-gray-300 hover:border-brand-orange' : ''}`}>
+              <div className={`relative w-full h-full flex flex-col items-center justify-center overflow-visible transition-all group/photo ${photo?.hidden ? 'border border-dashed border-gray-400 bg-gray-50 opacity-[0.1] hover:opacity-[0.4] transition-opacity' : !photo?.url ? 'bg-gray-200 border border-gray-400 hover:bg-gray-300 hover:border-brand-orange' : ''}`}>
                 {photo?.hidden ? (
-                  <div className="flex items-center justify-center opacity-40 cursor-pointer">
+                  <div className="flex items-center justify-center cursor-pointer">
                     <div className="w-7 h-7 bg-gray-300 rounded-full flex items-center justify-center text-gray-600 text-base hover:bg-gray-400">
                       +
                     </div>
