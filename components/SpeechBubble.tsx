@@ -4,6 +4,7 @@ import { SpeechBubble as SpeechBubbleType } from "@/lib/types";
 interface SpeechBubbleProps {
   bubble: SpeechBubbleType;
   containerRef?: React.RefObject<HTMLDivElement | null>; // Positioning container for drag (spread overlay)
+  containerScale?: number; // Scale factor applied by parent based on container width
   onEdit?: () => void;
   onDelete?: () => void;
   onMove?: (x: number, y: number) => void;
@@ -12,7 +13,18 @@ interface SpeechBubbleProps {
   onFontSizeChange?: (fontSize: number) => void;
 }
 
-export default function SpeechBubble({ bubble, containerRef, onEdit, onDelete, onMove, onResize, onScale, onFontSizeChange }: SpeechBubbleProps) {
+// Extract clientX/clientY from either MouseEvent or TouchEvent
+function getXY(e: MouseEvent | TouchEvent): { clientX: number; clientY: number } {
+  if ('touches' in e && e.touches.length > 0) {
+    return { clientX: e.touches[0].clientX, clientY: e.touches[0].clientY };
+  }
+  if ('changedTouches' in e && e.changedTouches.length > 0) {
+    return { clientX: e.changedTouches[0].clientX, clientY: e.changedTouches[0].clientY };
+  }
+  return { clientX: (e as MouseEvent).clientX, clientY: (e as MouseEvent).clientY };
+}
+
+export default function SpeechBubble({ bubble, containerRef, containerScale = 1, onEdit, onDelete, onMove, onResize, onScale, onFontSizeChange }: SpeechBubbleProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
   const [isScaling, setIsScaling] = useState(false);
@@ -181,74 +193,82 @@ export default function SpeechBubble({ bubble, containerRef, onEdit, onDelete, o
     }
   };
 
-  // Drag handlers
-  const handleMouseDown = (e: React.MouseEvent) => {
-    if (e.button !== 0 || !onMove) return; // Only left click
-    if ((e.target as HTMLElement).closest('button')) return; // Don't drag when clicking buttons
-
-    e.preventDefault();
-    e.stopPropagation();
-
-    const parentRect = (e.currentTarget as HTMLElement).parentElement?.getBoundingClientRect();
-    if (!parentRect) return;
-
+  // --- Drag handlers (mouse + touch) ---
+  const startDrag = (clientX: number, clientY: number) => {
+    if (!onMove) return;
     setIsDragging(true);
     dragStartRef.current = {
-      x: e.clientX,
-      y: e.clientY,
+      x: clientX,
+      y: clientY,
       bubbleX: bubble.x,
       bubbleY: bubble.y,
     };
   };
 
-  const handleMouseMove = (e: MouseEvent) => {
-    if (!isDragging || !dragStartRef.current || !onMove) return;
-
-    const parentRect = containerRef?.current?.getBoundingClientRect();
-    if (!parentRect) return;
-
-    const deltaX = e.clientX - dragStartRef.current.x;
-    const deltaY = e.clientY - dragStartRef.current.y;
-
-    const deltaXPercent = (deltaX / parentRect.width) * 100;
-    const deltaYPercent = (deltaY / parentRect.height) * 100;
-
-    const newX = Math.max(5, Math.min(95, dragStartRef.current.bubbleX + deltaXPercent));
-    const newY = Math.max(5, Math.min(95, dragStartRef.current.bubbleY + deltaYPercent));
-
-    onMove(newX, newY);
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (e.button !== 0) return;
+    if ((e.target as HTMLElement).closest('button')) return;
+    e.preventDefault();
+    e.stopPropagation();
+    startDrag(e.clientX, e.clientY);
   };
 
-  const handleMouseUp = () => {
-    setIsDragging(false);
-    dragStartRef.current = null;
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if ((e.target as HTMLElement).closest('button')) return;
+    e.stopPropagation();
+    const touch = e.touches[0];
+    startDrag(touch.clientX, touch.clientY);
   };
 
-  // Add/remove global event listeners for drag
   useEffect(() => {
-    if (isDragging) {
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
-      return () => {
-        document.removeEventListener('mousemove', handleMouseMove);
-        document.removeEventListener('mouseup', handleMouseUp);
-      };
-    }
+    if (!isDragging) return;
+
+    const onMove_ = (e: MouseEvent | TouchEvent) => {
+      if (!dragStartRef.current || !onMove) return;
+      const { clientX, clientY } = getXY(e);
+
+      const parentRect = containerRef?.current?.getBoundingClientRect();
+      if (!parentRect) return;
+
+      const deltaX = clientX - dragStartRef.current.x;
+      const deltaY = clientY - dragStartRef.current.y;
+
+      const deltaXPercent = (deltaX / parentRect.width) * 100;
+      const deltaYPercent = (deltaY / parentRect.height) * 100;
+
+      const newX = Math.max(5, Math.min(95, dragStartRef.current.bubbleX + deltaXPercent));
+      const newY = Math.max(5, Math.min(95, dragStartRef.current.bubbleY + deltaYPercent));
+
+      onMove(newX, newY);
+    };
+
+    const onEnd = () => {
+      setIsDragging(false);
+      dragStartRef.current = null;
+    };
+
+    document.addEventListener('mousemove', onMove_);
+    document.addEventListener('mouseup', onEnd);
+    document.addEventListener('touchmove', onMove_, { passive: false });
+    document.addEventListener('touchend', onEnd);
+    return () => {
+      document.removeEventListener('mousemove', onMove_);
+      document.removeEventListener('mouseup', onEnd);
+      document.removeEventListener('touchmove', onMove_);
+      document.removeEventListener('touchend', onEnd);
+    };
   }, [isDragging]);
 
   const bubblePath = getBubblePath();
   const isThoughtBubble = bubbleType === 'thought' && typeof bubblePath === 'object';
 
-  // Resize handlers (text-block only — changes width/height, top-left anchored)
-  const handleResizeMouseDown = (e: React.MouseEvent) => {
+  // --- Resize handlers (text-block only, mouse + touch) ---
+  const startResize = (clientX: number, clientY: number) => {
     if (!onResize || bubbleType !== 'text-block') return;
-    e.preventDefault();
-    e.stopPropagation();
-
     setIsResizing(true);
     resizeStartRef.current = {
-      x: e.clientX,
-      y: e.clientY,
+      x: clientX,
+      y: clientY,
       startWidth: estimatedWidth,
       startHeight: estimatedHeight,
       startBubbleX: bubble.x,
@@ -257,96 +277,128 @@ export default function SpeechBubble({ bubble, containerRef, onEdit, onDelete, o
     };
   };
 
-  const handleResizeMouseMove = (e: MouseEvent) => {
-    if (!isResizing || !resizeStartRef.current || !onResize) return;
-
-    const deltaX = e.clientX - resizeStartRef.current.x;
-    const deltaY = e.clientY - resizeStartRef.current.y;
-
-    const newWidth = Math.max(minWidth, Math.min(maxWidth, resizeStartRef.current.startWidth + deltaX));
-    const newHeight = Math.max(minHeight, resizeStartRef.current.startHeight + deltaY);
-
-    onResize(newWidth, newHeight);
-
-    // Shift position so top-left corner stays fixed (resize anchored to bottom-right)
-    if (onMove && resizeStartRef.current.slotRect) {
-      const widthChange = newWidth - resizeStartRef.current.startWidth;
-      const heightChange = newHeight - resizeStartRef.current.startHeight;
-      const newX = resizeStartRef.current.startBubbleX + (widthChange / 2 / resizeStartRef.current.slotRect.width) * 100;
-      const newY = resizeStartRef.current.startBubbleY + (heightChange / 2 / resizeStartRef.current.slotRect.height) * 100;
-      onMove(newX, newY);
-    }
-  };
-
-  const handleResizeMouseUp = () => {
-    setIsResizing(false);
-    resizeStartRef.current = null;
-  };
-
-  // Add resize event listeners
-  useEffect(() => {
-    if (isResizing) {
-      document.addEventListener('mousemove', handleResizeMouseMove);
-      document.addEventListener('mouseup', handleResizeMouseUp);
-      return () => {
-        document.removeEventListener('mousemove', handleResizeMouseMove);
-        document.removeEventListener('mouseup', handleResizeMouseUp);
-      };
-    }
-  }, [isResizing]);
-
-  // Scale handlers (uniform resize for non-text-block types)
-  const handleScaleMouseDown = (e: React.MouseEvent) => {
-    if (!onScale) return;
+  const handleResizeMouseDown = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    startResize(e.clientX, e.clientY);
+  };
 
-    setIsScaling(true);
+  const handleResizeTouchStart = (e: React.TouchEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    startResize(e.touches[0].clientX, e.touches[0].clientY);
+  };
+
+  useEffect(() => {
+    if (!isResizing) return;
+
+    const onMove_ = (e: MouseEvent | TouchEvent) => {
+      if (!resizeStartRef.current || !onResize) return;
+      if ('cancelable' in e && e.cancelable) e.preventDefault();
+      const { clientX, clientY } = getXY(e);
+
+      const deltaX = clientX - resizeStartRef.current.x;
+      const deltaY = clientY - resizeStartRef.current.y;
+
+      const newWidth = Math.max(minWidth, Math.min(maxWidth, resizeStartRef.current.startWidth + deltaX));
+      const newHeight = Math.max(minHeight, resizeStartRef.current.startHeight + deltaY);
+
+      onResize(newWidth, newHeight);
+
+      if (onMove && resizeStartRef.current.slotRect) {
+        const widthChange = newWidth - resizeStartRef.current.startWidth;
+        const heightChange = newHeight - resizeStartRef.current.startHeight;
+        const newX = resizeStartRef.current.startBubbleX + (widthChange / 2 / resizeStartRef.current.slotRect.width) * 100;
+        const newY = resizeStartRef.current.startBubbleY + (heightChange / 2 / resizeStartRef.current.slotRect.height) * 100;
+        onMove(newX, newY);
+      }
+    };
+
+    const onEnd = () => {
+      setIsResizing(false);
+      resizeStartRef.current = null;
+    };
+
+    document.addEventListener('mousemove', onMove_);
+    document.addEventListener('mouseup', onEnd);
+    document.addEventListener('touchmove', onMove_, { passive: false });
+    document.addEventListener('touchend', onEnd);
+    return () => {
+      document.removeEventListener('mousemove', onMove_);
+      document.removeEventListener('mouseup', onEnd);
+      document.removeEventListener('touchmove', onMove_);
+      document.removeEventListener('touchend', onEnd);
+    };
+  }, [isResizing]);
+
+  // --- Scale handlers (non-text-block, mouse + touch) ---
+  const startScale = (clientX: number, clientY: number) => {
+    if (!onScale) return;
     const container = containerRef?.current;
     if (!container) return;
     const containerRect = container.getBoundingClientRect();
     const centerX = containerRect.left + (bubble.x / 100) * containerRect.width;
     const centerY = containerRect.top + (bubble.y / 100) * containerRect.height;
 
-    const dx = e.clientX - centerX;
-    const dy = e.clientY - centerY;
+    const dx = clientX - centerX;
+    const dy = clientY - centerY;
 
+    setIsScaling(true);
     scaleStartRef.current = {
       centerX,
       centerY,
-      initialDist: Math.sqrt(dx * dx + dy * dy),
+      initialDist: Math.sqrt(dx * dx + dy * dy) || 1,
       initialScale: bubble.scale || 1,
     };
   };
 
-  const handleScaleMouseMove = (e: MouseEvent) => {
-    if (!isScaling || !scaleStartRef.current || !onScale) return;
-
-    const dx = e.clientX - scaleStartRef.current.centerX;
-    const dy = e.clientY - scaleStartRef.current.centerY;
-    const currentDist = Math.sqrt(dx * dx + dy * dy);
-
-    const ratio = currentDist / scaleStartRef.current.initialDist;
-    const newScale = Math.max(0.3, Math.min(3, scaleStartRef.current.initialScale * ratio));
-    onScale(Math.round(newScale * 100) / 100);
+  const handleScaleMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    startScale(e.clientX, e.clientY);
   };
 
-  const handleScaleMouseUp = () => {
-    setIsScaling(false);
-    scaleStartRef.current = null;
+  const handleScaleTouchStart = (e: React.TouchEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    startScale(e.touches[0].clientX, e.touches[0].clientY);
   };
 
-  // Add scale event listeners
   useEffect(() => {
-    if (isScaling) {
-      document.addEventListener('mousemove', handleScaleMouseMove);
-      document.addEventListener('mouseup', handleScaleMouseUp);
-      return () => {
-        document.removeEventListener('mousemove', handleScaleMouseMove);
-        document.removeEventListener('mouseup', handleScaleMouseUp);
-      };
-    }
+    if (!isScaling) return;
+
+    const onMove_ = (e: MouseEvent | TouchEvent) => {
+      if (!scaleStartRef.current || !onScale) return;
+      if ('cancelable' in e && e.cancelable) e.preventDefault();
+      const { clientX, clientY } = getXY(e);
+
+      const dx = clientX - scaleStartRef.current.centerX;
+      const dy = clientY - scaleStartRef.current.centerY;
+      const currentDist = Math.sqrt(dx * dx + dy * dy);
+
+      const ratio = currentDist / scaleStartRef.current.initialDist;
+      const newScale = Math.max(0.3, Math.min(3, scaleStartRef.current.initialScale * ratio));
+      onScale(Math.round(newScale * 100) / 100);
+    };
+
+    const onEnd = () => {
+      setIsScaling(false);
+      scaleStartRef.current = null;
+    };
+
+    document.addEventListener('mousemove', onMove_);
+    document.addEventListener('mouseup', onEnd);
+    document.addEventListener('touchmove', onMove_, { passive: false });
+    document.addEventListener('touchend', onEnd);
+    return () => {
+      document.removeEventListener('mousemove', onMove_);
+      document.removeEventListener('mouseup', onEnd);
+      document.removeEventListener('touchmove', onMove_);
+      document.removeEventListener('touchend', onEnd);
+    };
   }, [isScaling]);
+
+  const effectiveScale = (bubble.scale || 1) * containerScale;
 
   return (
     <div
@@ -354,11 +406,12 @@ export default function SpeechBubble({ bubble, containerRef, onEdit, onDelete, o
       style={{
         left: `${bubble.x}%`,
         top: `${bubble.y}%`,
-        transform: `translate(-50%, -50%) scale(${bubble.scale || 1})`,
+        transform: `translate(-50%, -50%) scale(${effectiveScale})`,
         zIndex: 10,
         cursor: (isResizing || isScaling) ? 'nwse-resize' : isDragging ? 'grabbing' : (onMove ? 'grab' : 'default'),
       }}
       onMouseDown={handleMouseDown}
+      onTouchStart={handleTouchStart}
       onClick={(e) => e.stopPropagation()}
     >
       <svg
@@ -419,9 +472,9 @@ export default function SpeechBubble({ bubble, containerRef, onEdit, onDelete, o
         </foreignObject>
       </svg>
 
-      {/* Edit/Delete buttons (show on hover) */}
+      {/* Edit/Delete buttons — always visible on mobile, hover on desktop */}
       {(onEdit || onDelete) && (
-        <div className="absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+        <div className="absolute -top-2 -right-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity flex gap-1">
           {onEdit && (
             <button
               onClick={onEdit}
@@ -443,31 +496,33 @@ export default function SpeechBubble({ bubble, containerRef, onEdit, onDelete, o
         </div>
       )}
 
-      {/* Resize handle for text blocks — changes width/height, top-left anchored */}
+      {/* Resize handle for text blocks — always visible on mobile, hover on desktop */}
       {isTextBlock && onResize && (
         <div
+          className="absolute -bottom-1 -right-1 w-8 h-8 sm:w-5 sm:h-5 flex items-center justify-center opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
           onMouseDown={handleResizeMouseDown}
-          className="absolute -bottom-1 -right-1 w-5 h-5 bg-gray-600 border-2 border-white rounded-sm cursor-nwse-resize opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
-          title="Изменить размер"
+          onTouchStart={handleResizeTouchStart}
+          style={{ touchAction: 'none' }}
         >
-          <div className="absolute inset-0 flex items-center justify-center text-white text-xs font-bold">⇲</div>
+          <div className="w-5 h-5 bg-gray-600 border-2 border-white rounded-sm cursor-nwse-resize shadow-lg flex items-center justify-center text-white text-xs font-bold">⇲</div>
         </div>
       )}
 
-      {/* Scale handle for non-text-block types — uniform scale from center */}
+      {/* Scale handle for non-text-block types — always visible on mobile, hover on desktop */}
       {!isTextBlock && onScale && (
         <div
+          className="absolute -bottom-1 -right-1 w-8 h-8 sm:w-5 sm:h-5 flex items-center justify-center opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
           onMouseDown={handleScaleMouseDown}
-          className="absolute -bottom-1 -right-1 w-5 h-5 bg-gray-600 border-2 border-white rounded-sm cursor-nwse-resize opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
-          title="Масштаб"
+          onTouchStart={handleScaleTouchStart}
+          style={{ touchAction: 'none' }}
         >
-          <div className="absolute inset-0 flex items-center justify-center text-white text-xs font-bold">⇲</div>
+          <div className="w-5 h-5 bg-gray-600 border-2 border-white rounded-sm cursor-nwse-resize shadow-lg flex items-center justify-center text-white text-xs font-bold">⇲</div>
         </div>
       )}
 
-      {/* Font size controls for text blocks */}
+      {/* Font size controls for text blocks — always visible on mobile, hover on desktop */}
       {isTextBlock && onFontSizeChange && (
-        <div className="absolute -top-2 -left-2 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col gap-1">
+        <div className="absolute -top-2 -left-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity flex flex-col gap-1">
           <button
             onClick={(e) => {
               e.stopPropagation();

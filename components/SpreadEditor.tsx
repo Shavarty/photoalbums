@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState, useEffect } from "react";
 import { Spread, Photo } from "@/lib/types";
 import { SPREAD_TEMPLATES, PhotoSlot, getPageSlots, PANORAMIC_BG_TEMPLATE_IDS } from "@/lib/spread-templates";
 import SpeechBubble from "./SpeechBubble";
@@ -35,6 +35,25 @@ export default function SpreadEditor({
   onFontSizeBubble,
 }: SpreadEditorProps) {
   const spreadRef = useRef<HTMLDivElement>(null);
+  const [containerScale, setContainerScale] = useState(1);
+
+  // Compute containerScale based on actual spread width vs a reference desktop width (600px).
+  // On mobile the spread is narrower, so bubbles (which have fixed pixel sizes) would be too big.
+  useEffect(() => {
+    const el = spreadRef.current;
+    if (!el) return;
+
+    const update = () => {
+      const w = el.getBoundingClientRect().width;
+      setContainerScale(Math.min(1, w / 600));
+    };
+    update();
+
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
   const template = SPREAD_TEMPLATES.find((t) => t.id === spread.templateId);
   if (!template) return null;
 
@@ -97,10 +116,10 @@ export default function SpreadEditor({
                       className={`w-full h-full object-cover ${slot.width < 1.0 || slot.height < 1.0 ? 'border-[3px] border-black' : ''}`}
                     />
 
-                    {/* Photo action buttons overlay (shown on hover) */}
+                    {/* Photo action buttons overlay — always visible on mobile, hover on desktop */}
                     {!photo.isStylizing && (
                       <div
-                        className="absolute inset-0 transition-all flex items-center justify-center gap-2 opacity-0 group-hover/photo:opacity-100 pointer-events-none group-hover/photo:pointer-events-auto"
+                        className="absolute inset-0 transition-all flex items-center justify-center gap-1.5 opacity-100 sm:opacity-0 sm:group-hover/photo:opacity-100 pointer-events-auto sm:pointer-events-none sm:group-hover/photo:pointer-events-auto"
                         style={{
                           backgroundColor: 'rgba(0, 0, 0, 0)',
                         }}
@@ -116,10 +135,10 @@ export default function SpreadEditor({
                             e.stopPropagation();
                             onPhotoClick(side, index);
                           }}
-                          className="px-3 py-1.5 bg-green-700 text-white rounded-lg text-xs font-medium hover:bg-green-800 transition shadow-lg"
+                          className="p-1.5 sm:px-3 sm:py-1.5 bg-green-700 text-white rounded-lg text-xs font-medium hover:bg-green-800 transition shadow-lg"
                           title="Заменить фото"
                         >
-                          🔄 Заменить
+                          🔄<span className="hidden sm:inline"> Заменить</span>
                         </button>
                         {onDeletePhoto && (
                           <button
@@ -127,10 +146,10 @@ export default function SpreadEditor({
                               e.stopPropagation();
                               onDeletePhoto(side, index);
                             }}
-                            className="px-3 py-1.5 bg-brand-orange text-white rounded-lg text-xs font-medium hover:bg-orange-600 transition shadow-lg"
+                            className="p-1.5 sm:px-3 sm:py-1.5 bg-brand-orange text-white rounded-lg text-xs font-medium hover:bg-orange-600 transition shadow-lg"
                             title="Удалить фото"
                           >
-                            🗑️ Удалить
+                            🗑️<span className="hidden sm:inline"> Удалить</span>
                           </button>
                         )}
                       </div>
@@ -176,9 +195,9 @@ export default function SpreadEditor({
                     </span>
                   </div>
                 )}
-                {/* Toggle slot visibility (hide) — not for background slots */}
+                {/* Toggle slot visibility (hide) — not for background slots; always visible on mobile */}
                 {!isBackground && onToggleSlot && !photo?.hidden && (
-                  <div className="absolute top-0.5 right-0.5 z-30 opacity-0 group-hover/photo:opacity-100 transition-opacity">
+                  <div className="absolute top-0.5 right-0.5 z-30 opacity-100 sm:opacity-0 sm:group-hover/photo:opacity-100 transition-opacity">
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
@@ -230,6 +249,7 @@ export default function SpreadEditor({
               key={bubble.id}
               bubble={bubble}
               containerRef={spreadRef}
+              containerScale={containerScale}
               onEdit={() => onEditBubble?.(bubble.id)}
               onDelete={() => onDeleteBubble?.(bubble.id)}
               onMove={(x, y) => onMoveBubble?.(bubble.id, x, y)}
