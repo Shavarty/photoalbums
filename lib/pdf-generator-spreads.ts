@@ -320,7 +320,7 @@ const renderSpeechBubbleToCanvas = (
                        getSpeechBubblePath();
 
     if (bubbleType === 'text-block') {
-      ctx.fillStyle = "rgba(255, 255, 255, 0.5)";
+      ctx.fillStyle = "rgba(255, 255, 255, 0.75)";
       ctx.fill(bubblePath);
       // No stroke for text blocks
     } else {

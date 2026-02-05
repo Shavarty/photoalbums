@@ -392,7 +392,7 @@ export default function SpeechBubble({ bubble, containerRef, onEdit, onDelete, o
         ) : (
           <path
             d={typeof bubblePath === 'string' ? bubblePath : ''}
-            fill={isTextBlock ? 'rgba(255, 255, 255, 0.5)' : 'white'}
+            fill={isTextBlock ? 'rgba(255, 255, 255, 0.75)' : 'white'}
             stroke={isTextBlock ? 'none' : 'black'}
             strokeWidth={isTextBlock ? 0 : 2}
             strokeLinejoin="round"
