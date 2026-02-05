@@ -168,12 +168,12 @@ export default function SpreadEditor({
                   </div>
                 )}
 
-                {/* Slot hide toggle — w-5 h-5, not on background slots */}
+                {/* Slot hide toggle — subtle, not on background slots */}
                 {!isBackground && onToggleSlot && !photo?.hidden && (
                   <div className={`absolute top-0.5 right-0.5 z-30 ${slotVisibleCls} transition-opacity`}>
                     <button
                       onClick={(e) => { e.stopPropagation(); onToggleSlot(side, index); }}
-                      className="w-5 h-5 bg-gray-700 bg-opacity-80 text-white rounded-full flex items-center justify-center text-[10px] hover:bg-gray-900 shadow"
+                      className="w-4 h-4 bg-gray-500 bg-opacity-50 text-white rounded-full flex items-center justify-center text-[8px] hover:bg-opacity-80"
                       title="Скрыть слот"
                     >
                       ✕
