@@ -43,13 +43,13 @@ export default function SpreadEditor({
     setIsTouch(navigator.maxTouchPoints > 0);
   }, []);
 
-  // containerScale: shrinks bubbles proportionally when spread is narrower than 600px reference
+  // containerScale: scales bubbles proportionally to match 600px reference spread width (same as PDF)
   useEffect(() => {
     const el = spreadRef.current;
     if (!el) return;
     const update = () => {
       const w = el.getBoundingClientRect().width;
-      setContainerScale(Math.min(1, w / 600));
+      setContainerScale(w / 600);
     };
     update();
     const ro = new ResizeObserver(update);

@@ -44,8 +44,8 @@ export default function SpeechBubble({ bubble, containerRef, containerScale = 1,
   const minHeight = 60;
   const maxWidth = isTextBlock ? 400 : 300;
 
-  const estimatedWidth = bubble.width || (isTextBlock ? 180 : Math.max(minWidth, Math.min(maxWidth, textLength * 8 + padding * 2)));
-  const charsPerLine = isTextBlock ? Math.max(10, Math.floor((estimatedWidth - padding * 2) / 8)) : 30;
+  const estimatedWidth = bubble.width || (isTextBlock ? 180 : Math.max(minWidth, Math.min(maxWidth, textLength * 9.5 + padding * 2)));
+  const charsPerLine = isTextBlock ? Math.max(10, Math.floor((estimatedWidth - padding * 2) / 9.5)) : 30;
   const estimatedHeight = bubble.height || Math.max(minHeight, Math.ceil(textLength / charsPerLine) * 20 + padding * 2);
 
   // Top-tail shift: pad above ellipse so tail / small-circles don't clip at y < 0.
@@ -306,7 +306,7 @@ export default function SpeechBubble({ bubble, containerRef, containerScale = 1,
 
   // SVG original coordinate space
   const svgW = estimatedWidth + 20;
-  const bottomPad = isTopTail ? 12 : (isThoughtBubble ? 70 : 30);
+  const bottomPad = isTopTail ? 12 : (isThoughtBubble ? 70 : (bubbleType === 'speech' ? 30 : 12));
   const svgH = estimatedHeight + topPad + bottomPad;
 
   // Visibility: touch → always visible; desktop → hover-reveal

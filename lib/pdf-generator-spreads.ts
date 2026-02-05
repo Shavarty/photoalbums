@@ -141,8 +141,8 @@ const renderSpeechBubbleToCanvas = (
   const minHeight = 60;
   const maxWidth = isTextBlock ? 400 : 300;
   // Text blocks: fixed default width 180px, height grows with content (same as SpeechBubble.tsx)
-  const estimatedWidth = bubble.width || (isTextBlock ? 180 : Math.max(minWidth, Math.min(maxWidth, textLength * 8 + padding * 2)));
-  const charsPerLine = isTextBlock ? Math.max(10, Math.floor((estimatedWidth - padding * 2) / 8)) : 30;
+  const estimatedWidth = bubble.width || (isTextBlock ? 180 : Math.max(minWidth, Math.min(maxWidth, textLength * 9.5 + padding * 2)));
+  const charsPerLine = isTextBlock ? Math.max(10, Math.floor((estimatedWidth - padding * 2) / 9.5)) : 30;
   const estimatedHeight = bubble.height || Math.max(minHeight, Math.ceil(textLength / charsPerLine) * 20 + padding * 2);
 
   // Top-tail shift (same logic as SpeechBubble.tsx)
@@ -152,7 +152,7 @@ const renderSpeechBubbleToCanvas = (
     : 0;
 
   const bubbleWidthPx = estimatedWidth + 20;
-  const bottomPad = isTopTail ? 12 : (bubbleType === 'thought' ? 70 : 30);
+  const bottomPad = isTopTail ? 12 : (bubbleType === 'thought' ? 70 : (bubbleType === 'speech' ? 30 : 12));
   const bubbleHeightPx = estimatedHeight + topPad + bottomPad;
 
   // Calculate bubble size in mm to match editor appearance EXACTLY
