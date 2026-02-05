@@ -384,36 +384,31 @@ const renderSpeechBubbleToCanvas = (
   // Split by manual line breaks first
   const paragraphs = bubble.text.split('\n');
 
-  // For text blocks, wrap each paragraph
-  if (bubbleType === 'text-block') {
-    paragraphs.forEach(paragraph => {
-      if (!paragraph.trim()) {
-        allLines.push('');
-        return;
-      }
-      const words = paragraph.split(' ');
-      let currentLine = '';
+  // Wrap all bubble types using measureText (matches editor CSS word-wrap)
+  paragraphs.forEach(paragraph => {
+    if (!paragraph.trim()) {
+      allLines.push('');
+      return;
+    }
+    const words = paragraph.split(' ');
+    let currentLine = '';
 
-      words.forEach(word => {
-        const testLine = currentLine ? `${currentLine} ${word}` : word;
-        const metrics = ctx.measureText(testLine);
+    words.forEach(word => {
+      const testLine = currentLine ? `${currentLine} ${word}` : word;
+      const metrics = ctx.measureText(testLine);
 
-        if (metrics.width > textMaxWidth && currentLine) {
-          allLines.push(currentLine);
-          currentLine = word;
-        } else {
-          currentLine = testLine;
-        }
-      });
-
-      if (currentLine) {
+      if (metrics.width > textMaxWidth && currentLine) {
         allLines.push(currentLine);
+        currentLine = word;
+      } else {
+        currentLine = testLine;
       }
     });
-  } else {
-    // For other bubble types, just use manual breaks
-    allLines.push(...paragraphs);
-  }
+
+    if (currentLine) {
+      allLines.push(currentLine);
+    }
+  });
 
   const startY = cy - ((allLines.length - 1) * lineHeight) / 2;
   const textX = bubbleType === 'text-block' ? padding + 10 : cx;
