@@ -55,13 +55,11 @@ const DEFAULT_PROCESS_INSTRUCTIONS = `IMPORTANT INSTRUCTIONS:
 5. Maintain spatial composition: if the photo is positioned upper-left, keep content there and extend the scene to right and bottom.
 6. Match the perspective, lighting, and elements from the visible background.
 7. The photo MUST MERGE seamlessly with the extended background - there should be NO separation, NO dividing lines, NO borders between the photo and the extended areas. The background from the photo should continue all the way to the outer edges of the canvas.
-8. Make people and objects recognizable but stylized in the chosen art style.
+8. Treat this as style transfer: apply the art style only to the visual rendering. Preserve the identity and appearance of every person and object exactly as they are in the source photo. The stylized result must depict the exact same individuals and scene — only the artistic style should differ.
 9. CRITICAL: Fill the ENTIRE canvas edge-to-edge with the scene. NO white bars, NO blank spaces, NO padding at top, bottom, left, or right. The artwork must extend all the way to every edge of the image.
 10. If the original aspect ratio needs adjustment, extend the background scenery rather than adding white/blank bars.
 
-Transform and extend seamlessly in the chosen art style. The result should look like one unified scene, not a photo placed on a background.
-
-Negative prompt: no borders, no frames, no margins, no mockup, no black border, no white border, no white bars, no blank bars, no padding, no letterbox, no pillarbox, no composite, no layered effect, no picture-in-picture, no blank spaces at edges.`;
+Transform and extend seamlessly in the chosen art style. The result should look like one unified scene, not a photo placed on a background.`;
 
 function getAssembledPrompt(stylizeSettings?: StylizeSettings): string {
   const s = stylizeSettings ?? {
