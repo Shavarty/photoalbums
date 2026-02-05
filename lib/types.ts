@@ -54,12 +54,20 @@ export interface Cover {
   title?: string;
 }
 
+export interface StylizeSettings {
+  activePreset: string;
+  style: string;
+  customPrompt: string;
+  processInstructions: string;
+}
+
 export interface Album {
   id: string;
   title: string;
   cover: Cover;
   spreads: Spread[]; // changed from pages to spreads
   withGaps: boolean; // whether to use gaps between photos (applies to entire album)
+  stylizeSettings?: StylizeSettings;
   createdAt: Date;
   updatedAt: Date;
 }

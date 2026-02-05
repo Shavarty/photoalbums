@@ -6,7 +6,7 @@ export const maxDuration = 60;
 
 export async function POST(request: Request) {
   try {
-    const { imageBase64, modelId = DEFAULT_MODEL } = await request.json();
+    const { imageBase64, modelId = DEFAULT_MODEL, prompt: promptFromClient } = await request.json();
 
     // Ваш API ключ из Google Cloud
     const apiKey = process.env.GOOGLE_GEMINI_API_KEY;
@@ -17,8 +17,8 @@ export async function POST(request: Request) {
       );
     }
 
-    // Промпт: конкретные инструкции по анализу и расширению фона
-    const prompt = `Transform this entire image into vibrant comic book style with bold black outlines, cel shading, and saturated flat colors.
+    // Промпт: клиент может передать свой промпт, иначе используется стандартный
+    const prompt = promptFromClient || `Transform this entire image into vibrant comic book style with bold black outlines, cel shading, and saturated flat colors.
 
 IMPORTANT INSTRUCTIONS:
 1. ANALYZE the small fragment of background visible in the source photo (e.g., sky, clouds, trees, ground, water, buildings, sunset).
