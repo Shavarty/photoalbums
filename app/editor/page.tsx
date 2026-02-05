@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { Album, Spread, Photo } from "@/lib/types";
 import { SPREAD_TEMPLATES, PANORAMIC_BG_TEMPLATE_IDS } from "@/lib/spread-templates";
@@ -10,6 +10,8 @@ import SpreadEditor from "@/components/SpreadEditor";
 import TokenSummary from "@/components/TokenSummary";
 import SpreadPreview from "@/components/SpreadPreview";
 import SpeechBubbleModal from "@/components/SpeechBubbleModal";
+import { saveAlbumToIDB, loadAlbumFromIDB } from "@/lib/albumStorage";
+import { exportAlbum, importAlbumFromFile } from "@/lib/albumExport";
 
 // Generate unique ID (works on both server and client)
 const generateId = () => {
@@ -39,6 +41,73 @@ export default function EditorPage() {
       setAlbum(prev => prev.title === 'Название альбома' ? { ...prev, title: 'Название комикса' } : prev);
     }
   }, []);
+
+  // --- Persistence: IndexedDB auto-save + Export/Import ---
+  const [isInitialized, setIsInitialized] = useState(false);
+  const [savedStatus, setSavedStatus] = useState<'idle' | 'saved'>('idle');
+  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const savedIndicatorRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const importFileRef = useRef<HTMLInputElement>(null);
+  const justLoadedRef = useRef(false);
+
+  // Load album from IndexedDB on mount
+  useEffect(() => {
+    loadAlbumFromIDB().then((saved) => {
+      if (saved) {
+        setAlbum(saved);
+        justLoadedRef.current = true;
+      }
+      setIsInitialized(true);
+    });
+  }, []);
+
+  // Auto-save with 1s debounce
+  useEffect(() => {
+    if (!isInitialized) return;
+    if (justLoadedRef.current) {
+      justLoadedRef.current = false;
+      return;
+    }
+    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+    saveTimeoutRef.current = setTimeout(() => {
+      saveAlbumToIDB(album).then(() => {
+        setSavedStatus('saved');
+        if (savedIndicatorRef.current) clearTimeout(savedIndicatorRef.current);
+        savedIndicatorRef.current = setTimeout(() => setSavedStatus('idle'), 2000);
+      });
+    }, 1000);
+    return () => {
+      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+    };
+  }, [album, isInitialized]);
+
+  const handleExport = () => exportAlbum(album);
+
+  const handleImportChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = '';
+    try {
+      const imported = await importAlbumFromFile(file);
+      if (album.spreads.length > 0 && !confirm('Текущий альбом будет заменён на импортированный. Продолжить?')) return;
+      setAlbum(imported);
+    } catch {
+      alert('Не удалось импортировать файл');
+    }
+  };
+
+  const handleNewProject = () => {
+    if (album.spreads.length > 0 && !confirm('Текущий альбом будет удалён. Создать новый?')) return;
+    setAlbum({
+      id: generateId(),
+      title: mode === 'comics' ? 'Название комикса' : 'Название альбома',
+      cover: { frontImage: null, backImage: null },
+      spreads: [],
+      withGaps: true,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+  };
 
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -953,13 +1022,18 @@ export default function EditorPage() {
               {mode === 'comics' ? 'Комикс' : 'Альбом'}
             </span>
           </div>
-          <button
-            onClick={handleGeneratePDF}
-            disabled={isGeneratingPDF}
-            className="btn-gradient px-4 md:px-6 py-2 text-white text-sm md:text-base font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
-          >
-            {isGeneratingPDF ? "PDF..." : "Скачать"}
-          </button>
+          <div className="flex items-center gap-3 flex-shrink-0">
+            {savedStatus === 'saved' && (
+              <span className="text-green-300 text-xs font-medium">✓ Сохранено</span>
+            )}
+            <button
+              onClick={handleGeneratePDF}
+              disabled={isGeneratingPDF}
+              className="btn-gradient px-4 md:px-6 py-2 text-white text-sm md:text-base font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isGeneratingPDF ? "PDF..." : "Скачать"}
+            </button>
+          </div>
         </div>
       </header>
 
@@ -1002,6 +1076,29 @@ export default function EditorPage() {
               </div>
 
               <div className="p-4">
+                {/* Project actions */}
+                <div className="mb-4 flex gap-2">
+                  <button
+                    onClick={handleNewProject}
+                    className="flex-1 px-2 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg text-xs font-medium text-gray-700 transition"
+                  >
+                    Новый
+                  </button>
+                  <button
+                    onClick={() => importFileRef.current?.click()}
+                    className="flex-1 px-2 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg text-xs font-medium text-gray-700 transition"
+                  >
+                    Импорт
+                  </button>
+                  <button
+                    onClick={handleExport}
+                    disabled={album.spreads.length === 0}
+                    className="flex-1 px-2 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg text-xs font-medium text-gray-700 transition disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    Экспорт
+                  </button>
+                </div>
+
                 {/* Gaps toggle */}
                 <div className="mb-4 p-3 bg-gray-50 rounded-lg">
                   <label className="flex items-center gap-2 text-sm cursor-pointer">
@@ -1084,6 +1181,29 @@ export default function EditorPage() {
             <h3 className="font-semibold mb-4">
               Развороты ({album.spreads.length})
             </h3>
+
+            {/* Project actions */}
+            <div className="mb-4 flex gap-2">
+              <button
+                onClick={handleNewProject}
+                className="flex-1 px-2 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg text-xs font-medium text-gray-700 transition"
+              >
+                Новый
+              </button>
+              <button
+                onClick={() => importFileRef.current?.click()}
+                className="flex-1 px-2 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg text-xs font-medium text-gray-700 transition"
+              >
+                Импорт
+              </button>
+              <button
+                onClick={handleExport}
+                disabled={album.spreads.length === 0}
+                className="flex-1 px-2 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg text-xs font-medium text-gray-700 transition disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                Экспорт
+              </button>
+            </div>
 
             {/* Gaps toggle */}
             <div className="mb-4 p-3 bg-gray-50 rounded-lg">
@@ -1230,6 +1350,15 @@ export default function EditorPage() {
           )}
         </div>
       </div>
+
+      {/* Hidden file input for import */}
+      <input
+        type="file"
+        ref={importFileRef}
+        accept=".json"
+        className="hidden"
+        onChange={handleImportChange}
+      />
 
       {/* Crop Modal */}
       {cropModal && (
