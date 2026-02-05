@@ -42,7 +42,7 @@ const STYLE_PRESETS = [
   },
 ];
 
-const DEFAULT_PROCESS_INSTRUCTIONS = `CRITICAL RULE: This is a faithful artistic rendering of the source photo — every person's exact pose, orientation, clothing, and accessories must be copied precisely as they appear in the source. Do NOT add or remove any objects, accessories, or clothing items (e.g. do not add glasses, hats, or change what someone is wearing). The style preset may adjust rendering proportions (e.g. larger eyes in manga style) — that is allowed as part of the art style. Only the rendering style (lines, colors, shading, proportions) should change.
+const DEFAULT_PROCESS_INSTRUCTIONS = `CRITICAL RULE: The output MUST be fully rendered in the chosen art style — it must look like stylized artwork, NOT a photograph. The style preset defines the target visual appearance and must be applied completely to every part of the image. At the same time, preserve all SOURCE CONTENT precisely: every person's pose, orientation, clothing, and accessories must be copied exactly as they appear. FACIAL EXPRESSIONS must be preserved exactly — if a person's eyes are closed or squinted in the source, render them closed or squinted; do not open closed eyes or invent details (such as eye color) that are not visible in the source. Do NOT add or remove any objects, accessories, or clothing items (e.g. do not add glasses, hats, or change what someone is wearing). The style preset may adjust rendering proportions (e.g. larger eyes in manga style) — that is allowed as part of the art style. Only the rendering style (lines, colors, shading, proportions) should change, not what is depicted.
 
 IMPORTANT INSTRUCTIONS:
 1. ANALYZE the small fragment of background visible in the source photo (e.g., sky, clouds, trees, ground, water, buildings, sunset).
@@ -52,11 +52,11 @@ IMPORTANT INSTRUCTIONS:
 5. Maintain spatial composition: if the photo is positioned upper-left, keep content there and extend the scene to right and bottom.
 6. Match the perspective, lighting, and elements from the visible background.
 7. The photo MUST MERGE seamlessly with the extended background - there should be NO separation, NO dividing lines, NO borders between the photo and the extended areas. The background from the photo should continue all the way to the outer edges of the canvas.
-8. The source photo is the single source of truth for all content. Every visible element — pose, orientation, clothing, accessories, expressions — must match the source exactly. Do NOT add or remove objects or accessories (glasses, hats, jewelry, clothing items). The art style may adjust proportions and eye size as part of the style, but must not invent or remove any items that are or are not present in the source.
+8. The source photo is the single source of truth for all content. Every visible element — pose, orientation, clothing, accessories, expressions — must match the source exactly. EXPRESSIONS: if eyes are closed or squinting, keep them that way; do not invent details not visible in the source (e.g. eye color when eyes are closed). Do NOT add or remove objects or accessories. The art style may adjust proportions and eye size as part of the style, but must not change expressions or invent missing details.
 9. CRITICAL: Fill the ENTIRE canvas edge-to-edge with the scene. NO white bars, NO blank spaces, NO padding at top, bottom, left, or right. The artwork must extend all the way to every edge of the image.
 10. If the original aspect ratio needs adjustment, extend the background scenery rather than adding white/blank bars.
 
-Transform and extend seamlessly in the chosen art style. The result should look like one unified scene, not a photo placed on a background.`;
+Transform and extend seamlessly in the chosen art style. The result must look like one unified scene of stylized artwork, not a photo placed on a background.`;
 
 function getAssembledPrompt(stylizeSettings?: StylizeSettings): string {
   const s = stylizeSettings ?? {
