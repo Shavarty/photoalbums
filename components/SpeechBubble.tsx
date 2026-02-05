@@ -353,7 +353,7 @@ export default function SpeechBubble({ bubble, containerRef, containerScale = 1,
         <foreignObject x={padding + 10} y={padding + 10 + topPad} width={estimatedWidth - padding * 2} height={estimatedHeight - padding * 2}>
           <div
             className={`font-bold ${isTextBlock ? 'text-left justify-start' : 'text-center justify-center'} flex items-center h-full break-words whitespace-pre-wrap`}
-            style={{ fontFamily: 'var(--font-balsamiq-sans), sans-serif', fontSize: `${bubble.fontSize || 14}px` }}
+            style={{ fontFamily: 'var(--font-balsamiq-sans), sans-serif', fontSize: `${bubble.fontSize || 14}px`, lineHeight: 1.2 }}
           >
             {bubble.text}
           </div>
