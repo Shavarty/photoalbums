@@ -48,10 +48,18 @@ export default function SpeechBubble({ bubble, containerRef, containerScale = 1,
   const charsPerLine = isTextBlock ? Math.max(10, Math.floor((estimatedWidth - padding * 2) / 8)) : 30;
   const estimatedHeight = bubble.height || Math.max(minHeight, Math.ceil(textLength / charsPerLine) * 20 + padding * 2);
 
-  // --- Bubble shape generators (unchanged) ---
+  // Top-tail shift: pad above ellipse so tail / small-circles don't clip at y < 0.
+  // speech tip extends 15px above ellipse → topPad = 20.
+  // thought circles extend bumpSize + 32px above → topPad = bumpSize + 30.
+  const isTopTail = (bubble.tailDirection || 'bottom-left').includes('top');
+  const topPad = isTopTail
+    ? (bubbleType === 'thought' ? Math.min(estimatedWidth / 2, estimatedHeight / 2) * 0.4 + 30 : 20)
+    : 0;
+
+  // --- Bubble shape generators ---
   const getSpeechBubblePath = () => {
     const cx = estimatedWidth / 2 + 10;
-    const cy = estimatedHeight / 2 + 10;
+    const cy = estimatedHeight / 2 + 10 + topPad;
     const rx = estimatedWidth / 2;
     const ry = estimatedHeight / 2;
     const kappa = 0.551915;
@@ -95,7 +103,7 @@ export default function SpeechBubble({ bubble, containerRef, containerScale = 1,
 
   const getThoughtBubblePath = () => {
     const cx = estimatedWidth / 2 + 10;
-    const cy = estimatedHeight / 2 + 10;
+    const cy = estimatedHeight / 2 + 10 + topPad;
     const rx = estimatedWidth / 2;
     const ry = estimatedHeight / 2;
     const numBumps = 10;
@@ -298,7 +306,8 @@ export default function SpeechBubble({ bubble, containerRef, containerScale = 1,
 
   // SVG original coordinate space
   const svgW = estimatedWidth + 20;
-  const svgH = estimatedHeight + (isThoughtBubble ? 70 : 30);
+  const bottomPad = isTopTail ? 12 : (isThoughtBubble ? 70 : 30);
+  const svgH = estimatedHeight + topPad + bottomPad;
 
   // Visibility: touch → always visible; desktop → hover-reveal
   const visibleCls = isTouch ? 'opacity-100' : 'opacity-0 group-hover:opacity-100';
@@ -341,7 +350,7 @@ export default function SpeechBubble({ bubble, containerRef, containerScale = 1,
             strokeLinejoin="round"
           />
         )}
-        <foreignObject x={padding + 10} y={padding + 10} width={estimatedWidth - padding * 2} height={estimatedHeight - padding * 2}>
+        <foreignObject x={padding + 10} y={padding + 10 + topPad} width={estimatedWidth - padding * 2} height={estimatedHeight - padding * 2}>
           <div
             className={`font-bold ${isTextBlock ? 'text-left justify-start' : 'text-center justify-center'} flex items-center h-full break-words whitespace-pre-wrap`}
             style={{ fontFamily: 'var(--font-balsamiq-sans), sans-serif', fontSize: `${bubble.fontSize || 14}px` }}

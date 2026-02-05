@@ -145,10 +145,15 @@ const renderSpeechBubbleToCanvas = (
   const charsPerLine = isTextBlock ? Math.max(10, Math.floor((estimatedWidth - padding * 2) / 8)) : 30;
   const estimatedHeight = bubble.height || Math.max(minHeight, Math.ceil(textLength / charsPerLine) * 20 + padding * 2);
 
-  // Bubble SVG size in pixels (with extra space for tail) - EXACTLY as in SpeechBubble.tsx
-  // Thought bubbles need +70 for the small trailing circles (matches SVG in SpeechBubble.tsx)
+  // Top-tail shift (same logic as SpeechBubble.tsx)
+  const isTopTail = (bubble.tailDirection || 'bottom-left').includes('top');
+  const topPad = isTopTail
+    ? (bubbleType === 'thought' ? Math.min(estimatedWidth / 2, estimatedHeight / 2) * 0.4 + 30 : 20)
+    : 0;
+
   const bubbleWidthPx = estimatedWidth + 20;
-  const bubbleHeightPx = estimatedHeight + (bubbleType === 'thought' ? 70 : 30);
+  const bottomPad = isTopTail ? 12 : (bubbleType === 'thought' ? 70 : 30);
+  const bubbleHeightPx = estimatedHeight + topPad + bottomPad;
 
   // Calculate bubble size in mm to match editor appearance EXACTLY
   // In editor: bubbles have FIXED pixel sizes (estimatedWidth + 20/30)
@@ -177,7 +182,7 @@ const renderSpeechBubbleToCanvas = (
 
   // Bubble shape helpers
   const cx = estimatedWidth / 2 + 10;
-  const cy = estimatedHeight / 2 + 10;
+  const cy = estimatedHeight / 2 + 10 + topPad;
   const rx = estimatedWidth / 2;
   const ry = estimatedHeight / 2;
   const kappa = 0.551915;
