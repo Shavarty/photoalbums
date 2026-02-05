@@ -40,7 +40,7 @@ export default function SpreadEditor({
   // Cannot use sm: breakpoint — landscape phone width >= 640px triggers sm: and hides everything.
   const [isTouch, setIsTouch] = useState(false);
   useEffect(() => {
-    setIsTouch(window.matchMedia('(hover: none)').matches);
+    setIsTouch(navigator.maxTouchPoints > 0);
   }, []);
 
   // containerScale: shrinks bubbles proportionally when spread is narrower than 600px reference

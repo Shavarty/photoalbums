@@ -157,8 +157,9 @@ const renderSpeechBubbleToCanvas = (
   // The editor page is typically rendered at ~400-500px (responsive)
   // PDF page is 206mm
   // We scale bubbles to match visual proportion
-  const EDITOR_PAGE_WIDTH_PX = 450; // Typical rendered page width in editor
-  const pixelToMmScale = PAGE_SIZE / EDITOR_PAGE_WIDTH_PX; // ~0.458 mm/px
+  // containerScale=1 when spread >= 600px → each page = 300px.
+  // PDF spread = PAGE_SIZE×2 = 412mm. Scale = 412 / 600 ≈ 0.687 mm/px.
+  const pixelToMmScale = (PAGE_SIZE * 2) / 600;
 
   const bubbleScale = bubble.scale || 1;
   const bubbleWidthMm = bubbleWidthPx * pixelToMmScale * bubbleScale;
