@@ -137,12 +137,13 @@ const renderSpeechBubbleToCanvas = (
   const textLength = bubble.text.length;
   const padding = 12;
   const isTextBlock = bubbleType === 'text-block';
-  const minWidth = isTextBlock ? 200 : 100;
-  const minHeight = isTextBlock ? 100 : 60;
-  const maxWidth = isTextBlock ? 600 : 300;
-  // Use custom size if provided (for text-block), otherwise estimate
-  const estimatedWidth = bubble.width || Math.max(minWidth, Math.min(maxWidth, textLength * 8 + padding * 2));
-  const estimatedHeight = bubble.height || Math.max(minHeight, Math.ceil(textLength / (isTextBlock ? 50 : 30)) * 20 + padding * 2);
+  const minWidth = isTextBlock ? 100 : 100;
+  const minHeight = 60;
+  const maxWidth = isTextBlock ? 400 : 300;
+  // Text blocks: fixed default width 180px, height grows with content (same as SpeechBubble.tsx)
+  const estimatedWidth = bubble.width || (isTextBlock ? 180 : Math.max(minWidth, Math.min(maxWidth, textLength * 8 + padding * 2)));
+  const charsPerLine = isTextBlock ? Math.max(10, Math.floor((estimatedWidth - padding * 2) / 8)) : 30;
+  const estimatedHeight = bubble.height || Math.max(minHeight, Math.ceil(textLength / charsPerLine) * 20 + padding * 2);
 
   // Bubble SVG size in pixels (with extra space for tail) - EXACTLY as in SpeechBubble.tsx
   // Thought bubbles need +70 for the small trailing circles (matches SVG in SpeechBubble.tsx)
