@@ -20,6 +20,8 @@ export async function POST(request: Request) {
     // Промпт: клиент может передать свой промпт, иначе используется стандартный
     const prompt = promptFromClient || `Transform this entire image into vibrant comic book style with bold black outlines, cel shading, and saturated flat colors.
 
+CRITICAL RULE: This is a faithful artistic rendering of the source photo — every person's exact pose, orientation, clothing, and accessories must be copied precisely as they appear in the source. Only the rendering style (lines, colors, shading) should change.
+
 IMPORTANT INSTRUCTIONS:
 1. ANALYZE the small fragment of background visible in the source photo (e.g., sky, clouds, trees, ground, water, buildings, sunset).
 2. EXTEND this EXACT SAME environment to fill the white areas. Create a wide panoramic view of this location.
@@ -28,7 +30,7 @@ IMPORTANT INSTRUCTIONS:
 5. Maintain spatial composition: if the photo is positioned upper-left, keep content there and extend the scene to right and bottom.
 6. Match the perspective, lighting, and elements from the visible background.
 7. The photo MUST MERGE seamlessly with the extended background - there should be NO separation, NO dividing lines, NO borders between the photo and the extended areas. The background from the photo should continue all the way to the outer edges of the canvas.
-8. Treat this as style transfer: apply the art style only to the visual rendering. Preserve the identity and appearance of every person and object exactly as they are in the source photo. The stylized result must depict the exact same individuals and scene — only the artistic style should differ.
+8. The source photo is the single source of truth for all content. Every visible element — pose, orientation, clothing, accessories, expressions — must match the source exactly. The art style applies only to how things are rendered (lines, colors, shading), not to what is depicted.
 9. CRITICAL: Fill the ENTIRE canvas edge-to-edge with the scene. NO white bars, NO blank spaces, NO padding at top, bottom, left, or right. The comic artwork must extend all the way to every edge of the image.
 10. If the original aspect ratio needs adjustment, extend the background scenery rather than adding white/blank bars.
 
