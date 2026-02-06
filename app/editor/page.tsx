@@ -1394,35 +1394,38 @@ export default function EditorPage() {
                     onToggleSlot={(side, idx) =>
                       handleToggleSlot(spread.id, side, idx)
                     }
-                    onAddBubble={(x, y) =>
-                      handleAddBubble(spread.id, x, y)
+                    onAddBubble={mode === 'comics' ? (x, y) =>
+                      handleAddBubble(spread.id, x, y) : undefined
                     }
-                    onEditBubble={(bubbleId) =>
-                      handleEditBubble(spread.id, bubbleId)
+                    onEditBubble={mode === 'comics' ? (bubbleId) =>
+                      handleEditBubble(spread.id, bubbleId) : undefined
                     }
-                    onDeleteBubble={(bubbleId) =>
-                      handleDeleteBubble(spread.id, bubbleId)
+                    onDeleteBubble={mode === 'comics' ? (bubbleId) =>
+                      handleDeleteBubble(spread.id, bubbleId) : undefined
                     }
-                    onMoveBubble={(bubbleId, x, y) =>
-                      handleMoveBubble(spread.id, bubbleId, x, y)
+                    onMoveBubble={mode === 'comics' ? (bubbleId, x, y) =>
+                      handleMoveBubble(spread.id, bubbleId, x, y) : undefined
                     }
-                    onResizeBubble={(bubbleId, width, height) =>
-                      handleResizeBubble(spread.id, bubbleId, width, height)
+                    onResizeBubble={mode === 'comics' ? (bubbleId, width, height) =>
+                      handleResizeBubble(spread.id, bubbleId, width, height) : undefined
                     }
-                    onScaleBubble={(bubbleId, scale) =>
-                      handleScaleBubble(spread.id, bubbleId, scale)
+                    onScaleBubble={mode === 'comics' ? (bubbleId, scale) =>
+                      handleScaleBubble(spread.id, bubbleId, scale) : undefined
                     }
-                    onFontSizeBubble={(bubbleId, fontSize) =>
-                      handleFontSizeBubble(spread.id, bubbleId, fontSize)
+                    onFontSizeBubble={mode === 'comics' ? (bubbleId, fontSize) =>
+                      handleFontSizeBubble(spread.id, bubbleId, fontSize) : undefined
                     }
                   />
-                  <TokenSummary
-                    photos={[...spread.leftPhotos, ...spread.rightPhotos]}
-                  />
+                  {mode === 'comics' && (
+                    <TokenSummary
+                      photos={[...spread.leftPhotos, ...spread.rightPhotos]}
+                    />
+                  )}
                 </div>
               ))}
 
-              {/* Stylization Settings — collapsible */}
+              {/* Stylization Settings — collapsible (comics only) */}
+              {mode === 'comics' && (
               <div className="bg-white rounded-xl shadow-sm overflow-hidden">
                 <button
                   onClick={() => setStylizeOpen(!stylizeOpen)}
@@ -1506,6 +1509,7 @@ export default function EditorPage() {
                   </div>
                 )}
               </div>
+              )}
 
               {/* Add more spreads button */}
               <div className="bg-white rounded-xl shadow-sm p-6 text-center">
@@ -1542,8 +1546,8 @@ export default function EditorPage() {
         />
       )}
 
-      {/* Speech Bubble Modal */}
-      {speechBubbleModal && (
+      {/* Speech Bubble Modal (comics only) */}
+      {mode === 'comics' && speechBubbleModal && (
         <SpeechBubbleModal
           initialText={speechBubbleModal.initialText}
           initialType={speechBubbleModal.initialType}
