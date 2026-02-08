@@ -3,8 +3,9 @@
 import { useState, useCallback, useEffect } from "react";
 import Cropper from "react-easy-crop";
 import { Area } from "react-easy-crop";
-import { CropArea, TokenUsage } from "@/lib/types";
+import { CropArea, TokenUsage, StylizeSettings } from "@/lib/types";
 import { GEMINI_MODELS, DEFAULT_MODEL } from "@/lib/geminiModels";
+import { STYLE_PRESETS, DEFAULT_PROCESS_INSTRUCTIONS } from "@/lib/stylization";
 
 interface CropResult {
   previewUrl: string; // Low-res preview for editor
@@ -23,6 +24,8 @@ interface ImageCropModalProps {
   slotHeight: number; // slot height in relative units (0-1)
   onComplete: (result: CropResult) => void;
   onCancel: () => void;
+  stylizeSettings: StylizeSettings;
+  onUpdateStylizeSettings: (updates: Partial<StylizeSettings>) => void;
 }
 
 // Helper to create LIGHTWEIGHT preview for editor (not for print!)
@@ -279,6 +282,8 @@ export default function ImageCropModal({
   slotHeight,
   onComplete,
   onCancel,
+  stylizeSettings,
+  onUpdateStylizeSettings,
 }: ImageCropModalProps) {
   console.log('ImageCropModal rendered with aspectRatio:', aspectRatio, 'slot:', slotWidth, 'x', slotHeight);
 
@@ -287,6 +292,8 @@ export default function ImageCropModal({
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [selectedModel, setSelectedModel] = useState<string>(DEFAULT_MODEL);
+  const [instructionsOpen, setInstructionsOpen] = useState(false);
+  const [processExpanded, setProcessExpanded] = useState(false);
 
   // Reset crop and zoom when image changes
   useEffect(() => {
@@ -445,6 +452,92 @@ export default function ImageCropModal({
             <p className="text-xs text-gray-500 mt-1">
               {GEMINI_MODELS[selectedModel]?.description}
             </p>
+          </div>
+
+          {/* Instructions Panel */}
+          <div className="border-t border-gray-200 pt-3">
+            <button
+              onClick={() => setInstructionsOpen(!instructionsOpen)}
+              className="w-full flex items-center justify-between text-sm font-medium text-gray-700 hover:text-brand-orange transition"
+            >
+              <span className="flex items-center gap-2">
+                <span>🎨</span>
+                <span>Инструкции стилизации</span>
+              </span>
+              <svg className={`w-4 h-4 transition-transform ${instructionsOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+
+            {instructionsOpen && (
+              <div className="mt-3 space-y-3">
+                {/* Block 1: Стиль иллюстрации */}
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1.5">Стиль иллюстрации</label>
+                  <div className="flex flex-wrap gap-1.5 mb-2">
+                    {STYLE_PRESETS.map(preset => (
+                      <button
+                        key={preset.id}
+                        onClick={() => onUpdateStylizeSettings({ activePreset: preset.id, style: preset.prompt })}
+                        className={`px-2.5 py-1 rounded-full text-[10px] font-medium transition ${
+                          stylizeSettings.activePreset === preset.id
+                            ? 'bg-brand-orange text-white'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                      >
+                        {preset.name}
+                      </button>
+                    ))}
+                  </div>
+                  <textarea
+                    value={stylizeSettings.style}
+                    onChange={(e) => onUpdateStylizeSettings({ style: e.target.value, activePreset: 'custom' })}
+                    className="w-full px-2 py-1.5 border border-gray-300 rounded text-xs resize-y focus:ring-2 focus:ring-brand-orange focus:border-transparent"
+                    rows={2}
+                  />
+                </div>
+
+                {/* Block 2: Дополнительные пожелания */}
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Дополнительные пожелания</label>
+                  <textarea
+                    value={stylizeSettings.customPrompt}
+                    onChange={(e) => onUpdateStylizeSettings({ customPrompt: e.target.value })}
+                    placeholder="Например: чёрно-белый, добавить туман..."
+                    className="w-full px-2 py-1.5 border border-gray-300 rounded text-xs resize-y focus:ring-2 focus:ring-brand-orange focus:border-transparent"
+                    rows={2}
+                  />
+                </div>
+
+                {/* Block 3: Инструкции процесса (advanced) */}
+                <div>
+                  <button
+                    onClick={() => setProcessExpanded(!processExpanded)}
+                    className="text-[10px] text-gray-500 hover:text-gray-700 transition flex items-center gap-1"
+                  >
+                    <svg className={`w-2.5 h-2.5 transition-transform ${processExpanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                    <span>Инструкции процесса</span>
+                    <span className="bg-gray-200 text-gray-500 px-1 py-0.5 rounded-full font-medium">advanced</span>
+                  </button>
+                  {stylizeSettings.processInstructions !== DEFAULT_PROCESS_INSTRUCTIONS && (
+                    <button
+                      onClick={() => onUpdateStylizeSettings({ processInstructions: DEFAULT_PROCESS_INSTRUCTIONS })}
+                      className="text-[9px] text-brand-orange hover:underline ml-2"
+                    >сбросить</button>
+                  )}
+                  {processExpanded && (
+                    <textarea
+                      value={stylizeSettings.processInstructions}
+                      onChange={(e) => onUpdateStylizeSettings({ processInstructions: e.target.value })}
+                      className="mt-1.5 w-full px-2 py-1.5 border border-gray-200 rounded text-[10px] text-gray-600 resize-y focus:ring-2 focus:ring-brand-orange focus:border-transparent bg-gray-50"
+                      rows={4}
+                    />
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

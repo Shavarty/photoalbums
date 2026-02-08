@@ -48,15 +48,9 @@ export default function Home() {
           <div className="hidden md:flex items-center gap-2">
             <Link
               href="/editor"
-              className="px-4 py-1.5 text-sm font-semibold border border-white/50 rounded-full hover:bg-white/10 transition whitespace-nowrap"
-            >
-              Альбом
-            </Link>
-            <Link
-              href="/comics"
               className="btn-gradient px-5 py-1.5 text-white font-semibold text-sm whitespace-nowrap"
             >
-              Комикс
+              Создать комикс
             </Link>
             <button className="w-8 h-8 hover:opacity-70 transition-opacity ml-1" aria-label="Telegram">
               <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
@@ -129,14 +123,7 @@ export default function Home() {
                     className="hover:text-brand-orange transition"
                     onClick={() => setMobileMenuOpen(false)}
                   >
-                    Фотоальбом
-                  </Link>
-                  <Link
-                    href="/comics"
-                    className="hover:text-brand-orange transition"
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    Стилизованные комиксы
+                    Создать комикс
                   </Link>
                 </div>
               </nav>
@@ -146,95 +133,6 @@ export default function Home() {
       )}
 
       <main className="flex-1">
-        {/* Photo Albums Section */}
-        <section className="px-6 py-8 md:px-24 md:py-16">
-          <div className="max-w-[1400px] mx-auto">
-            {/* Mobile Layout */}
-            <div className="md:hidden">
-              {/* Text Section */}
-              <div className="mb-8">
-                <h2 className="text-2xl font-serif font-bold leading-tight mb-5">
-                  <span className="block uppercase text-left">ФОТОАЛЬБОМ, КОТОРЫЙ СОХРАНИТ</span>
-                  <span className="block text-brand-green uppercase text-right">— ВАШИ ИСТОРИИ</span>
-                </h2>
-                <p className="text-sm text-gray-600 mb-5 leading-relaxed max-w-xl font-light">
-                  Создаём профессиональные фотокниги, отображающие историю вашей семьи.
-                  Подарок, который тронет сердце и сохранится на всю жизнь.
-                </p>
-                <p className="text-sm font-bold mb-6 text-foreground text-center">
-                  PDF за 10 минут, печатный альбом за 5-7 дней
-                </p>
-                <div className="text-center">
-                  <Link
-                    href="/editor"
-                    className="btn-gradient inline-block px-12 py-3 text-base text-white font-semibold"
-                  >
-                    Создать альбом
-                  </Link>
-                </div>
-              </div>
-
-              {/* Album Examples Grid */}
-              <div className="grid grid-cols-2 gap-3 max-w-2xl">
-                {[1, 2, 3, 4].map((i) => (
-                  <div
-                    key={i}
-                    className="aspect-square bg-brand-gray rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow"
-                  >
-                    <img
-                      src={`/examples/example-${i}.jpg`}
-                      alt={`Пример фотоальбома ${i}`}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Desktop Layout - Two Columns */}
-            <div className="hidden md:grid md:grid-cols-2 md:gap-12 lg:gap-16 items-start">
-              {/* Left Column - Text */}
-              <div>
-                <h2 className="text-3xl lg:text-[2.2rem] font-serif font-bold leading-tight mb-6">
-                  <span className="block uppercase text-left">ФОТОАЛЬБОМ,</span>
-                  <span className="block uppercase text-right">КОТОРЫЙ СОХРАНИТ</span>
-                  <span className="block text-brand-green uppercase text-right">— ВАШИ ИСТОРИИ</span>
-                </h2>
-                <p className="text-base lg:text-[17px] text-gray-600 mb-6 leading-relaxed font-light">
-                  Создаём профессиональные фотокниги, отображающие историю вашей семьи. Подарок, который тронет сердце и сохранится на всю жизнь.
-                </p>
-                <p className="text-sm lg:text-base font-bold mb-8 text-foreground">
-                  PDF за 10 минут, печатный альбом за 5-7 дней
-                </p>
-                <Link
-                  href="/editor"
-                  className="btn-gradient inline-block px-10 py-3 text-base text-white font-semibold"
-                >
-                  Создать альбом
-                </Link>
-              </div>
-
-              {/* Right Column - Examples 3x2 Grid with offset */}
-              <div className="grid grid-cols-3 gap-3 lg:gap-4">
-                {[1, 2, 3, 4, 5, 6].map((i) => (
-                  <div
-                    key={i}
-                    className={`aspect-[3/4] bg-brand-gray rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow ${
-                      i <= 3 ? 'transform translate-y-[-8px]' : ''
-                    }`}
-                  >
-                    <img
-                      src={`/examples/example-${i <= 4 ? i : i - 4}.jpg`}
-                      alt={`Пример фотоальбома ${i}`}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </section>
-
         {/* Stylized Comics Section */}
         <section className="px-6 py-12 md:px-24 md:py-16 bg-white">
           <div className="max-w-[1400px] mx-auto">

@@ -1307,25 +1307,13 @@ export const TEMPLATE_COMIC_ASYMMETRIC: SpreadTemplate = {
 
 // IDs шаблонов с panoramic 2:1 фоном, развёрнутым на две страницы
 export const PANORAMIC_BG_TEMPLATE_IDS = [
-  'full-spread',
-  'comic-spread-bg',
   'comic-strips',
   'comic-quartet',
   'comic-asymmetric',
 ];
 
+// Only comics templates (albums removed)
 export const SPREAD_TEMPLATES = [
-  TEMPLATE_CLASSIC,
-  TEMPLATE_6PHOTOS,
-  TEMPLATE_GRID,
-  TEMPLATE_ASYMMETRIC,
-  TEMPLATE_PORTRAIT,
-  TEMPLATE_SQUARES,
-  TEMPLATE_PANORAMA,
-  TEMPLATE_FOCUS,
-  TEMPLATE_MAGAZINE,
-  TEMPLATE_FULL_SPREAD, // Panoramic spread - one 2:1 photo split across both pages
-  TEMPLATE_COMIC_SPREAD_BG, // Panoramic background + mini-scenes on top
   TEMPLATE_COMIC_STRIPS,     // Panoramic BG + strips layout
   TEMPLATE_COMIC_QUARTET,    // Panoramic BG + 4 symmetric scenes
   TEMPLATE_COMIC_ASYMMETRIC, // Panoramic BG + asymmetric layout
