@@ -3,7 +3,6 @@
 import { useRef, useState, useEffect } from "react";
 import { Spread, Photo } from "@/lib/types";
 import { SPREAD_TEMPLATES, PhotoSlot, getPageSlots, PANORAMIC_BG_TEMPLATE_IDS } from "@/lib/spread-templates";
-import SpeechBubble from "./SpeechBubble";
 
 interface SpreadEditorProps {
   spread: Spread;
@@ -11,13 +10,6 @@ interface SpreadEditorProps {
   onPhotoClick: (side: "left" | "right", index: number) => void;
   onDeletePhoto?: (side: "left" | "right", index: number) => void;
   onToggleSlot?: (side: "left" | "right", index: number) => void;
-  onAddBubble?: (x: number, y: number) => void;
-  onEditBubble?: (bubbleId: string) => void;
-  onDeleteBubble?: (bubbleId: string) => void;
-  onMoveBubble?: (bubbleId: string, x: number, y: number) => void;
-  onResizeBubble?: (bubbleId: string, width: number, height: number) => void;
-  onScaleBubble?: (bubbleId: string, scale: number) => void;
-  onFontSizeBubble?: (bubbleId: string, fontSize: number) => void;
 }
 
 export default function SpreadEditor({
@@ -26,13 +18,6 @@ export default function SpreadEditor({
   onPhotoClick,
   onDeletePhoto,
   onToggleSlot,
-  onAddBubble,
-  onEditBubble,
-  onDeleteBubble,
-  onMoveBubble,
-  onResizeBubble,
-  onScaleBubble,
-  onFontSizeBubble,
 }: SpreadEditorProps) {
   const spreadRef = useRef<HTMLDivElement>(null);
   const [containerScale, setContainerScale] = useState(1);
@@ -88,17 +73,7 @@ export default function SpreadEditor({
                   onToggleSlot?.(side, index);
                   return;
                 }
-                if (photo?.url && onAddBubble && e.target instanceof HTMLElement) {
-                  if (!e.target.closest('button')) {
-                    const rect = e.currentTarget.getBoundingClientRect();
-                    const clickX = ((e.clientX - rect.left) / rect.width) * 100;
-                    const clickY = ((e.clientY - rect.top) / rect.height) * 100;
-                    const pageOffset = side === 'left' ? 0 : 50;
-                    const spreadX = pageOffset + (slot.x + clickX / 100 * slot.width) * 50;
-                    const spreadY = (slot.y + clickY / 100 * slot.height) * 100;
-                    onAddBubble(spreadX, spreadY);
-                  }
-                } else if (!photo?.url) {
+                if (!photo?.url) {
                   onPhotoClick(side, index);
                 }
               }}
@@ -115,7 +90,7 @@ export default function SpreadEditor({
                     <img
                       src={photo.url}
                       alt=""
-                      className={`w-full h-full object-cover ${slot.width < 1.0 || slot.height < 1.0 ? 'border-[3px] border-black' : ''}`}
+                      className="w-full h-full object-cover"
                     />
 
                     {/* Photo action buttons overlay */}
@@ -213,25 +188,6 @@ export default function SpreadEditor({
           <div className="grid grid-cols-2 gap-0">
             {renderPage(spread.leftPhotos, "left")}
             {renderPage(spread.rightPhotos, "right")}
-          </div>
-
-          {/* Bubble overlay — floats over entire spread */}
-          <div className="absolute inset-0 pointer-events-none">
-            {(spread.bubbles || []).map((bubble) => (
-              <SpeechBubble
-                key={bubble.id}
-                bubble={bubble}
-                containerRef={spreadRef}
-                containerScale={containerScale}
-                isTouch={isTouch}
-                onEdit={() => onEditBubble?.(bubble.id)}
-                onDelete={() => onDeleteBubble?.(bubble.id)}
-                onMove={(x, y) => onMoveBubble?.(bubble.id, x, y)}
-                onResize={(width, height) => onResizeBubble?.(bubble.id, width, height)}
-                onScale={(scale) => onScaleBubble?.(bubble.id, scale)}
-                onFontSizeChange={(fontSize) => onFontSizeBubble?.(bubble.id, fontSize)}
-              />
-            ))}
           </div>
         </div>
       </div>

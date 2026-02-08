@@ -4,7 +4,6 @@ import { useState, useCallback, useEffect } from "react";
 import Cropper from "react-easy-crop";
 import { Area } from "react-easy-crop";
 import { CropArea, TokenUsage } from "@/lib/types";
-import { GEMINI_MODELS, DEFAULT_MODEL } from "@/lib/geminiModels";
 
 interface CropResult {
   previewUrl: string; // Low-res preview for editor
@@ -286,7 +285,6 @@ export default function ImageCropModal({
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [selectedModel, setSelectedModel] = useState<string>(DEFAULT_MODEL);
 
   // Reset crop and zoom when image changes
   useEffect(() => {
@@ -302,8 +300,8 @@ export default function ImageCropModal({
     []
   );
 
-  // Сохранение БЕЗ стилизации
-  const handleSaveWithoutStylization = async () => {
+  // Сохранение обрезанного фото
+  const handleSave = async () => {
     if (!croppedAreaPixels) {
       alert("Сначала настройте область обрезки");
       return;
@@ -312,12 +310,11 @@ export default function ImageCropModal({
     setIsProcessing(true);
     try {
       console.log("Creating cropped preview...");
-      const isExpansionMode = zoom < 1.0;
       const croppedPreview = await createPreviewImage(
         imageUrl,
         croppedAreaPixels,
         aspectRatio,
-        isExpansionMode
+        false  // No expansion mode in photo albums
       );
 
       const result: CropResult = {
@@ -331,46 +328,6 @@ export default function ImageCropModal({
       onComplete(result);
     } catch (error: any) {
       console.error("Error cropping image:", error);
-      alert("Не удалось обработать изображение: " + error.message);
-      setIsProcessing(false);
-    }
-  };
-
-  // Стилизация и сразу сохранение
-  const handleStylizeAndSave = async () => {
-    if (!croppedAreaPixels) {
-      alert("Сначала настройте область обрезки");
-      return;
-    }
-
-    setIsProcessing(true);
-
-    try {
-      // Создаем обрезанный фрагмент
-      console.log("Creating cropped preview for stylization...");
-      const isExpansionMode = zoom < 1.0;
-      const croppedPreview = await createPreviewImage(
-        imageUrl,
-        croppedAreaPixels,
-        aspectRatio,
-        isExpansionMode
-      );
-
-      // Сохраняем обычное фото (чтобы быстро закрыть modal)
-      const result: CropResult = {
-        previewUrl: croppedPreview,
-        originalUrl: imageUrl,
-        cropArea: croppedAreaPixels,
-        tokens: undefined,
-        isStylizing: true,  // флаг что стилизация в процессе
-        modelId: selectedModel
-      };
-
-      // Сразу закрываем modal и сохраняем
-      onComplete(result);
-
-    } catch (error: any) {
-      console.error("Error during stylization:", error);
       alert("Не удалось обработать изображение: " + error.message);
       setIsProcessing(false);
     }
@@ -399,7 +356,7 @@ export default function ImageCropModal({
             onCropChange={setCrop}
             onZoomChange={setZoom}
             onCropComplete={onCropComplete}
-            restrictPosition={false}
+            restrictPosition={true}
           />
         </div>
 
@@ -411,40 +368,13 @@ export default function ImageCropModal({
             </label>
             <input
               type="range"
-              min={0.3}
+              min={1}
               max={3}
               step={0.05}
               value={zoom}
               onChange={(e) => setZoom(Number(e.target.value))}
               className="w-full"
             />
-            <p className="text-xs text-gray-500 mt-1">
-              {zoom < 1
-                ? "📐 Режим расширения: AI дорисует фон вокруг фото"
-                : "✂️ Обычная обрезка"}
-            </p>
-          </div>
-
-          {/* Model Selection */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">
-              Модель AI стилизации
-            </label>
-            <select
-              value={selectedModel}
-              onChange={(e) => setSelectedModel(e.target.value)}
-              disabled={isProcessing}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:opacity-50"
-            >
-              {Object.values(GEMINI_MODELS).map((model) => (
-                <option key={model.id} value={model.id}>
-                  {model.name} — ~${model.pricing.avgImageCost.toFixed(3)}/фото
-                </option>
-              ))}
-            </select>
-            <p className="text-xs text-gray-500 mt-1">
-              {GEMINI_MODELS[selectedModel]?.description}
-            </p>
           </div>
         </div>
 
@@ -458,18 +388,11 @@ export default function ImageCropModal({
             Отмена
           </button>
           <button
-            onClick={handleSaveWithoutStylization}
-            disabled={isProcessing}
-            className="px-4 py-2 bg-purple-100 border border-purple-500 text-purple-600 rounded-full hover:bg-purple-200 transition font-medium text-sm disabled:opacity-50"
-          >
-            Применить
-          </button>
-          <button
-            onClick={handleStylizeAndSave}
+            onClick={handleSave}
             disabled={isProcessing}
             className="btn-gradient px-5 py-2 text-white font-semibold text-sm disabled:opacity-50"
           >
-            {isProcessing ? "Обработка..." : "🎨 Стилизовать"}
+            {isProcessing ? "Обработка..." : "Применить"}
           </button>
         </div>
       </div>
