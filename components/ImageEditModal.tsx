@@ -64,24 +64,12 @@ export default function ImageEditModal({
       }
 
       // Отправляем на API для редактирования
-      // ВАЖНО: специальный промпт для редактирования без расширения фона
-      const editInstructions = `Edit this image based on the following instructions: ${editPrompt}
-
-CRITICAL RULES FOR EDITING:
-1. Keep the EXACT same image dimensions and composition
-2. Do NOT extend background or add white areas
-3. Do NOT change the aspect ratio or canvas size
-4. Only modify what is explicitly requested in the instructions
-5. Preserve all other elements exactly as they are
-
-Apply the requested edits while maintaining the original image boundaries.`;
-
       const apiResponse = await fetch("/api/stylize", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           imageBase64: base64Image,
-          prompt: editInstructions,
+          prompt: editPrompt, // Просто передаём инструкции редактирования
           modelId: selectedModel,
         }),
       });
