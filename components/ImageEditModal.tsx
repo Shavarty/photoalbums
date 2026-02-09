@@ -34,20 +34,34 @@ export default function ImageEditModal({
 
     try {
       // Конвертируем imageUrl в base64 для отправки в API
-      const response = await fetch(imageUrl);
-      const blob = await response.blob();
-      const reader = new FileReader();
+      let base64Image: string;
 
-      const base64Image = await new Promise<string>((resolve, reject) => {
-        reader.onloadend = () => {
-          const result = reader.result as string;
-          // Убираем data:image/...;base64, prefix
-          const base64 = result.split(',')[1];
-          resolve(base64);
-        };
-        reader.onerror = reject;
-        reader.readAsDataURL(blob);
-      });
+      if (imageUrl.startsWith('data:')) {
+        // Если это уже data URL, просто извлекаем base64
+        base64Image = imageUrl.split(',')[1];
+      } else {
+        // Иначе загружаем изображение и конвертируем через canvas
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+
+        await new Promise((resolve, reject) => {
+          img.onload = resolve;
+          img.onerror = reject;
+          img.src = imageUrl;
+        });
+
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+
+        const ctx = canvas.getContext('2d');
+        if (!ctx) throw new Error('Canvas context unavailable');
+
+        ctx.drawImage(img, 0, 0);
+
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
+        base64Image = dataUrl.split(',')[1];
+      }
 
       // Отправляем на API для редактирования
       const apiResponse = await fetch("/api/stylize", {
