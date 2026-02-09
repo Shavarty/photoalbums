@@ -38,7 +38,7 @@ export const GEMINI_MODELS: Record<string, GeminiModelConfig> = {
   },
 };
 
-export const DEFAULT_MODEL = "gemini-2.5-flash-image";
+export const DEFAULT_MODEL = "gemini-3-pro-image-preview";
 
 export function getModelConfig(modelId: string): GeminiModelConfig {
   return GEMINI_MODELS[modelId] || GEMINI_MODELS[DEFAULT_MODEL];

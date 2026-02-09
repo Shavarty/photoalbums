@@ -24,6 +24,7 @@ export default function ImageEditModal({
   const [isProcessing, setIsProcessing] = useState(false);
   const [editedImageUrl, setEditedImageUrl] = useState<string | null>(null);
   const [tokens, setTokens] = useState<any>(null);
+  const [modelDropdownOpen, setModelDropdownOpen] = useState(false);
 
   const handleEdit = async () => {
     if (!editPrompt.trim()) {
@@ -152,17 +153,38 @@ export default function ImageEditModal({
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Модель AI редактирования
                 </label>
-                <select
-                  value={selectedModel}
-                  onChange={(e) => setSelectedModel(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-orange focus:border-transparent"
-                >
-                  {Object.values(GEMINI_MODELS).map((model) => (
-                    <option key={model.id} value={model.id}>
-                      {model.name} — ~${model.pricing.avgImageCost.toFixed(3)}/фото
-                    </option>
-                  ))}
-                </select>
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => !isProcessing && setModelDropdownOpen(!modelDropdownOpen)}
+                    disabled={isProcessing}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-xs text-left flex items-center justify-between focus:ring-2 focus:ring-brand-orange focus:border-transparent disabled:opacity-50"
+                  >
+                    <span>{GEMINI_MODELS[selectedModel].name.replace(' Image', '').replace(' Preview', '')} (${GEMINI_MODELS[selectedModel].pricing.avgImageCost.toFixed(3)})</span>
+                    <svg className={`w-4 h-4 transition-transform ${modelDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                  {modelDropdownOpen && (
+                    <div className="absolute z-50 w-full bg-white border border-gray-300 rounded-lg shadow-lg mt-1 overflow-hidden">
+                      {Object.values(GEMINI_MODELS).map((model) => (
+                        <button
+                          key={model.id}
+                          type="button"
+                          onClick={() => {
+                            setSelectedModel(model.id);
+                            setModelDropdownOpen(false);
+                          }}
+                          className={`w-full px-3 py-2 text-left text-xs hover:bg-orange-50 transition ${
+                            selectedModel === model.id ? 'bg-orange-100 font-medium' : ''
+                          }`}
+                        >
+                          {model.name.replace(' Image', '').replace(' Preview', '')} (${model.pricing.avgImageCost.toFixed(3)})
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Инструкции редактирования */}
@@ -184,25 +206,25 @@ export default function ImageEditModal({
         </div>
 
         {/* Footer buttons */}
-        <div className="p-3 md:p-6 border-t border-gray-200 flex gap-2 md:gap-3 flex-shrink-0">
+        <div className="p-2 md:p-6 border-t border-gray-200 flex gap-2 md:gap-3 flex-shrink-0">
           {editedImageUrl ? (
             // Кнопки после редактирования
             <>
               <button
                 onClick={handleRetry}
-                className="flex-1 px-4 py-2.5 md:px-6 md:py-3 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold rounded-lg transition text-sm md:text-base"
+                className="flex-1 px-2 py-1.5 md:px-6 md:py-3 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold rounded-lg transition text-xs md:text-base"
               >
-                ↻ Редактировать ещё раз
+                ↻ Ещё раз
               </button>
               <button
                 onClick={onCancel}
-                className="flex-1 px-4 py-2.5 md:px-6 md:py-3 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold rounded-lg transition text-sm md:text-base"
+                className="flex-1 px-2 py-1.5 md:px-6 md:py-3 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold rounded-lg transition text-xs md:text-base"
               >
                 Отменить
               </button>
               <button
                 onClick={handleApply}
-                className="flex-1 px-4 py-2.5 md:px-6 md:py-3 btn-gradient text-white font-semibold rounded-lg transition text-sm md:text-base"
+                className="flex-1 px-2 py-1.5 md:px-6 md:py-3 btn-gradient text-white font-semibold rounded-lg transition text-xs md:text-base"
               >
                 ✓ Применить
               </button>
@@ -212,14 +234,14 @@ export default function ImageEditModal({
             <>
               <button
                 onClick={onCancel}
-                className="flex-1 px-4 py-2.5 md:px-6 md:py-3 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold rounded-lg transition text-sm md:text-base"
+                className="flex-1 px-2 py-1.5 md:px-6 md:py-3 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold rounded-lg transition text-xs md:text-base"
                 disabled={isProcessing}
               >
                 Отменить
               </button>
               <button
                 onClick={handleEdit}
-                className="flex-1 px-4 py-2.5 md:px-6 md:py-3 btn-gradient text-white font-semibold rounded-lg transition text-sm md:text-base disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 px-2 py-1.5 md:px-6 md:py-3 btn-gradient text-white font-semibold rounded-lg transition text-xs md:text-base disabled:opacity-50 disabled:cursor-not-allowed"
                 disabled={isProcessing || !editPrompt.trim()}
               >
                 {isProcessing ? "⏳ Редактирование..." : "✏️ Редактировать"}

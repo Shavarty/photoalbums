@@ -294,6 +294,7 @@ export default function ImageCropModal({
   const [selectedModel, setSelectedModel] = useState<string>(DEFAULT_MODEL);
   const [instructionsOpen, setInstructionsOpen] = useState(false);
   const [processExpanded, setProcessExpanded] = useState(false);
+  const [modelDropdownOpen, setModelDropdownOpen] = useState(false);
 
   // Reset crop and zoom when image changes
   useEffect(() => {
@@ -373,11 +374,13 @@ export default function ImageCropModal({
         modelId: selectedModel
       };
 
-      // Очищаем "дополнительные пожелания" перед закрытием modal
-      onUpdateStylizeSettings({ customPrompt: '' });
-
       // Сразу закрываем modal и сохраняем
       onComplete(result);
+
+      // Очищаем "дополнительные пожелания" ПОСЛЕ закрытия modal
+      setTimeout(() => {
+        onUpdateStylizeSettings({ customPrompt: '' });
+      }, 100);
 
     } catch (error: any) {
       console.error("Error during stylization:", error);
@@ -399,7 +402,7 @@ export default function ImageCropModal({
         </div>
 
         {/* Crop Area */}
-        <div className="relative flex-1 bg-gray-900 min-h-[120px] md:min-h-[300px]">
+        <div className="relative flex-1 bg-gray-900 min-h-[400px] md:min-h-[300px]">
           <Cropper
             key={`${imageUrl}-${aspectRatio}`}
             image={imageUrl}
@@ -440,18 +443,38 @@ export default function ImageCropModal({
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
               Модель AI стилизации
             </label>
-            <select
-              value={selectedModel}
-              onChange={(e) => setSelectedModel(e.target.value)}
-              disabled={isProcessing}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:opacity-50"
-            >
-              {Object.values(GEMINI_MODELS).map((model) => (
-                <option key={model.id} value={model.id}>
-                  {model.name} — ~${model.pricing.avgImageCost.toFixed(3)}/фото
-                </option>
-              ))}
-            </select>
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => !isProcessing && setModelDropdownOpen(!modelDropdownOpen)}
+                disabled={isProcessing}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-xs text-left flex items-center justify-between focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:opacity-50"
+              >
+                <span>{GEMINI_MODELS[selectedModel].name.replace(' Image', '').replace(' Preview', '')} (${GEMINI_MODELS[selectedModel].pricing.avgImageCost.toFixed(3)})</span>
+                <svg className={`w-4 h-4 transition-transform ${modelDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              {modelDropdownOpen && (
+                <div className="absolute z-50 w-full bg-white border border-gray-300 rounded-lg shadow-lg mt-1 overflow-hidden">
+                  {Object.values(GEMINI_MODELS).map((model) => (
+                    <button
+                      key={model.id}
+                      type="button"
+                      onClick={() => {
+                        setSelectedModel(model.id);
+                        setModelDropdownOpen(false);
+                      }}
+                      className={`w-full px-3 py-2 text-left text-xs hover:bg-purple-50 transition ${
+                        selectedModel === model.id ? 'bg-purple-100 font-medium' : ''
+                      }`}
+                    >
+                      {model.name.replace(' Image', '').replace(' Preview', '')} (${model.pricing.avgImageCost.toFixed(3)})
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
             <p className="text-xs text-gray-500 mt-1">
               {GEMINI_MODELS[selectedModel]?.description}
             </p>
@@ -549,21 +572,21 @@ export default function ImageCropModal({
           <button
             onClick={onCancel}
             disabled={isProcessing}
-            className="px-4 py-2 border border-gray-300 rounded-full hover:bg-gray-50 transition font-medium text-sm disabled:opacity-50"
+            className="px-3 py-1.5 md:px-4 md:py-2 border border-gray-300 rounded-full hover:bg-gray-50 transition font-medium text-sm disabled:opacity-50"
           >
             Отмена
           </button>
           <button
             onClick={handleSaveWithoutStylization}
             disabled={isProcessing}
-            className="px-4 py-2 bg-purple-100 border border-purple-500 text-purple-600 rounded-full hover:bg-purple-200 transition font-medium text-sm disabled:opacity-50"
+            className="px-3 py-1.5 md:px-4 md:py-2 bg-purple-100 border border-purple-500 text-purple-600 rounded-full hover:bg-purple-200 transition font-medium text-sm disabled:opacity-50"
           >
             Применить
           </button>
           <button
             onClick={handleStylizeAndSave}
             disabled={isProcessing}
-            className="btn-gradient px-5 py-2 text-white font-semibold text-sm disabled:opacity-50"
+            className="btn-gradient px-3 py-1.5 md:px-5 md:py-2 text-white font-semibold text-sm disabled:opacity-50"
           >
             {isProcessing ? "Обработка..." : "🎨 Стилизовать"}
           </button>

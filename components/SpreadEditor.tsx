@@ -68,7 +68,7 @@ export default function SpreadEditor({
   const renderPage = (photos: Photo[], side: "left" | "right") => {
     const slots = getPageSlots(template, side, withGaps);
     const roundedClass = side === "left" ? "rounded-l-lg" : "rounded-r-lg";
-    const borderClass = side === "left" ? "border-2" : "border-2 border-l-0";
+    const borderClass = side === "left" ? "border-2 border-r-0" : "border-2 border-l";
     return (
       <div className={`relative w-full aspect-square bg-gray-100 border-gray-300 ${borderClass} ${roundedClass} overflow-hidden`}>
         {slots.map((slot, index) => {
@@ -128,10 +128,10 @@ export default function SpreadEditor({
                         onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.15)'; }}
                         onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0)'; }}
                       >
-                        {/* Replace button — w-5 h-5 circle on touch, pill on desktop */}
+                        {/* Replace button — w-4 h-4 circle on touch, pill on desktop */}
                         <button
                           onClick={(e) => { e.stopPropagation(); onPhotoClick(side, index); }}
-                          className={`bg-green-700 text-white text-xs hover:bg-green-800 transition shadow-lg ${isTouch ? 'w-5 h-5 rounded-full flex items-center justify-center' : 'px-3 py-1.5 rounded-lg font-medium'}`}
+                          className={`bg-green-700 text-white text-xs hover:bg-green-800 transition shadow-lg ${isTouch ? 'w-4 h-4 rounded-full flex items-center justify-center' : 'px-2.5 py-1 rounded-lg font-medium'}`}
                           title="Заменить фото"
                         >
                           🔄{!isTouch && <span> Заменить</span>}
@@ -140,7 +140,7 @@ export default function SpreadEditor({
                         {onEditPhoto && (
                           <button
                             onClick={(e) => { e.stopPropagation(); onEditPhoto(side, index); }}
-                            className={`bg-blue-600 text-white text-xs hover:bg-blue-700 transition shadow-lg ${isTouch ? 'w-5 h-5 rounded-full flex items-center justify-center' : 'px-3 py-1.5 rounded-lg font-medium'}`}
+                            className={`bg-blue-600 text-white text-xs hover:bg-blue-700 transition shadow-lg ${isTouch ? 'w-4 h-4 rounded-full flex items-center justify-center' : 'px-2.5 py-1 rounded-lg font-medium'}`}
                             title="Редактировать фото"
                           >
                             ✏️{!isTouch && <span> Редактировать</span>}
@@ -150,7 +150,7 @@ export default function SpreadEditor({
                         {onDeletePhoto && (
                           <button
                             onClick={(e) => { e.stopPropagation(); onDeletePhoto(side, index); }}
-                            className={`bg-brand-orange text-white text-xs hover:bg-orange-600 transition shadow-lg ${isTouch ? 'w-5 h-5 rounded-full flex items-center justify-center' : 'px-3 py-1.5 rounded-lg font-medium'}`}
+                            className={`bg-brand-orange text-white text-xs hover:bg-orange-600 transition shadow-lg ${isTouch ? 'w-4 h-4 rounded-full flex items-center justify-center' : 'px-2.5 py-1 rounded-lg font-medium'}`}
                             title="Удалить фото"
                           >
                             🗑️{!isTouch && <span> Удалить</span>}
@@ -169,12 +169,12 @@ export default function SpreadEditor({
                     )}
                   </>
                 ) : (
-                  <div className="flex flex-col items-center justify-center gap-0.5 p-1 md:p-2 opacity-25">
-                    <svg className="w-4 h-4 md:w-6 md:h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="flex flex-col items-center justify-center gap-0.5 p-2 md:p-2 opacity-25">
+                    <svg className="w-2.5 h-2.5 md:w-6 md:h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0118.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
                     </svg>
-                    <span className="text-gray-600 text-[8px] md:text-xs font-normal text-center leading-tight">
+                    <span className="text-gray-600 text-[6px] md:text-xs font-normal text-center leading-tight">
                       {(PANORAMIC_BG_TEMPLATE_IDS.includes(template.id) && index === 0) ? "Добавить фото разворота" : "Добавить фото"}
                     </span>
                   </div>
@@ -185,7 +185,8 @@ export default function SpreadEditor({
                   <div className={`absolute top-0.5 right-0.5 z-30 ${slotVisibleCls} transition-opacity`}>
                     <button
                       onClick={(e) => { e.stopPropagation(); onToggleSlot(side, index); }}
-                      className="w-4 h-4 bg-gray-500 bg-opacity-50 text-white rounded-full flex items-center justify-center text-[8px] hover:bg-opacity-80"
+                      className="md:w-3.5 md:h-3.5 text-gray-400 hover:text-gray-600 flex items-center justify-center md:text-[10px] leading-none"
+                      style={{ width: '8px', height: '8px', fontSize: '8px' }}
                       title="Скрыть слот"
                     >
                       ✕
