@@ -1,6 +1,6 @@
 import { jsPDF } from "jspdf";
 import { Album, Spread, Photo, CropArea, SpeechBubble } from "./types";
-import { SPREAD_TEMPLATES, PhotoSlot, getPageSlots } from "./spread-templates";
+import { SPREAD_TEMPLATES, PhotoSlot, getPageSlots, PANORAMIC_BG_TEMPLATE_IDS } from "./spread-templates";
 
 // Print specs from typography
 const PAGE_SIZE = 206; // mm
@@ -435,6 +435,7 @@ const generatePageWithSlots = async (
   pdf: jsPDF,
   photos: Photo[],
   slots: PhotoSlot[],
+  templateId: string,
   offsetX: number = 0 // Horizontal offset for right page in spread
 ): Promise<void> => {
   // Add each photo according to slot position
@@ -510,7 +511,8 @@ const generatePageWithSlots = async (
 
       // Add black comic-style border around photo (only for mini-scenes, not full-page backgrounds)
       const isFullPage = slot.width >= 1.0 && slot.height >= 1.0;
-      if (!isFullPage) {
+      const isBackground = PANORAMIC_BG_TEMPLATE_IDS.includes(templateId) && i === 0;
+      if (!isFullPage && !isBackground) {
         pdf.setDrawColor(0, 0, 0); // Black
         pdf.setLineWidth(0.75); // ~0.75mm thickness (similar to 3px in editor)
         pdf.rect(photoX, photoY, photoWidth, photoHeight, 'S'); // 'S' = stroke only
@@ -575,11 +577,11 @@ export async function generateAlbumPDF(album: Album): Promise<Blob> {
 
     // LEFT PAGE (x: 0 to PAGE_SIZE)
     const leftSlots = getPageSlots(template, 'left', album.withGaps);
-    await generatePageWithSlots(pdf, spread.leftPhotos, leftSlots, 0);
+    await generatePageWithSlots(pdf, spread.leftPhotos, leftSlots, template.id, 0);
 
     // RIGHT PAGE (x: PAGE_SIZE to SPREAD_WIDTH)
     const rightSlots = getPageSlots(template, 'right', album.withGaps);
-    await generatePageWithSlots(pdf, spread.rightPhotos, rightSlots, PAGE_SIZE);
+    await generatePageWithSlots(pdf, spread.rightPhotos, rightSlots, template.id, PAGE_SIZE);
 
     // SPREAD-LEVEL BUBBLES — single pass on top of all photos
     if (spread.bubbles && spread.bubbles.length > 0) {

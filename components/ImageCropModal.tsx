@@ -373,6 +373,9 @@ export default function ImageCropModal({
         modelId: selectedModel
       };
 
+      // Очищаем "дополнительные пожелания" перед закрытием modal
+      onUpdateStylizeSettings({ customPrompt: '' });
+
       // Сразу закрываем modal и сохраняем
       onComplete(result);
 

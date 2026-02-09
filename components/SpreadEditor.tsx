@@ -115,7 +115,7 @@ export default function SpreadEditor({
                     <img
                       src={photo.url}
                       alt=""
-                      className={`w-full h-full object-cover ${slot.width < 1.0 || slot.height < 1.0 ? 'border-[3px] border-black' : ''}`}
+                      className={`w-full h-full object-cover ${!isBackground && (slot.width < 1.0 || slot.height < 1.0) ? 'border-[3px] border-black' : ''}`}
                     />
 
                     {/* Photo action buttons overlay */}
