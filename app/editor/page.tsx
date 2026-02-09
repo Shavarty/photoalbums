@@ -530,10 +530,11 @@ export default function EditorPage() {
   };
 
   // Complete photo edit
-  const completePhotoEdit = async (newImageUrl: string) => {
+  const completePhotoEdit = async (result: { newImageUrl: string; tokens?: any }) => {
     if (!editModal) return;
 
     const { spreadId, side, photoIndex, isPanoramicBg } = editModal;
+    const { newImageUrl, tokens } = result;
 
     if (isPanoramicBg) {
       // For panoramic background, split back into left and right parts
@@ -547,10 +548,10 @@ export default function EditorPage() {
               ? {
                   ...spread,
                   leftPhotos: spread.leftPhotos.map((p, i) =>
-                    i === 0 && p ? { ...p, url: leftUrl, originalUrl: leftUrl } : p
+                    i === 0 && p ? { ...p, url: leftUrl, originalUrl: leftUrl, tokens } : p
                   ),
                   rightPhotos: spread.rightPhotos.map((p, i) =>
-                    i === 0 && p ? { ...p, url: rightUrl, originalUrl: rightUrl } : p
+                    i === 0 && p ? { ...p, url: rightUrl, originalUrl: rightUrl, tokens } : p
                   ),
                 }
               : spread
@@ -574,7 +575,7 @@ export default function EditorPage() {
                   side === "left" ? spread.leftPhotos : spread.rightPhotos
                 ).map((p, i) =>
                   i === photoIndex && p
-                    ? { ...p, url: newImageUrl }
+                    ? { ...p, url: newImageUrl, tokens }
                     : p
                 ),
               }

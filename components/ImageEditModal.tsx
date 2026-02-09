@@ -6,7 +6,7 @@ import { GEMINI_MODELS, DEFAULT_MODEL } from "@/lib/geminiModels";
 
 interface ImageEditModalProps {
   imageUrl: string;
-  onComplete: (newImageUrl: string) => void;
+  onComplete: (result: { newImageUrl: string; tokens?: any }) => void;
   onCancel: () => void;
   stylizeSettings: StylizeSettings;
   onUpdateStylizeSettings: (updates: Partial<StylizeSettings>) => void;
@@ -23,6 +23,7 @@ export default function ImageEditModal({
   const [selectedModel, setSelectedModel] = useState(DEFAULT_MODEL);
   const [isProcessing, setIsProcessing] = useState(false);
   const [editedImageUrl, setEditedImageUrl] = useState<string | null>(null);
+  const [tokens, setTokens] = useState<any>(null);
 
   const handleEdit = async () => {
     if (!editPrompt.trim()) {
@@ -87,6 +88,7 @@ export default function ImageEditModal({
 
       // stylizedUrl уже в формате data:image/...;base64,...
       setEditedImageUrl(data.stylizedUrl);
+      setTokens(data.tokens || null);
       setIsProcessing(false);
     } catch (error: any) {
       console.error("Error editing image:", error);
@@ -97,7 +99,7 @@ export default function ImageEditModal({
 
   const handleApply = () => {
     if (editedImageUrl) {
-      onComplete(editedImageUrl);
+      onComplete({ newImageUrl: editedImageUrl, tokens });
     }
   };
 
