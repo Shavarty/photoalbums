@@ -10,6 +10,7 @@ interface SpreadEditorProps {
   withGaps: boolean;
   onPhotoClick: (side: "left" | "right", index: number) => void;
   onDeletePhoto?: (side: "left" | "right", index: number) => void;
+  onEditPhoto?: (side: "left" | "right", index: number) => void;
   onToggleSlot?: (side: "left" | "right", index: number) => void;
   onAddBubble?: (x: number, y: number) => void;
   onEditBubble?: (bubbleId: string) => void;
@@ -25,6 +26,7 @@ export default function SpreadEditor({
   withGaps,
   onPhotoClick,
   onDeletePhoto,
+  onEditPhoto,
   onToggleSlot,
   onAddBubble,
   onEditBubble,
@@ -134,6 +136,16 @@ export default function SpreadEditor({
                         >
                           🔄{!isTouch && <span> Заменить</span>}
                         </button>
+                        {/* Edit button */}
+                        {onEditPhoto && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); onEditPhoto(side, index); }}
+                            className={`bg-blue-600 text-white text-xs hover:bg-blue-700 transition shadow-lg ${isTouch ? 'w-5 h-5 rounded-full flex items-center justify-center' : 'px-3 py-1.5 rounded-lg font-medium'}`}
+                            title="Редактировать фото"
+                          >
+                            ✏️{!isTouch && <span> Редактировать</span>}
+                          </button>
+                        )}
                         {/* Delete button */}
                         {onDeletePhoto && (
                           <button

@@ -6,6 +6,7 @@ import { Album, Spread, Photo, StylizeSettings } from "@/lib/types";
 import { SPREAD_TEMPLATES, PANORAMIC_BG_TEMPLATE_IDS } from "@/lib/spread-templates";
 import { generateAlbumPDF, downloadPDF } from "@/lib/pdf-generator-spreads";
 import ImageCropModal from "@/components/ImageCropModal";
+import ImageEditModal from "@/components/ImageEditModal";
 import SpreadEditor from "@/components/SpreadEditor";
 import TokenSummary from "@/components/TokenSummary";
 import SpreadPreview from "@/components/SpreadPreview";
@@ -162,6 +163,14 @@ export default function EditorPage() {
     aspectRatio: number;
     slotWidth: number;
     slotHeight: number;
+  } | null>(null);
+
+  // Edit modal state
+  const [editModal, setEditModal] = useState<{
+    imageUrl: string;
+    spreadId: string;
+    side: "left" | "right";
+    photoIndex: number;
   } | null>(null);
 
   // Speech bubble modal state (spread-level — no side/photoIndex)
@@ -437,6 +446,55 @@ export default function EditorPage() {
       }
     };
     input.click();
+  };
+
+  // Edit existing photo
+  const handleEditPhoto = (spreadId: string, side: "left" | "right", photoIndex: number) => {
+    const spread = album.spreads.find((s) => s.id === spreadId);
+    if (!spread) return;
+
+    const photos = side === "left" ? spread.leftPhotos : spread.rightPhotos;
+    const photo = photos[photoIndex];
+
+    if (!photo?.url) {
+      alert("Нет изображения для редактирования");
+      return;
+    }
+
+    setEditModal({
+      imageUrl: photo.url,
+      spreadId,
+      side,
+      photoIndex,
+    });
+  };
+
+  // Complete photo edit
+  const completePhotoEdit = (newImageUrl: string) => {
+    if (!editModal) return;
+
+    const { spreadId, side, photoIndex } = editModal;
+
+    setAlbum((prev) => ({
+      ...prev,
+      spreads: prev.spreads.map((spread) =>
+        spread.id === spreadId
+          ? {
+              ...spread,
+              [side === "left" ? "leftPhotos" : "rightPhotos"]: (
+                side === "left" ? spread.leftPhotos : spread.rightPhotos
+              ).map((p, i) =>
+                i === photoIndex && p
+                  ? { ...p, url: newImageUrl }
+                  : p
+              ),
+            }
+          : spread
+      ),
+      updatedAt: new Date(),
+    }));
+
+    setEditModal(null);
   };
 
   // Complete photo upload after crop
@@ -1317,6 +1375,9 @@ export default function EditorPage() {
                     onDeletePhoto={(side, idx) =>
                       handleDeletePhoto(spread.id, side, idx)
                     }
+                    onEditPhoto={(side, idx) =>
+                      handleEditPhoto(spread.id, side, idx)
+                    }
                     onToggleSlot={(side, idx) =>
                       handleToggleSlot(spread.id, side, idx)
                     }
@@ -1382,6 +1443,17 @@ export default function EditorPage() {
           slotHeight={cropModal.slotHeight}
           onComplete={completePhotoUpload}
           onCancel={() => setCropModal(null)}
+          stylizeSettings={settings}
+          onUpdateStylizeSettings={updateStylizeSettings}
+        />
+      )}
+
+      {/* Edit Modal */}
+      {editModal && (
+        <ImageEditModal
+          imageUrl={editModal.imageUrl}
+          onComplete={completePhotoEdit}
+          onCancel={() => setEditModal(null)}
           stylizeSettings={settings}
           onUpdateStylizeSettings={updateStylizeSettings}
         />
