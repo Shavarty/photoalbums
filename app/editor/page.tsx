@@ -171,6 +171,7 @@ export default function EditorPage() {
     spreadId: string;
     side: "left" | "right";
     photoIndex: number;
+    isPanoramicBg?: boolean;
   } | null>(null);
 
   // Speech bubble modal state (spread-level — no side/photoIndex)
@@ -448,51 +449,140 @@ export default function EditorPage() {
     input.click();
   };
 
+  // Helper: merge left and right images back into full panoramic image
+  const mergeLeftRightImages = async (leftUrl: string, rightUrl: string): Promise<string> => {
+    const leftImg = new Image();
+    const rightImg = new Image();
+
+    await Promise.all([
+      new Promise((resolve, reject) => {
+        leftImg.onload = resolve;
+        leftImg.onerror = reject;
+        leftImg.src = leftUrl;
+      }),
+      new Promise((resolve, reject) => {
+        rightImg.onload = resolve;
+        rightImg.onerror = reject;
+        rightImg.src = rightUrl;
+      }),
+    ]);
+
+    const canvas = document.createElement('canvas');
+    canvas.width = leftImg.width + rightImg.width;
+    canvas.height = leftImg.height;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('Canvas context unavailable');
+
+    ctx.drawImage(leftImg, 0, 0);
+    ctx.drawImage(rightImg, leftImg.width, 0);
+
+    return canvas.toDataURL('image/jpeg', 0.95);
+  };
+
   // Edit existing photo
-  const handleEditPhoto = (spreadId: string, side: "left" | "right", photoIndex: number) => {
+  const handleEditPhoto = async (spreadId: string, side: "left" | "right", photoIndex: number) => {
     const spread = album.spreads.find((s) => s.id === spreadId);
     if (!spread) return;
 
-    const photos = side === "left" ? spread.leftPhotos : spread.rightPhotos;
-    const photo = photos[photoIndex];
+    const template = SPREAD_TEMPLATES.find((t) => t.id === spread.templateId);
+    const isPanoramicBg = template && PANORAMIC_BG_TEMPLATE_IDS.includes(template.id) && photoIndex === 0;
 
-    if (!photo?.url) {
-      alert("Нет изображения для редактирования");
-      return;
+    let imageUrl: string;
+
+    if (isPanoramicBg) {
+      // For panoramic background, merge left and right parts
+      const leftPhoto = spread.leftPhotos[0];
+      const rightPhoto = spread.rightPhotos[0];
+
+      if (!leftPhoto?.url || !rightPhoto?.url) {
+        alert("Нет изображения для редактирования");
+        return;
+      }
+
+      try {
+        imageUrl = await mergeLeftRightImages(leftPhoto.url, rightPhoto.url);
+      } catch (error) {
+        console.error("Error merging images:", error);
+        alert("Не удалось объединить изображения");
+        return;
+      }
+    } else {
+      // For regular photos, use photo.url
+      const photos = side === "left" ? spread.leftPhotos : spread.rightPhotos;
+      const photo = photos[photoIndex];
+
+      if (!photo?.url) {
+        alert("Нет изображения для редактирования");
+        return;
+      }
+
+      imageUrl = photo.url;
     }
 
     setEditModal({
-      imageUrl: photo.url,
+      imageUrl,
       spreadId,
       side,
       photoIndex,
+      isPanoramicBg,
     });
   };
 
   // Complete photo edit
-  const completePhotoEdit = (newImageUrl: string) => {
+  const completePhotoEdit = async (newImageUrl: string) => {
     if (!editModal) return;
 
-    const { spreadId, side, photoIndex } = editModal;
+    const { spreadId, side, photoIndex, isPanoramicBg } = editModal;
 
-    setAlbum((prev) => ({
-      ...prev,
-      spreads: prev.spreads.map((spread) =>
-        spread.id === spreadId
-          ? {
-              ...spread,
-              [side === "left" ? "leftPhotos" : "rightPhotos"]: (
-                side === "left" ? spread.leftPhotos : spread.rightPhotos
-              ).map((p, i) =>
-                i === photoIndex && p
-                  ? { ...p, url: newImageUrl }
-                  : p
-              ),
-            }
-          : spread
-      ),
-      updatedAt: new Date(),
-    }));
+    if (isPanoramicBg) {
+      // For panoramic background, split back into left and right parts
+      try {
+        const { leftUrl, rightUrl } = await splitImageInHalf(newImageUrl);
+
+        setAlbum((prev) => ({
+          ...prev,
+          spreads: prev.spreads.map((spread) =>
+            spread.id === spreadId
+              ? {
+                  ...spread,
+                  leftPhotos: spread.leftPhotos.map((p, i) =>
+                    i === 0 && p ? { ...p, url: leftUrl, originalUrl: leftUrl } : p
+                  ),
+                  rightPhotos: spread.rightPhotos.map((p, i) =>
+                    i === 0 && p ? { ...p, url: rightUrl, originalUrl: rightUrl } : p
+                  ),
+                }
+              : spread
+          ),
+          updatedAt: new Date(),
+        }));
+      } catch (error) {
+        console.error("Error splitting edited image:", error);
+        alert("Не удалось разделить отредактированное изображение");
+        return;
+      }
+    } else {
+      // For regular photos, just update the URL
+      setAlbum((prev) => ({
+        ...prev,
+        spreads: prev.spreads.map((spread) =>
+          spread.id === spreadId
+            ? {
+                ...spread,
+                [side === "left" ? "leftPhotos" : "rightPhotos"]: (
+                  side === "left" ? spread.leftPhotos : spread.rightPhotos
+                ).map((p, i) =>
+                  i === photoIndex && p
+                    ? { ...p, url: newImageUrl }
+                    : p
+                ),
+              }
+            : spread
+        ),
+        updatedAt: new Date(),
+      }));
+    }
 
     setEditModal(null);
   };
