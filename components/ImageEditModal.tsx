@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { StylizeSettings } from "@/lib/types";
-import { GEMINI_MODELS } from "@/lib/geminiModels";
+import { GEMINI_MODELS, DEFAULT_MODEL } from "@/lib/geminiModels";
 
 interface ImageEditModalProps {
   imageUrl: string;
@@ -20,7 +20,7 @@ export default function ImageEditModal({
   onUpdateStylizeSettings,
 }: ImageEditModalProps) {
   const [editPrompt, setEditPrompt] = useState("");
-  const [selectedModel, setSelectedModel] = useState(GEMINI_MODELS[0].id);
+  const [selectedModel, setSelectedModel] = useState(DEFAULT_MODEL);
   const [isProcessing, setIsProcessing] = useState(false);
   const [editedImageUrl, setEditedImageUrl] = useState<string | null>(null);
 
@@ -155,7 +155,7 @@ export default function ImageEditModal({
                   onChange={(e) => setSelectedModel(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-orange focus:border-transparent"
                 >
-                  {GEMINI_MODELS.map((model) => (
+                  {Object.values(GEMINI_MODELS).map((model) => (
                     <option key={model.id} value={model.id}>
                       {model.name} — ~${model.pricing.avgImageCost.toFixed(3)}/фото
                     </option>
