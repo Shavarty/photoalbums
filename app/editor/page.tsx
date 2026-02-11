@@ -7,6 +7,7 @@ import { SPREAD_TEMPLATES, PANORAMIC_BG_TEMPLATE_IDS } from "@/lib/spread-templa
 import { generateAlbumPDF, downloadPDF } from "@/lib/pdf-generator-spreads";
 import ImageCropModal from "@/components/ImageCropModal";
 import ImageEditModal from "@/components/ImageEditModal";
+import SceneGenerationModal, { SceneResult } from "@/components/SceneGenerationModal";
 import SpreadEditor from "@/components/SpreadEditor";
 import TokenSummary from "@/components/TokenSummary";
 import SpreadPreview from "@/components/SpreadPreview";
@@ -172,6 +173,13 @@ export default function EditorPage() {
     side: "left" | "right";
     photoIndex: number;
     isPanoramicBg?: boolean;
+  } | null>(null);
+
+  // Scene generation modal state
+  const [sceneModal, setSceneModal] = useState<{
+    spreadId: string;
+    side: "left" | "right";
+    photoIndex: number;
   } | null>(null);
 
   // Speech bubble modal state (spread-level — no side/photoIndex)
@@ -478,6 +486,115 @@ export default function EditorPage() {
     ctx.drawImage(rightImg, leftImg.width, 0);
 
     return canvas.toDataURL('image/jpeg', 0.95);
+  };
+
+  // Open scene generation modal for empty slot
+  const handleGenerateScene = (spreadId: string, side: "left" | "right", photoIndex: number) => {
+    setSceneModal({ spreadId, side, photoIndex });
+  };
+
+  // Complete scene generation: close modal, mark slot as loading, call API in background
+  const completeSceneGeneration = async (result: SceneResult) => {
+    if (!sceneModal) return;
+    const { spreadId, side, photoIndex } = sceneModal;
+    setSceneModal(null);
+
+    // Show reference photo in slot as placeholder while generating
+    setAlbum((prev) => ({
+      ...prev,
+      spreads: prev.spreads.map((spread) =>
+        spread.id === spreadId
+          ? {
+              ...spread,
+              [side === "left" ? "leftPhotos" : "rightPhotos"]: (
+                side === "left" ? spread.leftPhotos : spread.rightPhotos
+              ).map((photo, idx) =>
+                idx === photoIndex
+                  ? { ...photo, url: result.referenceBase64, originalUrl: result.referenceBase64, isStylizing: true, file: null }
+                  : photo
+              ),
+            }
+          : spread
+      ),
+      updatedAt: new Date(),
+    }));
+
+    try {
+      const apiResponse = await fetch("/api/scene", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          imageBase64: result.referenceBase64,
+          sceneDescription: result.sceneDescription,
+          stylePreset: result.stylePreset,
+        }),
+      });
+
+      const sceneResult = await apiResponse.json();
+
+      if (sceneResult.success) {
+        setAlbum((prev) => ({
+          ...prev,
+          spreads: prev.spreads.map((spread) =>
+            spread.id === spreadId
+              ? {
+                  ...spread,
+                  [side === "left" ? "leftPhotos" : "rightPhotos"]: (
+                    side === "left" ? spread.leftPhotos : spread.rightPhotos
+                  ).map((photo, idx) =>
+                    idx === photoIndex
+                      ? { ...photo, url: sceneResult.generatedUrl, originalUrl: sceneResult.generatedUrl, tokens: sceneResult.tokens, isStylizing: false }
+                      : photo
+                  ),
+                }
+              : spread
+          ),
+          updatedAt: new Date(),
+        }));
+        console.log("Scene generation complete!");
+      } else {
+        console.error("Scene generation failed:", sceneResult.error);
+        alert("Не удалось создать сцену: " + sceneResult.error);
+        // Reset slot to empty
+        setAlbum((prev) => ({
+          ...prev,
+          spreads: prev.spreads.map((spread) =>
+            spread.id === spreadId
+              ? {
+                  ...spread,
+                  [side === "left" ? "leftPhotos" : "rightPhotos"]: (
+                    side === "left" ? spread.leftPhotos : spread.rightPhotos
+                  ).map((photo, idx) =>
+                    idx === photoIndex
+                      ? { ...photo, url: "", originalUrl: undefined, isStylizing: false }
+                      : photo
+                  ),
+                }
+              : spread
+          ),
+        }));
+      }
+    } catch (error: any) {
+      console.error("Scene generation error:", error);
+      alert("Ошибка генерации сцены: " + error.message);
+      setAlbum((prev) => ({
+        ...prev,
+        spreads: prev.spreads.map((spread) =>
+          spread.id === spreadId
+            ? {
+                ...spread,
+                [side === "left" ? "leftPhotos" : "rightPhotos"]: (
+                  side === "left" ? spread.leftPhotos : spread.rightPhotos
+                ).map((photo, idx) =>
+                  idx === photoIndex
+                    ? { ...photo, url: "", originalUrl: undefined, isStylizing: false }
+                    : photo
+                ),
+              }
+            : spread
+        ),
+      }));
+    }
   };
 
   // Edit existing photo
@@ -1472,6 +1589,9 @@ export default function EditorPage() {
                     onToggleSlot={(side, idx) =>
                       handleToggleSlot(spread.id, side, idx)
                     }
+                    onGenerateScene={(side, idx) =>
+                      handleGenerateScene(spread.id, side, idx)
+                    }
                     onAddBubble={mode === 'comics' ? (x, y) =>
                       handleAddBubble(spread.id, x, y) : undefined
                     }
@@ -1547,6 +1667,14 @@ export default function EditorPage() {
           onCancel={() => setEditModal(null)}
           stylizeSettings={settings}
           onUpdateStylizeSettings={updateStylizeSettings}
+        />
+      )}
+
+      {/* Scene Generation Modal */}
+      {sceneModal && (
+        <SceneGenerationModal
+          onComplete={completeSceneGeneration}
+          onCancel={() => setSceneModal(null)}
         />
       )}
 

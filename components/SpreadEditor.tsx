@@ -12,6 +12,7 @@ interface SpreadEditorProps {
   onDeletePhoto?: (side: "left" | "right", index: number) => void;
   onEditPhoto?: (side: "left" | "right", index: number) => void;
   onToggleSlot?: (side: "left" | "right", index: number) => void;
+  onGenerateScene?: (side: "left" | "right", index: number) => void;
   onAddBubble?: (x: number, y: number) => void;
   onEditBubble?: (bubbleId: string) => void;
   onDeleteBubble?: (bubbleId: string) => void;
@@ -28,6 +29,7 @@ export default function SpreadEditor({
   onDeletePhoto,
   onEditPhoto,
   onToggleSlot,
+  onGenerateScene,
   onAddBubble,
   onEditBubble,
   onDeleteBubble,
@@ -37,6 +39,7 @@ export default function SpreadEditor({
   onFontSizeBubble,
 }: SpreadEditorProps) {
   const spreadRef = useRef<HTMLDivElement>(null);
+  const [slotChoice, setSlotChoice] = useState<{ side: "left" | "right"; index: number } | null>(null);
   const [containerScale, setContainerScale] = useState(1);
   // Touch device detection: true on phones/tablets in any orientation.
   // Cannot use sm: breakpoint — landscape phone width >= 640px triggers sm: and hides everything.
@@ -101,7 +104,11 @@ export default function SpreadEditor({
                     onAddBubble(spreadX, spreadY);
                   }
                 } else if (!photo?.url) {
-                  onPhotoClick(side, index);
+                  if (onGenerateScene) {
+                    setSlotChoice({ side, index });
+                  } else {
+                    onPhotoClick(side, index);
+                  }
                 }
               }}
             >
@@ -248,6 +255,41 @@ export default function SpreadEditor({
           </div>
         </div>
       </div>
+
+      {/* Slot action choice overlay */}
+      {slotChoice && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+          onClick={() => setSlotChoice(null)}
+        >
+          <div
+            className="bg-white rounded-xl shadow-xl p-6 flex flex-col gap-4 w-72 mx-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="font-semibold text-gray-800 text-center">Что добавить в слот?</h3>
+            <button
+              onClick={() => { onPhotoClick(slotChoice.side, slotChoice.index); setSlotChoice(null); }}
+              className="flex items-center gap-3 px-4 py-3 border-2 border-gray-200 rounded-xl hover:border-brand-orange hover:bg-orange-50 transition text-left"
+            >
+              <span className="text-2xl">📷</span>
+              <div>
+                <div className="font-medium text-sm">Добавить фото</div>
+                <div className="text-xs text-gray-500">Загрузить и обрезать фотографию</div>
+              </div>
+            </button>
+            <button
+              onClick={() => { onGenerateScene?.(slotChoice.side, slotChoice.index); setSlotChoice(null); }}
+              className="flex items-center gap-3 px-4 py-3 border-2 border-gray-200 rounded-xl hover:border-purple-500 hover:bg-purple-50 transition text-left"
+            >
+              <span className="text-2xl">🌄</span>
+              <div>
+                <div className="font-medium text-sm">Создать сцену</div>
+                <div className="text-xs text-gray-500">AI перенесёт людей в описанную сцену</div>
+              </div>
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Helper Text */}
       {[...spread.leftPhotos, ...spread.rightPhotos].every(p => !p?.url) && (
