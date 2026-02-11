@@ -14,8 +14,14 @@ CRITICAL RULES:
 
 export async function POST(request: Request) {
   try {
-    const { imageBase64, sceneDescription, stylePreset } = await request.json();
+    const { imageBase64, imageBase64s, sceneDescription, stylePreset } = await request.json();
 
+    // Support both single imageBase64 (legacy) and imageBase64s array
+    const images: string[] = imageBase64s?.length ? imageBase64s : (imageBase64 ? [imageBase64] : []);
+
+    if (images.length === 0) {
+      return NextResponse.json({ error: "At least one reference image is required" }, { status: 400 });
+    }
     if (!sceneDescription?.trim()) {
       return NextResponse.json({ error: "Scene description is required" }, { status: 400 });
     }
@@ -34,22 +40,21 @@ export async function POST(request: Request) {
 
     const prompt = (stylePreset?.trim() ? stylePreset.trim() + "\n\n" : "") + processInstructions;
 
-    const base64Data = imageBase64.includes(",")
-      ? imageBase64.split(",")[1]
-      : imageBase64;
+    // Build parts: one inlineData per reference image, then the text prompt
+    const imageParts = images.map((img) => {
+      const base64Data = img.includes(",") ? img.split(",")[1] : img;
+      return { inlineData: { mimeType: "image/jpeg", data: base64Data } };
+    });
 
     const requestBody = {
       contents: [
         {
           parts: [
+            ...imageParts,
             {
-              inlineData: {
-                mimeType: "image/jpeg",
-                data: base64Data,
-              },
-            },
-            {
-              text: prompt,
+              text: images.length > 1
+                ? `Reference photos above show the people to use (${images.length} photos). ` + prompt
+                : prompt,
             },
           ],
         },

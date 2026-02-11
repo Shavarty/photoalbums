@@ -259,7 +259,8 @@ export default function SpreadEditor({
       {/* Slot action choice overlay */}
       {slotChoice && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-15 flex items-center justify-center z-50"
+          className="fixed inset-0 flex items-center justify-center z-50"
+          style={{ backgroundColor: 'rgba(0,0,0,0.15)' }}
           onClick={() => setSlotChoice(null)}
         >
           <div

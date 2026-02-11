@@ -3,8 +3,10 @@
 import { useState, useRef } from "react";
 import { STYLE_PRESETS } from "@/lib/stylization";
 
+const MAX_REFERENCES = 3;
+
 export interface SceneResult {
-  referenceBase64: string;
+  referenceImages: string[]; // array of base64 data URLs
   sceneDescription: string;
   stylePreset: string;
 }
@@ -18,7 +20,7 @@ export default function SceneGenerationModal({
   onComplete,
   onCancel,
 }: SceneGenerationModalProps) {
-  const [referenceUrl, setReferenceUrl] = useState<string | null>(null);
+  const [referenceImages, setReferenceImages] = useState<string[]>([]);
   const [sceneDescription, setSceneDescription] = useState("");
   const [activePreset, setActivePreset] = useState(STYLE_PRESETS[0].id);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -27,18 +29,25 @@ export default function SceneGenerationModal({
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (referenceImages.length >= MAX_REFERENCES) return;
     const reader = new FileReader();
     reader.onload = (ev) => {
-      setReferenceUrl(ev.target?.result as string);
+      setReferenceImages(prev => [...prev, ev.target?.result as string]);
     };
     reader.readAsDataURL(file);
+    // Reset so same file can be picked again
+    e.target.value = '';
+  };
+
+  const removeImage = (idx: number) => {
+    setReferenceImages(prev => prev.filter((_, i) => i !== idx));
   };
 
   const handleCreate = () => {
-    if (!referenceUrl || !sceneDescription.trim()) return;
+    if (referenceImages.length === 0 || !sceneDescription.trim()) return;
     const stylePreset = STYLE_PRESETS.find(p => p.id === activePreset)?.prompt || STYLE_PRESETS[0].prompt;
     setIsProcessing(true);
-    onComplete({ referenceBase64: referenceUrl, sceneDescription: sceneDescription.trim(), stylePreset });
+    onComplete({ referenceImages, sceneDescription: sceneDescription.trim(), stylePreset });
   };
 
   return (
@@ -51,22 +60,46 @@ export default function SceneGenerationModal({
         </div>
 
         <div className="p-4 md:p-6 space-y-4 overflow-y-auto">
-          {/* Reference photo upload */}
+          {/* Reference photos */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
-              Референс с людьми
+              Референсы с людьми
+              <span className="ml-1.5 text-xs text-gray-400 font-normal">{referenceImages.length}/{MAX_REFERENCES}</span>
             </label>
-            {referenceUrl ? (
-              <div className="relative rounded-lg overflow-hidden border border-gray-200">
-                <img src={referenceUrl} alt="Референс" className="w-full max-h-48 object-contain bg-gray-50" />
-                <button
-                  onClick={() => { setReferenceUrl(null); if (fileInputRef.current) fileInputRef.current.value = ''; }}
-                  className="absolute top-2 right-2 bg-white bg-opacity-90 rounded-full w-6 h-6 flex items-center justify-center text-gray-500 hover:text-gray-700 text-xs shadow"
-                >
-                  ✕
-                </button>
+
+            {/* Uploaded previews */}
+            {referenceImages.length > 0 && (
+              <div className="flex gap-2 mb-2 flex-wrap">
+                {referenceImages.map((url, idx) => (
+                  <div key={idx} className="relative w-20 h-20 rounded-lg overflow-hidden border border-gray-200 flex-shrink-0">
+                    <img src={url} alt={`Референс ${idx + 1}`} className="w-full h-full object-cover" />
+                    <button
+                      onClick={() => removeImage(idx)}
+                      className="absolute top-0.5 right-0.5 bg-white bg-opacity-90 rounded-full w-5 h-5 flex items-center justify-center text-gray-500 hover:text-gray-700 text-[10px] shadow leading-none"
+                    >
+                      ✕
+                    </button>
+                    <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-40 text-white text-[9px] text-center py-0.5">
+                      Фото {idx + 1}
+                    </div>
+                  </div>
+                ))}
+
+                {/* Add more button */}
+                {referenceImages.length < MAX_REFERENCES && (
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="w-20 h-20 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center text-gray-400 hover:border-brand-orange hover:text-brand-orange transition flex-shrink-0"
+                  >
+                    <span className="text-xl leading-none">+</span>
+                    <span className="text-[9px] mt-0.5">Добавить</span>
+                  </button>
+                )}
               </div>
-            ) : (
+            )}
+
+            {/* Empty state */}
+            {referenceImages.length === 0 && (
               <button
                 onClick={() => fileInputRef.current?.click()}
                 className="w-full border-2 border-dashed border-gray-300 rounded-lg p-6 flex flex-col items-center gap-2 text-gray-400 hover:border-brand-orange hover:text-brand-orange transition"
@@ -76,8 +109,10 @@ export default function SceneGenerationModal({
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
                 <span className="text-sm font-medium">Нажми, чтобы загрузить фото</span>
+                <span className="text-xs">До {MAX_REFERENCES} фотографий</span>
               </button>
             )}
+
             <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
           </div>
 
@@ -131,7 +166,7 @@ export default function SceneGenerationModal({
           </button>
           <button
             onClick={handleCreate}
-            disabled={isProcessing || !referenceUrl || !sceneDescription.trim()}
+            disabled={isProcessing || referenceImages.length === 0 || !sceneDescription.trim()}
             className="btn-gradient px-5 py-2 text-white font-semibold text-sm disabled:opacity-50"
           >
             {isProcessing ? "Запуск..." : "🌄 Создать сцену"}

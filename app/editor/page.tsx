@@ -504,6 +504,9 @@ export default function EditorPage() {
     const templateForPlaceholder = spreadForPlaceholder ? SPREAD_TEMPLATES.find(t => t.id === spreadForPlaceholder.templateId) : null;
     const isPanoramicPlaceholder = templateForPlaceholder ? PANORAMIC_BG_TEMPLATE_IDS.includes(templateForPlaceholder.id) && photoIndex === 0 : false;
 
+    // Use first reference image as placeholder
+    const placeholderUrl = result.referenceImages[0];
+
     // Show reference photo in slot(s) as placeholder while generating
     setAlbum((prev) => ({
       ...prev,
@@ -513,12 +516,12 @@ export default function EditorPage() {
               ...spread,
               leftPhotos: spread.leftPhotos.map((photo, idx) =>
                 (isPanoramicPlaceholder && idx === 0) || (side === "left" && idx === photoIndex)
-                  ? { ...photo, url: result.referenceBase64, originalUrl: result.referenceBase64, isStylizing: true, file: null }
+                  ? { ...photo, url: placeholderUrl, originalUrl: placeholderUrl, isStylizing: true, file: null }
                   : photo
               ),
               rightPhotos: spread.rightPhotos.map((photo, idx) =>
                 (isPanoramicPlaceholder && idx === 0) || (side === "right" && idx === photoIndex)
-                  ? { ...photo, url: result.referenceBase64, originalUrl: result.referenceBase64, isStylizing: true, file: null }
+                  ? { ...photo, url: placeholderUrl, originalUrl: placeholderUrl, isStylizing: true, file: null }
                   : photo
               ),
             }
@@ -568,7 +571,7 @@ export default function EditorPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          imageBase64: result.referenceBase64,
+          imageBase64s: result.referenceImages,
           sceneDescription: result.sceneDescription,
           stylePreset: result.stylePreset,
         }),
