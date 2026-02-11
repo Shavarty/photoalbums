@@ -2,6 +2,30 @@ import { NextResponse } from "next/server";
 
 export const maxDuration = 120;
 
+// Все поддерживаемые Gemini соотношения сторон (generationConfig.imageConfig.aspectRatio)
+const GEMINI_ASPECT_RATIOS: [string, number][] = [
+  ["1:1",  1],
+  ["2:3",  2/3],
+  ["3:2",  3/2],
+  ["3:4",  3/4],
+  ["4:3",  4/3],
+  ["4:5",  4/5],
+  ["5:4",  5/4],
+  ["9:16", 9/16],
+  ["16:9", 16/9],
+  ["21:9", 21/9],
+];
+
+function toGeminiAspectRatio(ar: number): string {
+  let best = "1:1";
+  let bestDiff = Infinity;
+  for (const [label, value] of GEMINI_ASPECT_RATIOS) {
+    const diff = Math.abs(ar - value);
+    if (diff < bestDiff) { bestDiff = diff; best = label; }
+  }
+  return best;
+}
+
 const SCENE_GENERATION_INSTRUCTIONS = `Extract all the people from this reference photo — their exact faces, clothing, body types, and poses. Place them naturally in this new scene: {SCENE_DESCRIPTION}
 
 CRITICAL RULES:
@@ -39,16 +63,7 @@ export async function POST(request: Request) {
       sceneDescription.trim()
     );
 
-    // Build aspect ratio instruction
-    let aspectRatioNote = "";
-    if (aspectRatio && typeof aspectRatio === "number" && Math.abs(aspectRatio - 1) > 0.05) {
-      const arStr = aspectRatio >= 1
-        ? `${aspectRatio.toFixed(2)}:1 (${aspectRatio > 1.2 ? "landscape, wider than tall" : "nearly square"})`
-        : `1:${(1 / aspectRatio).toFixed(2)} (portrait, taller than wide)`;
-      aspectRatioNote = `\n8. Generate the output in ${arStr} aspect ratio — the canvas must match this proportion exactly`;
-    }
-
-    const prompt = (stylePreset?.trim() ? stylePreset.trim() + "\n\n" : "") + processInstructions + aspectRatioNote;
+    const prompt = (stylePreset?.trim() ? stylePreset.trim() + "\n\n" : "") + processInstructions;
 
     // Build parts: one inlineData per reference image, then the text prompt
     const imageParts = images.map((img) => {
@@ -71,6 +86,9 @@ export async function POST(request: Request) {
       ],
       generationConfig: {
         temperature: 0.8,
+        imageConfig: {
+          aspectRatio: aspectRatio ? toGeminiAspectRatio(aspectRatio) : "1:1",
+        },
       },
     };
 
