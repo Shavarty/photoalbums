@@ -10,11 +10,12 @@ CRITICAL RULES:
 3. Integrate the people naturally into the new scene with correct lighting and perspective
 4. Apply the art style described above to the entire image
 5. Fill the ENTIRE canvas edge-to-edge — no white bars, no blank spaces
-6. The result must be one unified stylized illustration of these people in the described scene`;
+6. The result must be one unified stylized illustration of these people in the described scene
+7. DO NOT add speech bubbles, thought bubbles, caption boxes, sound effects text, or any text overlay — the image must be clean artwork with no text embedded in it`;
 
 export async function POST(request: Request) {
   try {
-    const { imageBase64, imageBase64s, sceneDescription, stylePreset } = await request.json();
+    const { imageBase64, imageBase64s, sceneDescription, stylePreset, aspectRatio } = await request.json();
 
     // Support both single imageBase64 (legacy) and imageBase64s array
     const images: string[] = imageBase64s?.length ? imageBase64s : (imageBase64 ? [imageBase64] : []);
@@ -38,7 +39,16 @@ export async function POST(request: Request) {
       sceneDescription.trim()
     );
 
-    const prompt = (stylePreset?.trim() ? stylePreset.trim() + "\n\n" : "") + processInstructions;
+    // Build aspect ratio instruction
+    let aspectRatioNote = "";
+    if (aspectRatio && typeof aspectRatio === "number" && Math.abs(aspectRatio - 1) > 0.05) {
+      const arStr = aspectRatio >= 1
+        ? `${aspectRatio.toFixed(2)}:1 (${aspectRatio > 1.2 ? "landscape, wider than tall" : "nearly square"})`
+        : `1:${(1 / aspectRatio).toFixed(2)} (portrait, taller than wide)`;
+      aspectRatioNote = `\n8. Generate the output in ${arStr} aspect ratio — the canvas must match this proportion exactly`;
+    }
+
+    const prompt = (stylePreset?.trim() ? stylePreset.trim() + "\n\n" : "") + processInstructions + aspectRatioNote;
 
     // Build parts: one inlineData per reference image, then the text prompt
     const imageParts = images.map((img) => {

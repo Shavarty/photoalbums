@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { Album, Spread, Photo, StylizeSettings } from "@/lib/types";
-import { SPREAD_TEMPLATES, PANORAMIC_BG_TEMPLATE_IDS } from "@/lib/spread-templates";
+import { SPREAD_TEMPLATES, PANORAMIC_BG_TEMPLATE_IDS, getPageSlots } from "@/lib/spread-templates";
 import { generateAlbumPDF, downloadPDF } from "@/lib/pdf-generator-spreads";
 import ImageCropModal from "@/components/ImageCropModal";
 import ImageEditModal from "@/components/ImageEditModal";
@@ -180,6 +180,7 @@ export default function EditorPage() {
     spreadId: string;
     side: "left" | "right";
     photoIndex: number;
+    slotAspectRatio: number;
   } | null>(null);
 
   // Speech bubble modal state (spread-level — no side/photoIndex)
@@ -490,13 +491,17 @@ export default function EditorPage() {
 
   // Open scene generation modal for empty slot
   const handleGenerateScene = (spreadId: string, side: "left" | "right", photoIndex: number) => {
-    setSceneModal({ spreadId, side, photoIndex });
+    const spread = album.spreads.find(s => s.id === spreadId);
+    const template = spread ? SPREAD_TEMPLATES.find(t => t.id === spread.templateId) : null;
+    const slots = template ? getPageSlots(template, side, album.withGaps) : [];
+    const slotAspectRatio = slots[photoIndex]?.aspectRatio || 1;
+    setSceneModal({ spreadId, side, photoIndex, slotAspectRatio });
   };
 
   // Complete scene generation: close modal, mark slot as loading, call API in background
   const completeSceneGeneration = async (result: SceneResult) => {
     if (!sceneModal) return;
-    const { spreadId, side, photoIndex } = sceneModal;
+    const { spreadId, side, photoIndex, slotAspectRatio } = sceneModal;
     setSceneModal(null);
 
     // Determine panoramic early (needed for placeholder placement too)
@@ -574,6 +579,7 @@ export default function EditorPage() {
           imageBase64s: result.referenceImages,
           sceneDescription: result.sceneDescription,
           stylePreset: result.stylePreset,
+          aspectRatio: slotAspectRatio,
         }),
       });
 
@@ -602,6 +608,36 @@ export default function EditorPage() {
             updatedAt: new Date(),
           }));
         } else {
+          // Crop result to match slot aspect ratio (Gemini may return different orientation)
+          const finalUrl = await (async () => {
+            const img = await new Promise<HTMLImageElement>((resolve) => {
+              const image = new Image();
+              image.crossOrigin = "anonymous";
+              image.onload = () => resolve(image);
+              image.onerror = () => resolve(image); // on error, image.width/height will be 0 → skip crop
+              image.src = sceneResult.generatedUrl;
+            });
+            if (!img.width || !img.height) return sceneResult.generatedUrl;
+            const currentAspect = img.width / img.height;
+            if (Math.abs(currentAspect - slotAspectRatio) < 0.05) return sceneResult.generatedUrl;
+            let cropX = 0, cropY = 0, cropWidth = img.width, cropHeight = img.height;
+            if (currentAspect > slotAspectRatio) {
+              cropWidth = Math.round(img.height * slotAspectRatio);
+              cropX = Math.round((img.width - cropWidth) / 2);
+            } else {
+              cropHeight = Math.round(img.width / slotAspectRatio);
+              cropY = Math.round((img.height - cropHeight) / 2);
+            }
+            const canvas = document.createElement("canvas");
+            canvas.width = cropWidth;
+            canvas.height = cropHeight;
+            const ctx = canvas.getContext("2d");
+            if (!ctx) return sceneResult.generatedUrl;
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = "high";
+            ctx.drawImage(img, cropX, cropY, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight);
+            return canvas.toDataURL("image/jpeg", 0.92);
+          })();
           setAlbum((prev) => ({
             ...prev,
             spreads: prev.spreads.map((s) =>
@@ -612,7 +648,7 @@ export default function EditorPage() {
                       side === "left" ? s.leftPhotos : s.rightPhotos
                     ).map((photo, idx) =>
                       idx === photoIndex
-                        ? { ...photo, url: sceneResult.generatedUrl, originalUrl: sceneResult.generatedUrl, tokens: sceneResult.tokens, isStylizing: false }
+                        ? { ...photo, url: finalUrl, originalUrl: finalUrl, tokens: sceneResult.tokens, isStylizing: false }
                         : photo
                     ),
                   }
