@@ -27,15 +27,17 @@ export default function SceneGenerationModal({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (referenceImages.length >= MAX_REFERENCES) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      setReferenceImages(prev => [...prev, ev.target?.result as string]);
-    };
-    reader.readAsDataURL(file);
-    // Reset so same file can be picked again
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    const slots = MAX_REFERENCES - referenceImages.length;
+    const toLoad = files.slice(0, slots);
+    toLoad.forEach(file => {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        setReferenceImages(prev => [...prev, ev.target?.result as string]);
+      };
+      reader.readAsDataURL(file);
+    });
     e.target.value = '';
   };
 
@@ -113,7 +115,7 @@ export default function SceneGenerationModal({
               </button>
             )}
 
-            <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
+            <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleFileChange} />
           </div>
 
           {/* Scene description */}
