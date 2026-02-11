@@ -163,6 +163,11 @@ async function handleFalRequest(
   console.log(`Sending request to fal.ai (model: ${modelPath})...`);
   console.log('PROMPT:\n' + prompt);
 
+  // Seedream uses image_urls (array), Kontext uses image_url (single)
+  const imagePayload = modelConfig.falInputStyle === 'single'
+    ? { image_url: imageDataUrl }
+    : { image_urls: [imageDataUrl], image_size: 'auto_4K' };
+
   const response = await fetch(falUrl, {
     method: 'POST',
     headers: {
@@ -171,8 +176,7 @@ async function handleFalRequest(
     },
     body: JSON.stringify({
       prompt,
-      image_urls: [imageDataUrl],
-      image_size: 'auto_4K',
+      ...imagePayload,
       num_images: 1,
     }),
   });

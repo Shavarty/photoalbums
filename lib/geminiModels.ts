@@ -10,6 +10,7 @@ export interface GeminiModelConfig {
   description: string;
   provider: ModelProvider;
   falModelPath?: string; // для fal.ai моделей
+  falInputStyle?: 'single' | 'array'; // 'single' = image_url, 'array' = image_urls[]
   pricing: {
     textInput: number;      // $ per 1M tokens (для Gemini)
     imageOutput: number;    // $ per 1M tokens (для Gemini)
@@ -49,6 +50,21 @@ export const GEMINI_MODELS: Record<string, GeminiModelConfig> = {
     description: "Специализируется на manga/anime стиле, до 4K, дешевле Gemini 3 Pro — тест",
     provider: 'fal',
     falModelPath: 'fal-ai/bytedance/seedream/v4.5/edit',
+    falInputStyle: 'array',
+    pricing: {
+      textInput: 0,
+      imageOutput: 0,
+      avgImageTokens: 0,
+      avgImageCost: 0.04,
+    },
+  },
+  "flux-kontext-pro": {
+    id: "flux-kontext-pro",
+    name: "FLUX.1 Kontext Pro",
+    description: "Точное редактирование и стилизация от Black Forest Labs, ~$0.055/MP",
+    provider: 'fal',
+    falModelPath: 'fal-ai/flux-pro/kontext',
+    falInputStyle: 'single',
     pricing: {
       textInput: 0,
       imageOutput: 0,
