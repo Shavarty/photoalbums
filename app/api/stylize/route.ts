@@ -150,7 +150,19 @@ async function handleFalRequest(
     );
   }
 
-  const prompt = promptFromClient || `Transform this image into vibrant manga/comic book style. Bold black ink outlines, cel shading, saturated flat colors. Preserve every person's appearance, pose and expression exactly. Fill the ENTIRE canvas edge-to-edge with stylized artwork. NO white bars, NO black borders, NO blank spaces at any edge.`;
+  // Kontext works better with short, direct instructions.
+  // Replace the long DEFAULT_PROCESS_INSTRUCTIONS (everything from "CRITICAL RULE:") with
+  // a Kontext-optimized version. Style preset text is preserved.
+  const KONTEXT_PROCESS_INSTRUCTIONS = `The source image shows a photo placed on a white canvas. The photo does NOT fill the entire canvas — it occupies only part of it. DO NOT scale, stretch, crop, or reposition the photo. Keep it at its exact current size and position. The white areas around the photo are empty canvas — fill them by extending the background that is visible inside the photo (same sky, ground, trees, or environment). Blend the extended background into the photo with no visible borders or seams. Apply the art style described above to the entire result — both the photo content and the extended background — so everything looks like one unified stylized artwork. Fill 100% of the canvas with no white spaces remaining.`;
+
+  let prompt: string;
+  if (promptFromClient && modelConfig.falInputStyle === 'single') {
+    // For Kontext: keep style preset, replace heavy process instructions
+    const stylePart = promptFromClient.split('\n\nCRITICAL RULE:')[0].trim();
+    prompt = stylePart + '\n\n' + KONTEXT_PROCESS_INSTRUCTIONS;
+  } else {
+    prompt = promptFromClient || `Transform this image into vibrant manga/comic book style. Bold black ink outlines, cel shading, saturated flat colors. Preserve every person's appearance, pose and expression exactly. Fill the ENTIRE canvas edge-to-edge with stylized artwork. NO white bars, NO black borders, NO blank spaces at any edge.`;
+  }
 
   // Подготавливаем изображение — fal.ai принимает data URL напрямую
   const imageDataUrl = imageBase64.startsWith('data:')
