@@ -499,17 +499,25 @@ export default function EditorPage() {
     const { spreadId, side, photoIndex } = sceneModal;
     setSceneModal(null);
 
-    // Show reference photo in slot as placeholder while generating
+    // Determine panoramic early (needed for placeholder placement too)
+    const spreadForPlaceholder = album.spreads.find(s => s.id === spreadId);
+    const templateForPlaceholder = spreadForPlaceholder ? SPREAD_TEMPLATES.find(t => t.id === spreadForPlaceholder.templateId) : null;
+    const isPanoramicPlaceholder = templateForPlaceholder ? PANORAMIC_BG_TEMPLATE_IDS.includes(templateForPlaceholder.id) && photoIndex === 0 : false;
+
+    // Show reference photo in slot(s) as placeholder while generating
     setAlbum((prev) => ({
       ...prev,
       spreads: prev.spreads.map((spread) =>
         spread.id === spreadId
           ? {
               ...spread,
-              [side === "left" ? "leftPhotos" : "rightPhotos"]: (
-                side === "left" ? spread.leftPhotos : spread.rightPhotos
-              ).map((photo, idx) =>
-                idx === photoIndex
+              leftPhotos: spread.leftPhotos.map((photo, idx) =>
+                (isPanoramicPlaceholder && idx === 0) || (side === "left" && idx === photoIndex)
+                  ? { ...photo, url: result.referenceBase64, originalUrl: result.referenceBase64, isStylizing: true, file: null }
+                  : photo
+              ),
+              rightPhotos: spread.rightPhotos.map((photo, idx) =>
+                (isPanoramicPlaceholder && idx === 0) || (side === "right" && idx === photoIndex)
                   ? { ...photo, url: result.referenceBase64, originalUrl: result.referenceBase64, isStylizing: true, file: null }
                   : photo
               ),
@@ -518,6 +526,42 @@ export default function EditorPage() {
       ),
       updatedAt: new Date(),
     }));
+
+    // Helper: crop any aspect ratio to exactly 2:1
+    const cropTo2x1 = async (imageUrl: string): Promise<string> => {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        img.onload = () => {
+          const currentAspect = img.width / img.height;
+          const targetAspect = 2;
+          let cropX = 0, cropY = 0, cropWidth = img.width, cropHeight = img.height;
+          if (currentAspect > targetAspect) {
+            cropWidth = Math.round(img.height * targetAspect);
+            cropX = Math.round((img.width - cropWidth) / 2);
+          } else if (currentAspect < targetAspect) {
+            cropHeight = Math.round(img.width / targetAspect);
+            cropY = Math.round((img.height - cropHeight) / 2);
+          }
+          const canvas = document.createElement("canvas");
+          canvas.width = cropWidth;
+          canvas.height = cropHeight;
+          const ctx = canvas.getContext("2d");
+          if (!ctx) { reject(new Error("No canvas context")); return; }
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = "high";
+          ctx.drawImage(img, cropX, cropY, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight);
+          resolve(canvas.toDataURL("image/jpeg", 0.92));
+        };
+        img.onerror = () => reject(new Error("Failed to load generated image"));
+        img.src = imageUrl;
+      });
+    };
+
+    // Check if this is a panoramic background slot (needs 2:1 crop + split)
+    const spread = album.spreads.find(s => s.id === spreadId);
+    const template = spread ? SPREAD_TEMPLATES.find(t => t.id === spread.templateId) : null;
+    const isPanoramicBg = template ? PANORAMIC_BG_TEMPLATE_IDS.includes(template.id) && photoIndex === 0 : false;
 
     try {
       const apiResponse = await fetch("/api/scene", {
@@ -533,44 +577,61 @@ export default function EditorPage() {
       const sceneResult = await apiResponse.json();
 
       if (sceneResult.success) {
-        setAlbum((prev) => ({
-          ...prev,
-          spreads: prev.spreads.map((spread) =>
-            spread.id === spreadId
-              ? {
-                  ...spread,
-                  [side === "left" ? "leftPhotos" : "rightPhotos"]: (
-                    side === "left" ? spread.leftPhotos : spread.rightPhotos
-                  ).map((photo, idx) =>
-                    idx === photoIndex
-                      ? { ...photo, url: sceneResult.generatedUrl, originalUrl: sceneResult.generatedUrl, tokens: sceneResult.tokens, isStylizing: false }
-                      : photo
-                  ),
-                }
-              : spread
-          ),
-          updatedAt: new Date(),
-        }));
+        if (isPanoramicBg) {
+          // Crop to 2:1, split into left/right halves
+          const cropped = await cropTo2x1(sceneResult.generatedUrl);
+          const { leftUrl, rightUrl } = await splitImageInHalf(cropped);
+          setAlbum((prev) => ({
+            ...prev,
+            spreads: prev.spreads.map((s) =>
+              s.id === spreadId
+                ? {
+                    ...s,
+                    leftPhotos: s.leftPhotos.map((p, i) =>
+                      i === 0 ? { ...p, url: leftUrl, originalUrl: leftUrl, tokens: sceneResult.tokens, isStylizing: false } : p
+                    ),
+                    rightPhotos: s.rightPhotos.map((p, i) =>
+                      i === 0 ? { ...p, url: rightUrl, originalUrl: rightUrl, isStylizing: false } : p
+                    ),
+                  }
+                : s
+            ),
+            updatedAt: new Date(),
+          }));
+        } else {
+          setAlbum((prev) => ({
+            ...prev,
+            spreads: prev.spreads.map((s) =>
+              s.id === spreadId
+                ? {
+                    ...s,
+                    [side === "left" ? "leftPhotos" : "rightPhotos"]: (
+                      side === "left" ? s.leftPhotos : s.rightPhotos
+                    ).map((photo, idx) =>
+                      idx === photoIndex
+                        ? { ...photo, url: sceneResult.generatedUrl, originalUrl: sceneResult.generatedUrl, tokens: sceneResult.tokens, isStylizing: false }
+                        : photo
+                    ),
+                  }
+                : s
+            ),
+            updatedAt: new Date(),
+          }));
+        }
         console.log("Scene generation complete!");
       } else {
         console.error("Scene generation failed:", sceneResult.error);
         alert("Не удалось создать сцену: " + sceneResult.error);
-        // Reset slot to empty
         setAlbum((prev) => ({
           ...prev,
-          spreads: prev.spreads.map((spread) =>
-            spread.id === spreadId
+          spreads: prev.spreads.map((s) =>
+            s.id === spreadId
               ? {
-                  ...spread,
-                  [side === "left" ? "leftPhotos" : "rightPhotos"]: (
-                    side === "left" ? spread.leftPhotos : spread.rightPhotos
-                  ).map((photo, idx) =>
-                    idx === photoIndex
-                      ? { ...photo, url: "", originalUrl: undefined, isStylizing: false }
-                      : photo
-                  ),
+                  ...s,
+                  leftPhotos: s.leftPhotos.map((p, i) => isPanoramicBg && i === 0 ? { ...p, url: "", originalUrl: undefined, isStylizing: false } : (side === "left" && i === photoIndex ? { ...p, url: "", originalUrl: undefined, isStylizing: false } : p)),
+                  rightPhotos: s.rightPhotos.map((p, i) => isPanoramicBg && i === 0 ? { ...p, url: "", originalUrl: undefined, isStylizing: false } : (side === "right" && i === photoIndex ? { ...p, url: "", originalUrl: undefined, isStylizing: false } : p)),
                 }
-              : spread
+              : s
           ),
         }));
       }
@@ -579,19 +640,14 @@ export default function EditorPage() {
       alert("Ошибка генерации сцены: " + error.message);
       setAlbum((prev) => ({
         ...prev,
-        spreads: prev.spreads.map((spread) =>
-          spread.id === spreadId
+        spreads: prev.spreads.map((s) =>
+          s.id === spreadId
             ? {
-                ...spread,
-                [side === "left" ? "leftPhotos" : "rightPhotos"]: (
-                  side === "left" ? spread.leftPhotos : spread.rightPhotos
-                ).map((photo, idx) =>
-                  idx === photoIndex
-                    ? { ...photo, url: "", originalUrl: undefined, isStylizing: false }
-                    : photo
-                ),
+                ...s,
+                leftPhotos: s.leftPhotos.map((p, i) => isPanoramicBg && i === 0 ? { ...p, url: "", originalUrl: undefined, isStylizing: false } : (side === "left" && i === photoIndex ? { ...p, url: "", originalUrl: undefined, isStylizing: false } : p)),
+                rightPhotos: s.rightPhotos.map((p, i) => isPanoramicBg && i === 0 ? { ...p, url: "", originalUrl: undefined, isStylizing: false } : (side === "right" && i === photoIndex ? { ...p, url: "", originalUrl: undefined, isStylizing: false } : p)),
               }
-            : spread
+            : s
         ),
       }));
     }
