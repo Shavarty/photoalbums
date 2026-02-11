@@ -11,8 +11,14 @@ export interface TokenCost {
 export function calculateTokenCost(
   promptTokens: number,
   candidatesTokens: number,
-  modelId?: string
+  modelId?: string,
+  costUsd?: number
 ): TokenCost {
+  // fal.ai models use fixed pricing, not token-based
+  if (costUsd !== undefined) {
+    return { inputCost: 0, outputCost: costUsd, totalCost: costUsd };
+  }
+
   const model = getModelConfig(modelId || "gemini-2.5-flash-image");
 
   // Входные токены (текст + изображение на входе)

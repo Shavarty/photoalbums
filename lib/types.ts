@@ -12,6 +12,7 @@ export interface TokenUsage {
   candidatesTokens: number;
   totalTokens: number;
   modelId?: string; // Which Gemini model was used
+  costUsd?: number; // Fixed price for fal.ai models (no token-based billing)
 }
 
 export type BubbleType = 'speech' | 'thought' | 'annotation' | 'text-block';

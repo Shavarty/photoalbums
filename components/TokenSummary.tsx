@@ -26,17 +26,23 @@ export default function TokenSummary({ photos }: TokenSummaryProps) {
     const cost = calculateTokenCost(
       tokens.promptTokens,
       tokens.candidatesTokens,
-      tokens.modelId
+      tokens.modelId,
+      tokens.costUsd
     );
 
     return { index: idx + 1, tokens, cost };
   });
 
-  const totalCost = calculateTokenCost(
-    totalPromptTokens,
-    totalCandidatesTokens,
-    stylizedPhotos[0]?.tokens?.modelId
-  );
+  const totalFixedCost = photoCosts.reduce((sum, item) => sum + item.cost.totalCost, 0);
+  const isFalModel = stylizedPhotos.some(p => p.tokens?.costUsd !== undefined);
+
+  const totalCost = isFalModel
+    ? { inputCost: 0, outputCost: totalFixedCost, totalCost: totalFixedCost }
+    : calculateTokenCost(
+        totalPromptTokens,
+        totalCandidatesTokens,
+        stylizedPhotos[0]?.tokens?.modelId
+      );
 
   return (
     <div className="bg-white rounded-xl shadow-sm overflow-hidden">
@@ -46,7 +52,7 @@ export default function TokenSummary({ photos }: TokenSummaryProps) {
         className="w-full px-5 py-3 flex items-center justify-between hover:bg-gray-50 transition text-left"
       >
         <span className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-          <span>Токены</span>
+          <span>{isFalModel ? 'Стоимость AI' : 'Токены'}</span>
           <span className="text-purple-600 font-mono text-xs font-normal">
             {formatCost(totalCost.totalCost)}
           </span>
@@ -68,12 +74,20 @@ export default function TokenSummary({ photos }: TokenSummaryProps) {
                     {formatCost(item.cost.totalCost)}
                   </span>
                 </div>
-                <div className="text-[10px] text-gray-500 pl-2">
-                  <span>Вход: {item.tokens.promptTokens.toLocaleString()} токенов ({formatCost(item.cost.inputCost)})</span>
-                </div>
-                <div className="text-[10px] text-gray-500 pl-2">
-                  <span>Выход: {item.tokens.candidatesTokens.toLocaleString()} токенов ({formatCost(item.cost.outputCost)})</span>
-                </div>
+                {item.tokens.costUsd !== undefined ? (
+                  <div className="text-[10px] text-gray-500 pl-2">
+                    <span>Фиксированная цена за изображение</span>
+                  </div>
+                ) : (
+                  <>
+                    <div className="text-[10px] text-gray-500 pl-2">
+                      <span>Вход: {item.tokens.promptTokens.toLocaleString()} токенов ({formatCost(item.cost.inputCost)})</span>
+                    </div>
+                    <div className="text-[10px] text-gray-500 pl-2">
+                      <span>Выход: {item.tokens.candidatesTokens.toLocaleString()} токенов ({formatCost(item.cost.outputCost)})</span>
+                    </div>
+                  </>
+                )}
               </div>
             ))}
 
@@ -85,12 +99,16 @@ export default function TokenSummary({ photos }: TokenSummaryProps) {
                     {formatCost(totalCost.totalCost)}
                   </span>
                 </div>
-                <div className="text-[10px] text-gray-500 pl-2 mt-0.5">
-                  <span>Вход: {totalPromptTokens.toLocaleString()} токенов ({formatCost(totalCost.inputCost)})</span>
-                </div>
-                <div className="text-[10px] text-gray-500 pl-2">
-                  <span>Выход: {totalCandidatesTokens.toLocaleString()} токенов ({formatCost(totalCost.outputCost)})</span>
-                </div>
+                {!isFalModel && (
+                  <>
+                    <div className="text-[10px] text-gray-500 pl-2 mt-0.5">
+                      <span>Вход: {totalPromptTokens.toLocaleString()} токенов ({formatCost(totalCost.inputCost)})</span>
+                    </div>
+                    <div className="text-[10px] text-gray-500 pl-2">
+                      <span>Выход: {totalCandidatesTokens.toLocaleString()} токенов ({formatCost(totalCost.outputCost)})</span>
+                    </div>
+                  </>
+                )}
               </div>
             )}
           </div>
@@ -101,6 +119,18 @@ export default function TokenSummary({ photos }: TokenSummaryProps) {
               const firstPhoto = stylizedPhotos[0];
               if (!firstPhoto?.tokens?.modelId) return null;
               const model = getModelConfig(firstPhoto.tokens.modelId);
+              if (isFalModel) {
+                return (
+                  <>
+                    <div>
+                      <span className="font-medium">{model.name}</span>: фиксированная цена
+                    </div>
+                    <div className="text-[9px] text-gray-400 mt-0.5">
+                      ${model.pricing.avgImageCost.toFixed(4)} за изображение (до 4K)
+                    </div>
+                  </>
+                );
+              }
               return (
                 <>
                   <div>

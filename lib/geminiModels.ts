@@ -1,15 +1,20 @@
-// Gemini models configuration with official pricing
-// Source: https://ai.google.dev/gemini-api/docs/pricing
+// Models configuration with pricing
+// Gemini: https://ai.google.dev/gemini-api/docs/pricing
+// fal.ai: https://fal.ai/models
+
+export type ModelProvider = 'gemini' | 'fal';
 
 export interface GeminiModelConfig {
   id: string;
   name: string;
   description: string;
+  provider: ModelProvider;
+  falModelPath?: string; // для fal.ai моделей
   pricing: {
-    textInput: number;      // $ per 1M tokens
-    imageOutput: number;    // $ per 1M tokens
-    avgImageTokens: number; // average tokens per image
-    avgImageCost: number;   // average $ per image
+    textInput: number;      // $ per 1M tokens (для Gemini)
+    imageOutput: number;    // $ per 1M tokens (для Gemini)
+    avgImageTokens: number; // среднее токенов на изображение
+    avgImageCost: number;   // средняя стоимость $ за изображение
   };
 }
 
@@ -18,6 +23,7 @@ export const GEMINI_MODELS: Record<string, GeminiModelConfig> = {
     id: "gemini-2.5-flash-image",
     name: "Gemini 2.5 Flash Image",
     description: "Быстрая и экономичная модель для стилизации (рекомендуется для тестов)",
+    provider: 'gemini',
     pricing: {
       textInput: 0.15,
       imageOutput: 30.00,
@@ -29,11 +35,25 @@ export const GEMINI_MODELS: Record<string, GeminiModelConfig> = {
     id: "gemini-3-pro-image-preview",
     name: "Gemini 3 Pro Image Preview",
     description: "Продвинутая модель с лучшим качеством (дороже в 3.4 раза)",
+    provider: 'gemini',
     pricing: {
       textInput: 2.00,
       imageOutput: 120.00,
       avgImageTokens: 1120,
       avgImageCost: 0.134,
+    },
+  },
+  "seedream-4.5": {
+    id: "seedream-4.5",
+    name: "Seedream 4.5 (ByteDance)",
+    description: "Специализируется на manga/anime стиле, до 4K, дешевле Gemini 3 Pro — тест",
+    provider: 'fal',
+    falModelPath: 'fal-ai/bytedance/seedream/v4.5/edit',
+    pricing: {
+      textInput: 0,
+      imageOutput: 0,
+      avgImageTokens: 0,
+      avgImageCost: 0.04,
     },
   },
 };

@@ -1,12 +1,19 @@
 import { NextResponse } from "next/server";
-import { DEFAULT_MODEL } from "@/lib/geminiModels";
+import { DEFAULT_MODEL, GEMINI_MODELS } from "@/lib/geminiModels";
 
-// Gemini image generation берёт 20-60 секунд
-export const maxDuration = 60;
+// Gemini берёт 20-60 сек, Seedream через fal.ai ~60 сек
+export const maxDuration = 120;
 
 export async function POST(request: Request) {
   try {
     const { imageBase64, modelId = DEFAULT_MODEL, prompt: promptFromClient } = await request.json();
+
+    const modelConfig = GEMINI_MODELS[modelId];
+
+    // Роутинг по провайдеру
+    if (modelConfig?.provider === 'fal') {
+      return handleFalRequest(imageBase64, promptFromClient, modelConfig);
+    }
 
     // Ваш API ключ из Google Cloud
     const apiKey = process.env.GOOGLE_GEMINI_API_KEY;
@@ -126,4 +133,92 @@ Transform and extend seamlessly in comic book art style. The result must look li
       { status: 500 }
     );
   }
+}
+
+// ─── fal.ai handler (Seedream 4.5 и другие fal.ai модели) ───────────────────
+
+async function handleFalRequest(
+  imageBase64: string,
+  promptFromClient: string | undefined,
+  modelConfig: any
+) {
+  const falApiKey = process.env.FAL_API_KEY;
+  if (!falApiKey) {
+    return NextResponse.json(
+      { error: "FAL_API_KEY not configured. Add it to .env.local" },
+      { status: 500 }
+    );
+  }
+
+  const prompt = promptFromClient || `Transform this image into vibrant manga/comic book style. Bold black ink outlines, cel shading, saturated flat colors. Preserve every person's appearance, pose and expression exactly. Fill the ENTIRE canvas edge-to-edge with stylized artwork. NO white bars, NO black borders, NO blank spaces at any edge.`;
+
+  // Подготавливаем изображение — fal.ai принимает data URL напрямую
+  const imageDataUrl = imageBase64.startsWith('data:')
+    ? imageBase64
+    : `data:image/jpeg;base64,${imageBase64}`;
+
+  const modelPath = modelConfig.falModelPath;
+  const falUrl = `https://fal.run/${modelPath}`;
+
+  console.log(`Sending request to fal.ai (model: ${modelPath})...`);
+  console.log('PROMPT:\n' + prompt);
+
+  const response = await fetch(falUrl, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Key ${falApiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      prompt,
+      image_urls: [imageDataUrl],
+      image_size: 'auto_4K',
+      num_images: 1,
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error("fal.ai error:", response.status, errorText);
+    return NextResponse.json(
+      { error: `fal.ai error: ${response.status} ${errorText}` },
+      { status: 500 }
+    );
+  }
+
+  const result = await response.json();
+  console.log("fal.ai response:", JSON.stringify(result, null, 2));
+
+  // fal.ai возвращает images[].url
+  const imageUrl = result.images?.[0]?.url;
+  if (!imageUrl) {
+    console.error("No image in fal.ai response:", result);
+    return NextResponse.json(
+      { error: "No image returned from fal.ai" },
+      { status: 500 }
+    );
+  }
+
+  // Скачиваем результат и конвертируем в base64 (как и у Gemini)
+  const imgResponse = await fetch(imageUrl);
+  const imgBuffer = await imgResponse.arrayBuffer();
+  const imgBase64 = Buffer.from(imgBuffer).toString('base64');
+  const contentType = imgResponse.headers.get('content-type') || 'image/jpeg';
+  const stylizedImage = `data:${contentType};base64,${imgBase64}`;
+
+  const tokenInfo = {
+    promptTokens: 0,
+    candidatesTokens: 0,
+    totalTokens: 0,
+    modelId: modelConfig.id,
+    costUsd: modelConfig.pricing.avgImageCost,
+  };
+
+  console.log(`fal.ai stylization successful! Cost: ~$${modelConfig.pricing.avgImageCost}`);
+
+  return NextResponse.json({
+    success: true,
+    stylizedUrl: stylizedImage,
+    tokens: tokenInfo,
+  });
 }
