@@ -496,7 +496,8 @@ export default function EditorPage() {
     const slots = template ? getPageSlots(template, side, album.withGaps) : [];
     // Панорамный фон охватывает оба листа (2:1), хотя per-page слот 1:1
     const isPanoramicBg = template ? PANORAMIC_BG_TEMPLATE_IDS.includes(template.id) && photoIndex === 0 : false;
-    const slotAspectRatio = isPanoramicBg ? 2 : (slots[photoIndex]?.aspectRatio || 1);
+    // Панорамный фон: запрашиваем 21:9 (обрезаются края слева/справа, а не важные фрагменты сверху/снизу)
+    const slotAspectRatio = isPanoramicBg ? 21/9 : (slots[photoIndex]?.aspectRatio || 1);
     setSceneModal({ spreadId, side, photoIndex, slotAspectRatio });
   };
 
