@@ -494,7 +494,9 @@ export default function EditorPage() {
     const spread = album.spreads.find(s => s.id === spreadId);
     const template = spread ? SPREAD_TEMPLATES.find(t => t.id === spread.templateId) : null;
     const slots = template ? getPageSlots(template, side, album.withGaps) : [];
-    const slotAspectRatio = slots[photoIndex]?.aspectRatio || 1;
+    // Панорамный фон охватывает оба листа (2:1), хотя per-page слот 1:1
+    const isPanoramicBg = template ? PANORAMIC_BG_TEMPLATE_IDS.includes(template.id) && photoIndex === 0 : false;
+    const slotAspectRatio = isPanoramicBg ? 2 : (slots[photoIndex]?.aspectRatio || 1);
     setSceneModal({ spreadId, side, photoIndex, slotAspectRatio });
   };
 
