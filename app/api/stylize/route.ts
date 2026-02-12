@@ -306,15 +306,28 @@ async function handleOpenAIRequest(
   }
 
   const stylizedImage = `data:image/jpeg;base64,${b64}`;
+
+  // gpt-image-1.5 возвращает реальный usage (токенная тарификация)
+  // Цены gpt-image-1.5 medium: input ~$5/1M, output ~$32/1M токенов
+  const usage = result.usage || {};
+  const inputTokens  = usage.input_tokens  || 0;
+  const outputTokens = usage.output_tokens || 0;
+  const totalTokens  = usage.total_tokens  || 0;
+  const INPUT_PRICE_PER_TOKEN  = 5   / 1_000_000; // $5 / 1M
+  const OUTPUT_PRICE_PER_TOKEN = 32  / 1_000_000; // $32 / 1M (medium)
+  const actualCost = totalTokens > 0
+    ? inputTokens * INPUT_PRICE_PER_TOKEN + outputTokens * OUTPUT_PRICE_PER_TOKEN
+    : modelConfig.pricing.avgImageCost; // fallback если usage не вернулся
+
   const tokenInfo = {
-    promptTokens: 0,
-    candidatesTokens: 0,
-    totalTokens: 0,
+    promptTokens: inputTokens,
+    candidatesTokens: outputTokens,
+    totalTokens,
     modelId: modelConfig.id,
-    costUsd: modelConfig.pricing.avgImageCost,
+    costUsd: actualCost,
   };
 
-  console.log(`OpenAI stylization successful! Cost: ~$${modelConfig.pricing.avgImageCost}`);
+  console.log(`OpenAI stylization successful! Tokens: in=${inputTokens} out=${outputTokens} total=${totalTokens} cost=$${actualCost.toFixed(4)}`);
 
   return NextResponse.json({
     success: true,
