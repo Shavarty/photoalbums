@@ -274,7 +274,7 @@ export default function SpreadEditor({
             >
               <span className="text-2xl">📷</span>
               <div>
-                <div className="font-medium text-sm">Добавить фото</div>
+                <div className="font-medium text-sm">Стилизовать фото</div>
                 <div className="text-xs text-gray-500">Загрузить и обрезать фотографию</div>
               </div>
             </button>
