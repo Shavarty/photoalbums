@@ -2,15 +2,16 @@
 // Gemini: https://ai.google.dev/gemini-api/docs/pricing
 // fal.ai: https://fal.ai/models
 
-export type ModelProvider = 'gemini' | 'fal';
+export type ModelProvider = 'gemini' | 'fal' | 'openai';
 
 export interface GeminiModelConfig {
   id: string;
   name: string;
   description: string;
   provider: ModelProvider;
-  falModelPath?: string; // для fal.ai моделей
+  falModelPath?: string;      // для fal.ai моделей
   falInputStyle?: 'single' | 'array'; // 'single' = image_url, 'array' = image_urls[]
+  openaiQuality?: 'low' | 'medium' | 'high'; // для OpenAI моделей
   pricing: {
     textInput: number;      // $ per 1M tokens (для Gemini)
     imageOutput: number;    // $ per 1M tokens (для Gemini)
@@ -70,6 +71,19 @@ export const GEMINI_MODELS: Record<string, GeminiModelConfig> = {
       imageOutput: 0,
       avgImageTokens: 0,
       avgImageCost: 0.04,
+    },
+  },
+  "gpt-image-1.5": {
+    id: "gpt-image-1.5",
+    name: "GPT Image 1.5 (OpenAI)",
+    description: "Лучшее сохранение черт лица при стилизации, ~$0.034/img (medium)",
+    provider: 'openai',
+    openaiQuality: 'medium',
+    pricing: {
+      textInput: 0,
+      imageOutput: 0,
+      avgImageTokens: 0,
+      avgImageCost: 0.034,
     },
   },
 };

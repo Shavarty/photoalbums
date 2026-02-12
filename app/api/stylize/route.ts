@@ -11,6 +11,9 @@ export async function POST(request: Request) {
     const modelConfig = GEMINI_MODELS[modelId];
 
     // Роутинг по провайдеру
+    if (modelConfig?.provider === 'openai') {
+      return handleOpenAIRequest(imageBase64, promptFromClient, modelConfig);
+    }
     if (modelConfig?.provider === 'fal') {
       return handleFalRequest(imageBase64, promptFromClient, modelConfig);
     }
@@ -231,6 +234,87 @@ async function handleFalRequest(
   };
 
   console.log(`fal.ai stylization successful! Cost: ~$${modelConfig.pricing.avgImageCost}`);
+
+  return NextResponse.json({
+    success: true,
+    stylizedUrl: stylizedImage,
+    tokens: tokenInfo,
+  });
+}
+
+// ─── OpenAI handler (gpt-image-1.5 и другие OpenAI модели) ──────────────────
+
+async function handleOpenAIRequest(
+  imageBase64: string,
+  promptFromClient: string | undefined,
+  modelConfig: any
+) {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    return NextResponse.json(
+      { error: "OPENAI_API_KEY not configured. Add it to .env.local" },
+      { status: 500 }
+    );
+  }
+
+  // Используем тот же промпт, что и для Gemini (клиент передаёт собранный промпт)
+  const prompt = promptFromClient || `Transform this entire image into vibrant comic book style with bold black outlines, cel shading, and saturated flat colors. Preserve every person's exact appearance — same faces, clothing, body type, poses. Fill the entire canvas edge-to-edge with stylized artwork.`;
+
+  // Конвертируем base64 → Buffer → Blob для multipart/form-data
+  const base64Data = imageBase64.startsWith('data:') ? imageBase64.split(',')[1] : imageBase64;
+  const mimeMatch = imageBase64.startsWith('data:') ? imageBase64.match(/data:([^;]+);/) : null;
+  const mimeType = mimeMatch?.[1] || 'image/jpeg';
+  const imageBuffer = Buffer.from(base64Data, 'base64');
+  const imageBlob = new Blob([imageBuffer], { type: mimeType });
+
+  const formData = new FormData();
+  formData.append('model', modelConfig.id);
+  formData.append('image[]', imageBlob, 'image.jpg');
+  formData.append('prompt', prompt);
+  formData.append('quality', modelConfig.openaiQuality || 'medium');
+  formData.append('size', 'auto');
+  formData.append('output_format', 'jpeg');
+  formData.append('output_compression', '92');
+  formData.append('input_fidelity', 'high');
+  formData.append('moderation', 'low');
+
+  console.log(`Sending request to OpenAI API (model: ${modelConfig.id}, quality: ${modelConfig.openaiQuality || 'medium'})...`);
+
+  const response = await fetch('https://api.openai.com/v1/images/edits', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      // Content-Type НЕ устанавливаем — fetch сам добавит boundary для FormData
+    },
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error('OpenAI API error:', response.status, errorText);
+    return NextResponse.json(
+      { error: `OpenAI API error: ${response.status} ${errorText}` },
+      { status: 500 }
+    );
+  }
+
+  const result = await response.json();
+  const b64 = result.data?.[0]?.b64_json;
+  if (!b64) {
+    console.error('No image in OpenAI response:', JSON.stringify(result, null, 2));
+    return NextResponse.json({ error: 'No image returned from OpenAI' }, { status: 500 });
+  }
+
+  const stylizedImage = `data:image/jpeg;base64,${b64}`;
+  const tokenInfo = {
+    promptTokens: 0,
+    candidatesTokens: 0,
+    totalTokens: 0,
+    modelId: modelConfig.id,
+    costUsd: modelConfig.pricing.avgImageCost,
+  };
+
+  console.log(`OpenAI stylization successful! Cost: ~$${modelConfig.pricing.avgImageCost}`);
 
   return NextResponse.json({
     success: true,
