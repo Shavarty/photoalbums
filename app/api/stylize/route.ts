@@ -6,7 +6,7 @@ export const maxDuration = 120;
 
 export async function POST(request: Request) {
   try {
-    const { imageBase64, modelId = DEFAULT_MODEL, prompt: promptFromClient } = await request.json();
+    const { imageBase64, modelId = DEFAULT_MODEL, prompt: promptFromClient, isCover = false } = await request.json();
 
     const modelConfig = GEMINI_MODELS[modelId];
 
@@ -28,7 +28,24 @@ export async function POST(request: Request) {
     }
 
     // Промпт: клиент может передать свой промпт, иначе используется стандартный
+    // For COVER images, add special instructions for composition and safe zones
+    const coverInstructions = isCover ? `
+
+BOOK COVER COMPOSITION (CRITICAL):
+- This is a 2:1 panoramic book cover spread (LEFT page = back cover, RIGHT page = front cover)
+- The main characters/subjects are currently positioned on the RIGHT HALF of the image
+- KEEP all main characters, faces, and key elements CENTERED on the RIGHT HALF (front cover area)
+- The LEFT HALF should have NEUTRAL, MINIMAL background scenery only (sky, landscape, blurred environment)
+- DO NOT place any important characters, faces, or key details on the left half
+- Ensure 18-20% SAFE MARGINS from all edges (top, bottom, left, right) - no important content near edges
+- The top of the RIGHT page needs extra clear space for the book title
+- The right and bottom edges of the RIGHT page need safe space for trim/bleed (18mm minimum)
+- Fill the left half with atmospheric background that complements the scene but stays neutral and unimportant
+- The visual focus and all story elements must be in the CENTER of the RIGHT HALF only
+` : '';
+
     const prompt = promptFromClient || `Transform this entire image into vibrant comic book style with bold black outlines, cel shading, and saturated flat colors.
+${coverInstructions}
 
 CRITICAL RULE: The output MUST be fully rendered in the chosen art style — it must look like stylized artwork, NOT a photograph. The style preset defines the target visual appearance and must be applied completely to every part of the image. At the same time, copy every person and detail from the source exactly as visible — same poses, same body orientations, same states. The art style changes how things are rendered; it does not change what is shown. Do NOT add or remove any objects, accessories, or clothing items (e.g. do not add glasses, hats, or change what someone is wearing). The style preset may adjust rendering proportions (e.g. larger eyes in manga style) — that is allowed as part of the art style. Only the rendering style (lines, colors, shading, proportions) should change, not what is depicted.
 

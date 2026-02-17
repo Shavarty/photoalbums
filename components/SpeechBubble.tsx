@@ -6,12 +6,14 @@ interface SpeechBubbleProps {
   containerRef?: React.RefObject<HTMLDivElement | null>;
   containerScale?: number; // applied to SVG only via viewBox — buttons stay fixed size
   isTouch?: boolean; // true on touch devices regardless of orientation
+  isCover?: boolean; // true if this is on the cover (for constraining movement to safe area)
   onEdit?: () => void;
   onDelete?: () => void;
   onMove?: (x: number, y: number) => void;
   onResize?: (width: number, height: number) => void;
   onScale?: (scale: number) => void;
   onFontSizeChange?: (fontSize: number) => void;
+  onRotate?: (rotation: number) => void;
 }
 
 function getXY(e: MouseEvent | TouchEvent): { clientX: number; clientY: number } {
@@ -24,18 +26,24 @@ function getXY(e: MouseEvent | TouchEvent): { clientX: number; clientY: number }
   return { clientX: (e as MouseEvent).clientX, clientY: (e as MouseEvent).clientY };
 }
 
-export default function SpeechBubble({ bubble, containerRef, containerScale = 1, isTouch = false, onEdit, onDelete, onMove, onResize, onScale, onFontSizeChange }: SpeechBubbleProps) {
+export default function SpeechBubble({ bubble, containerRef, containerScale = 1, isTouch = false, isCover = false, onEdit, onDelete, onMove, onResize, onScale, onFontSizeChange, onRotate }: SpeechBubbleProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
   const [isScaling, setIsScaling] = useState(false);
+  const [isRotating, setIsRotating] = useState(false);
+  const wrapperRef = useRef<HTMLDivElement>(null);
   const dragStartRef = useRef<{ x: number; y: number; bubbleX: number; bubbleY: number } | null>(null);
   const resizeStartRef = useRef<{ x: number; y: number; startWidth: number; startHeight: number; startBubbleX: number; startBubbleY: number; slotRect: DOMRect | null } | null>(null);
   const scaleStartRef = useRef<{ centerX: number; centerY: number; initialDist: number; initialScale: number } | null>(null);
+  const rotateStartRef = useRef<{ centerX: number; centerY: number; initialAngle: number; initialRotation: number } | null>(null);
   // Ref so resize effect closure always reads the latest containerScale
   const containerScaleRef = useRef(containerScale);
   containerScaleRef.current = containerScale;
 
   const bubbleType = bubble.type || 'speech';
+
+  // Cover title special rendering (no SVG bubble, just styled text)
+  const isCoverTitle = bubbleType === 'cover-title';
   const textLength = bubble.text.length;
   const padding = 12;
 
@@ -193,8 +201,35 @@ export default function SpeechBubble({ bubble, containerRef, containerScale = 1,
       if (!parentRect) return;
       const deltaX = clientX - dragStartRef.current.x;
       const deltaY = clientY - dragStartRef.current.y;
-      const newX = Math.max(5, Math.min(95, dragStartRef.current.bubbleX + (deltaX / parentRect.width) * 100));
-      const newY = Math.max(5, Math.min(95, dragStartRef.current.bubbleY + (deltaY / parentRect.height) * 100));
+      let minX = 5, maxX = 95, minY = 5, maxY = 95;
+
+      if (isCover) {
+        // Cover: constrain based on ACTUAL element size, not just center point
+        // Get the real rendered width/height of this element
+        const wrapperRect = wrapperRef.current?.getBoundingClientRect();
+        const halfWidthPct = wrapperRect ? (wrapperRect.width / 2 / parentRect.width) * 100 : 5;
+        const halfHeightPct = wrapperRect ? (wrapperRect.height / 2 / parentRect.height) * 100 : 5;
+
+        // Red guide lines: outer box 3.93%-96.07% horizontal, spine 48.91%-51.09%
+        const currentX = dragStartRef.current.bubbleX + (deltaX / parentRect.width) * 100;
+        const isLeftSide = currentX < 50;
+
+        if (isLeftSide) {
+          // Left side: between left edge (3.93%) and left spine line (48.91%)
+          minX = 3.93 + halfWidthPct;
+          maxX = 48.91 - halfWidthPct;
+        } else {
+          // Right side: between right spine line (51.09%) and right edge (96.07%)
+          minX = 51.09 + halfWidthPct;
+          maxX = 96.07 - halfWidthPct;
+        }
+        // Vertical: between top (7.44%) and bottom (92.56%)
+        minY = 7.44 + halfHeightPct;
+        maxY = 92.56 - halfHeightPct;
+      }
+
+      const newX = Math.max(minX, Math.min(maxX, dragStartRef.current.bubbleX + (deltaX / parentRect.width) * 100));
+      const newY = Math.max(minY, Math.min(maxY, dragStartRef.current.bubbleY + (deltaY / parentRect.height) * 100));
       onMove(newX, newY);
     };
     const onEnd = () => { setIsDragging(false); dragStartRef.current = null; };
@@ -304,6 +339,50 @@ export default function SpeechBubble({ bubble, containerRef, containerScale = 1,
     };
   }, [isScaling]);
 
+  // --- Rotate (cover-title, mouse + touch) ---
+  const startRotate = (clientX: number, clientY: number) => {
+    if (!onRotate) return;
+    const container = containerRef?.current;
+    if (!container) return;
+    const containerRect = container.getBoundingClientRect();
+    const centerX = containerRect.left + (bubble.x / 100) * containerRect.width;
+    const centerY = containerRect.top + (bubble.y / 100) * containerRect.height;
+    const dx = clientX - centerX;
+    const dy = clientY - centerY;
+    const initialAngle = Math.atan2(dy, dx) * (180 / Math.PI);
+    setIsRotating(true);
+    rotateStartRef.current = { centerX, centerY, initialAngle, initialRotation: bubble.rotation || 0 };
+  };
+
+  const handleRotateMouseDown = (e: React.MouseEvent) => { e.preventDefault(); e.stopPropagation(); startRotate(e.clientX, e.clientY); };
+  const handleRotateTouchStart = (e: React.TouchEvent) => { e.preventDefault(); e.stopPropagation(); startRotate(e.touches[0].clientX, e.touches[0].clientY); };
+
+  useEffect(() => {
+    if (!isRotating) return;
+    const onMove_ = (e: MouseEvent | TouchEvent) => {
+      if (!rotateStartRef.current || !onRotate) return;
+      if ('cancelable' in e && e.cancelable) e.preventDefault();
+      const { clientX, clientY } = getXY(e);
+      const dx = clientX - rotateStartRef.current.centerX;
+      const dy = clientY - rotateStartRef.current.centerY;
+      const currentAngle = Math.atan2(dy, dx) * (180 / Math.PI);
+      const deltaAngle = currentAngle - rotateStartRef.current.initialAngle;
+      const newRotation = rotateStartRef.current.initialRotation + deltaAngle;
+      onRotate(Math.round(newRotation));
+    };
+    const onEnd = () => { setIsRotating(false); rotateStartRef.current = null; };
+    document.addEventListener('mousemove', onMove_);
+    document.addEventListener('mouseup', onEnd);
+    document.addEventListener('touchmove', onMove_, { passive: false });
+    document.addEventListener('touchend', onEnd);
+    return () => {
+      document.removeEventListener('mousemove', onMove_);
+      document.removeEventListener('mouseup', onEnd);
+      document.removeEventListener('touchmove', onMove_);
+      document.removeEventListener('touchend', onEnd);
+    };
+  }, [isRotating]);
+
   // SVG original coordinate space
   const svgW = estimatedWidth + 20;
   const bottomPad = isTopTail ? 12 : (isThoughtBubble ? 70 : (bubbleType === 'speech' ? 30 : 12));
@@ -312,8 +391,131 @@ export default function SpeechBubble({ bubble, containerRef, containerScale = 1,
   // Visibility: touch → always visible; desktop → hover-reveal
   const visibleCls = isTouch ? 'opacity-100' : 'opacity-0 group-hover:opacity-100';
 
+  // Cover title styling - white text with dark outline and black shadow
+  const getTitleStyle = (): React.CSSProperties => {
+    if (!isCoverTitle) return {};
+    const titleStyle = bubble.titleStyle || 'ice-age';
+    const fontSize = bubble.fontSize || 64;
+    const strokeWidth = Math.round(fontSize * 0.045); // ~4.5% stroke (medium outline)
+    const shadowOffsetX = Math.round(fontSize * 0.06); // ~6% horizontal
+    const shadowOffsetY = Math.round(fontSize * 0.06); // ~6% vertical
+
+    const baseStyle: React.CSSProperties = {
+      fontSize: `${fontSize}px`,
+      whiteSpace: 'nowrap',
+      textAlign: 'center',
+      userSelect: 'none',
+      WebkitUserSelect: 'none',
+      pointerEvents: 'auto',
+      color: '#FFFFFF', // White text
+      WebkitTextStroke: `${strokeWidth}px #1a1a1a`, // Dark outline (thin)
+      paintOrder: 'stroke fill', // Stroke goes UNDER the fill
+      textShadow: `${shadowOffsetX}px ${shadowOffsetY}px 0px #000000`, // Black shadow
+    };
+
+    if (titleStyle === 'fk-alako') {
+      // FK Alako.kz - cursive/script style
+      return {
+        ...baseStyle,
+        fontFamily: 'var(--font-fk-alako)',
+        textTransform: 'none', // Keep original case for script
+        letterSpacing: '0.02em',
+        lineHeight: '1.2',
+        fontWeight: 'normal',
+      };
+    } else {
+      // ice aGE rUSS - bold block style
+      return {
+        ...baseStyle,
+        fontFamily: 'var(--font-ice-age)',
+        textTransform: 'uppercase',
+        letterSpacing: '0.05em',
+        lineHeight: '1.1',
+        fontWeight: 'bold',
+      };
+    }
+  };
+
+  // Cover title: simplified rendering (no SVG bubble, just styled text)
+  if (isCoverTitle) {
+    return (
+      <div
+        ref={wrapperRef}
+        className="absolute group pointer-events-auto"
+        style={{
+          left: `${bubble.x}%`,
+          top: `${bubble.y}%`,
+          transform: `translate(-50%, -50%) scale(${bubble.scale || 1}) rotate(${bubble.rotation || 0}deg)`,
+          zIndex: 10,
+          cursor: isRotating ? 'grabbing' : isDragging ? 'grabbing' : (onMove ? 'grab' : 'default'),
+        }}
+        onMouseDown={handleMouseDown}
+        onTouchStart={handleTouchStart}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div style={getTitleStyle()}>
+          {bubble.text}
+        </div>
+
+        {/* Edit / Delete */}
+        {(onEdit || onDelete) && (
+          <div className={`absolute flex gap-1 ${visibleCls} transition-opacity`} style={{ top: '-8px', right: '-8px' }}>
+            {onEdit && (
+              <button onClick={onEdit} className="bg-green-700 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-green-800" title="Редактировать">✏️</button>
+            )}
+            {onDelete && (
+              <button onClick={onDelete} className="bg-brand-orange text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-orange-600" title="Удалить">✕</button>
+            )}
+          </div>
+        )}
+
+        {/* Scale handle */}
+        {onScale && (
+          <div
+            className={`absolute flex items-center justify-center ${visibleCls} transition-opacity`}
+            style={{ bottom: '-4px', right: '-4px', width: '20px', height: '20px', touchAction: 'none' }}
+            onMouseDown={handleScaleMouseDown}
+            onTouchStart={handleScaleTouchStart}
+          >
+            <div className="w-5 h-5 bg-gray-600 border-2 border-white rounded-sm cursor-nwse-resize shadow-lg flex items-center justify-center text-white text-xs font-bold">⇲</div>
+          </div>
+        )}
+
+        {/* Font size +/− */}
+        {onFontSizeChange && (
+          <div className={`absolute flex flex-col gap-1 ${visibleCls} transition-opacity`} style={{ top: '-8px', left: '-8px' }}>
+            <button
+              onClick={(e) => { e.stopPropagation(); const s = (bubble.fontSize || 48) + 4; if (s <= 120) onFontSizeChange(s); }}
+              className="bg-gray-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-gray-700"
+              title="Увеличить шрифт"
+            >+</button>
+            <button
+              onClick={(e) => { e.stopPropagation(); const s = (bubble.fontSize || 48) - 4; if (s >= 24) onFontSizeChange(s); }}
+              className="bg-gray-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-gray-700"
+              title="Уменьшить шрифт"
+            >−</button>
+          </div>
+        )}
+
+        {/* Rotation handle (next to scale) */}
+        {onRotate && (
+          <div
+            className={`absolute flex items-center justify-center ${visibleCls} transition-opacity`}
+            style={{ bottom: '-4px', right: '22px', width: '20px', height: '20px', touchAction: 'none' }}
+            onMouseDown={handleRotateMouseDown}
+            onTouchStart={handleRotateTouchStart}
+          >
+            <div className="w-5 h-5 bg-purple-600 border-2 border-white rounded-full cursor-grab shadow-lg flex items-center justify-center text-white text-xs font-bold">↻</div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Regular bubbles (speech, thought, annotation, text-block)
   return (
     <div
+      ref={wrapperRef}
       className="absolute group pointer-events-auto"
       style={{
         left: `${bubble.x}%`,

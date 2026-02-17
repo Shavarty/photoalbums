@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { IBM_Plex_Sans, Playfair_Display, Balsamiq_Sans } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 
 const ibmPlexSans = IBM_Plex_Sans({
@@ -20,6 +21,21 @@ const balsamiqSans = Balsamiq_Sans({
   subsets: ["latin", "cyrillic"],
 });
 
+// Cover title fonts (local) - относительно app/layout.tsx
+const iceAge = localFont({
+  src: "./fonts/iceageruss.ttf",
+  variable: "--font-ice-age",
+  display: "swap",
+  fallback: ["Impact", "Arial Black", "sans-serif"],
+});
+
+const fkAlako = localFont({
+  src: "./fonts/fkalakokz.ttf",
+  variable: "--font-fk-alako",
+  display: "swap",
+  fallback: ["Brush Script MT", "cursive"],
+});
+
 export const metadata: Metadata = {
   title: "Фотоальбомы КНИГОДАР",
   description: "Создайте персонализированный фотоальбом для печати",
@@ -33,7 +49,7 @@ export default function RootLayout({
   return (
     <html lang="ru">
       <body
-        className={`${ibmPlexSans.variable} ${playfairDisplay.variable} ${balsamiqSans.variable} antialiased`}
+        className={`${ibmPlexSans.variable} ${playfairDisplay.variable} ${balsamiqSans.variable} ${iceAge.variable} ${fkAlako.variable} antialiased`}
       >
         {children}
       </body>

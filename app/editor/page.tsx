@@ -40,10 +40,7 @@ export default function EditorPage() {
   const [album, setAlbum] = useState<Album>({
     id: generateId(),
     title: "Название альбома",
-    cover: {
-      frontImage: null,
-      backImage: null,
-    },
+    cover: null, // Cover is now a Spread with templateId='cover'
     spreads: [],
     withGaps: true,
     createdAt: new Date(),
@@ -117,7 +114,7 @@ export default function EditorPage() {
     setAlbum({
       id: generateId(),
       title: mode === 'comics' ? 'Название комикса' : 'Название альбома',
-      cover: { frontImage: null, backImage: null },
+      cover: null,
       spreads: [],
       withGaps: true,
       createdAt: new Date(),
@@ -190,9 +187,38 @@ export default function EditorPage() {
     y: number;
     bubbleId?: string; // If editing existing bubble
     initialText?: string;
+    initialTitleStyle?: 'ice-age' | 'fk-alako';
     initialType?: 'speech' | 'thought' | 'annotation' | 'text-block';
     initialTailDirection?: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
   } | null>(null);
+
+  // Helper: Find spread (works for both cover and regular spreads)
+  const findSpread = (spreadId: string): Spread | undefined => {
+    if (album.cover?.id === spreadId) return album.cover;
+    return album.spreads.find((s) => s.id === spreadId);
+  };
+
+  // Helper: Update a spread (works for both cover and regular spreads)
+  const updateSpread = (spreadId: string, updater: (spread: Spread) => Spread) => {
+    setAlbum((prev) => {
+      // Check if this is the cover
+      if (prev.cover?.id === spreadId) {
+        return {
+          ...prev,
+          cover: updater(prev.cover),
+          updatedAt: new Date(),
+        };
+      }
+      // Otherwise it's a regular spread
+      return {
+        ...prev,
+        spreads: prev.spreads.map((s) =>
+          s.id === spreadId ? updater(s) : s
+        ),
+        updatedAt: new Date(),
+      };
+    });
+  };
 
   // Add new spread
   const addSpread = (templateId: string) => {
@@ -231,6 +257,51 @@ export default function EditorPage() {
     setAlbum((prev) => ({
       ...prev,
       spreads: prev.spreads.filter((s) => s.id !== spreadId),
+      updatedAt: new Date(),
+    }));
+  };
+
+  // Add cover (creates a Spread with templateId='cover')
+  const addCover = () => {
+    const template = SPREAD_TEMPLATES.find((t) => t.id === 'cover');
+    if (!template) {
+      console.error('Cover template not found');
+      return;
+    }
+
+    const createEmptyPhotos = (count: number): Photo[] =>
+      Array(count)
+        .fill(null)
+        .map(() => ({
+          id: generateId(),
+          file: null,
+          url: "",
+          caption: "",
+        }));
+
+    const newCover: Spread = {
+      id: generateId(),
+      templateId: 'cover',
+      leftPhotos: createEmptyPhotos(template.leftPage.slots.length),
+      rightPhotos: createEmptyPhotos(template.rightPage.slots.length),
+    };
+
+    setAlbum((prev) => ({
+      ...prev,
+      cover: newCover,
+      updatedAt: new Date(),
+    }));
+
+    // Close sidebar on mobile after adding cover
+    setSidebarOpen(false);
+  };
+
+  // Delete cover
+  const deleteCover = () => {
+    if (!confirm('Удалить обложку?')) return;
+    setAlbum((prev) => ({
+      ...prev,
+      cover: null,
       updatedAt: new Date(),
     }));
   };
@@ -330,7 +401,8 @@ export default function EditorPage() {
 
   // Handle photo click - open file picker
   const handlePhotoClick = (spreadId: string, side: "left" | "right", photoIndex: number) => {
-    const spread = album.spreads.find((s) => s.id === spreadId);
+    // Find spread in either cover or spreads array
+    const spread = album.cover?.id === spreadId ? album.cover : album.spreads.find((s) => s.id === spreadId);
     if (!spread) return;
 
     const template = SPREAD_TEMPLATES.find((t) => t.id === spread.templateId);
@@ -342,11 +414,13 @@ export default function EditorPage() {
         : template.rightPage.slots[photoIndex];
 
     // For full-spread templates: use 2:1 aspect ratio for background slots (photoIndex 0)
+    // EXCEPTION: For cover template, use 1:1 (square) so key content is centered, then AI expands left
     // These templates split one 2:1 photo across both pages
     const isFullSpreadTemplate = PANORAMIC_BG_TEMPLATE_IDS.includes(template.id);
     const isBackgroundSlot = photoIndex === 0;
     const isFullSpread = isFullSpreadTemplate && isBackgroundSlot;
-    const realAspectRatio = isFullSpread ? 2 : slot.width / slot.height;
+    const isCoverTemplate = template.id === 'cover';
+    const realAspectRatio = isFullSpread ? (isCoverTemplate ? 1 : 2) : slot.width / slot.height;
 
     const input = document.createElement("input");
     input.type = "file";
@@ -491,7 +565,7 @@ export default function EditorPage() {
 
   // Open scene generation modal for empty slot
   const handleGenerateScene = (spreadId: string, side: "left" | "right", photoIndex: number) => {
-    const spread = album.spreads.find(s => s.id === spreadId);
+    const spread = findSpread(spreadId);
     const template = spread ? SPREAD_TEMPLATES.find(t => t.id === spread.templateId) : null;
     const slots = template ? getPageSlots(template, side, album.withGaps) : [];
     // Панорамный фон охватывает оба листа (2:1), хотя per-page слот 1:1
@@ -508,7 +582,7 @@ export default function EditorPage() {
     setSceneModal(null);
 
     // Determine panoramic early (needed for placeholder placement too)
-    const spreadForPlaceholder = album.spreads.find(s => s.id === spreadId);
+    const spreadForPlaceholder = findSpread(spreadId);
     const templateForPlaceholder = spreadForPlaceholder ? SPREAD_TEMPLATES.find(t => t.id === spreadForPlaceholder.templateId) : null;
     const isPanoramicPlaceholder = templateForPlaceholder ? PANORAMIC_BG_TEMPLATE_IDS.includes(templateForPlaceholder.id) && photoIndex === 0 : false;
 
@@ -516,26 +590,18 @@ export default function EditorPage() {
     const placeholderUrl = result.referenceImages[0];
 
     // Show reference photo in slot(s) as placeholder while generating
-    setAlbum((prev) => ({
-      ...prev,
-      spreads: prev.spreads.map((spread) =>
-        spread.id === spreadId
-          ? {
-              ...spread,
-              leftPhotos: spread.leftPhotos.map((photo, idx) =>
-                (isPanoramicPlaceholder && idx === 0) || (side === "left" && idx === photoIndex)
-                  ? { ...photo, url: placeholderUrl, originalUrl: placeholderUrl, isStylizing: true, file: null }
-                  : photo
-              ),
-              rightPhotos: spread.rightPhotos.map((photo, idx) =>
-                (isPanoramicPlaceholder && idx === 0) || (side === "right" && idx === photoIndex)
-                  ? { ...photo, url: placeholderUrl, originalUrl: placeholderUrl, isStylizing: true, file: null }
-                  : photo
-              ),
-            }
-          : spread
+    updateSpread(spreadId, (spread) => ({
+      ...spread,
+      leftPhotos: spread.leftPhotos.map((photo, idx) =>
+        (isPanoramicPlaceholder && idx === 0) || (side === "left" && idx === photoIndex)
+          ? { ...photo, url: placeholderUrl, originalUrl: placeholderUrl, isStylizing: true, file: null }
+          : photo
       ),
-      updatedAt: new Date(),
+      rightPhotos: spread.rightPhotos.map((photo, idx) =>
+        (isPanoramicPlaceholder && idx === 0) || (side === "right" && idx === photoIndex)
+          ? { ...photo, url: placeholderUrl, originalUrl: placeholderUrl, isStylizing: true, file: null }
+          : photo
+      ),
     }));
 
     // Helper: crop any aspect ratio to exactly 2:1
@@ -570,7 +636,7 @@ export default function EditorPage() {
     };
 
     // Check if this is a panoramic background slot (needs 2:1 crop + split)
-    const spread = album.spreads.find(s => s.id === spreadId);
+    const spread = findSpread(spreadId);
     const template = spread ? SPREAD_TEMPLATES.find(t => t.id === spread.templateId) : null;
     const isPanoramicBg = template ? PANORAMIC_BG_TEMPLATE_IDS.includes(template.id) && photoIndex === 0 : false;
 
@@ -593,22 +659,14 @@ export default function EditorPage() {
           // Crop to 2:1, split into left/right halves
           const cropped = await cropTo2x1(sceneResult.generatedUrl);
           const { leftUrl, rightUrl } = await splitImageInHalf(cropped);
-          setAlbum((prev) => ({
-            ...prev,
-            spreads: prev.spreads.map((s) =>
-              s.id === spreadId
-                ? {
-                    ...s,
-                    leftPhotos: s.leftPhotos.map((p, i) =>
-                      i === 0 ? { ...p, url: leftUrl, originalUrl: leftUrl, tokens: sceneResult.tokens, isStylizing: false } : p
-                    ),
-                    rightPhotos: s.rightPhotos.map((p, i) =>
-                      i === 0 ? { ...p, url: rightUrl, originalUrl: rightUrl, isStylizing: false } : p
-                    ),
-                  }
-                : s
+          updateSpread(spreadId, (s) => ({
+            ...s,
+            leftPhotos: s.leftPhotos.map((p, i) =>
+              i === 0 ? { ...p, url: leftUrl, originalUrl: leftUrl, tokens: sceneResult.tokens, isStylizing: false } : p
             ),
-            updatedAt: new Date(),
+            rightPhotos: s.rightPhotos.map((p, i) =>
+              i === 0 ? { ...p, url: rightUrl, originalUrl: rightUrl, isStylizing: false } : p
+            ),
           }));
         } else {
           // Crop result to match slot aspect ratio (Gemini may return different orientation)
@@ -641,23 +699,15 @@ export default function EditorPage() {
             ctx.drawImage(img, cropX, cropY, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight);
             return canvas.toDataURL("image/jpeg", 0.92);
           })();
-          setAlbum((prev) => ({
-            ...prev,
-            spreads: prev.spreads.map((s) =>
-              s.id === spreadId
-                ? {
-                    ...s,
-                    [side === "left" ? "leftPhotos" : "rightPhotos"]: (
-                      side === "left" ? s.leftPhotos : s.rightPhotos
-                    ).map((photo, idx) =>
-                      idx === photoIndex
-                        ? { ...photo, url: finalUrl, originalUrl: finalUrl, tokens: sceneResult.tokens, isStylizing: false }
-                        : photo
-                    ),
-                  }
-                : s
+          updateSpread(spreadId, (s) => ({
+            ...s,
+            [side === "left" ? "leftPhotos" : "rightPhotos"]: (
+              side === "left" ? s.leftPhotos : s.rightPhotos
+            ).map((photo, idx) =>
+              idx === photoIndex
+                ? { ...photo, url: finalUrl, originalUrl: finalUrl, tokens: sceneResult.tokens, isStylizing: false }
+                : photo
             ),
-            updatedAt: new Date(),
           }));
         }
         console.log("Scene generation complete!");
@@ -697,7 +747,7 @@ export default function EditorPage() {
 
   // Edit existing photo
   const handleEditPhoto = async (spreadId: string, side: "left" | "right", photoIndex: number) => {
-    const spread = album.spreads.find((s) => s.id === spreadId);
+    const spread = album.cover?.id === spreadId ? album.cover : album.spreads.find((s) => s.id === spreadId);
     if (!spread) return;
 
     const template = SPREAD_TEMPLATES.find((t) => t.id === spread.templateId);
@@ -810,15 +860,49 @@ export default function EditorPage() {
     const { spreadId, side, photoIndex } = cropModal;
 
     // Check if this is full-spread template (2:1 photo split across both pages)
-    const spread = album.spreads.find((s) => s.id === spreadId);
+    const spread = album.cover?.id === spreadId ? album.cover : album.spreads.find((s) => s.id === spreadId);
     const template = spread && SPREAD_TEMPLATES.find((t) => t.id === spread.templateId);
     const isFullSpreadTemplate = template ? PANORAMIC_BG_TEMPLATE_IDS.includes(template.id) : false;
     const isBackgroundSlot = photoIndex === 0;
     const isFullSpread = isFullSpreadTemplate && isBackgroundSlot;
+    const isCover = template?.id === 'cover' && isBackgroundSlot;
+
+    // Helper: Expand square (1:1) image to 2:1 by adding white canvas on the left
+    const expandSquareTo2x1 = async (imageUrl: string): Promise<string> => {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        img.onload = () => {
+          const squareSize = Math.max(img.width, img.height);
+          const canvas = document.createElement("canvas");
+          canvas.width = squareSize * 2; // 2:1 aspect ratio
+          canvas.height = squareSize;
+
+          const ctx = canvas.getContext("2d", { alpha: false });
+          if (!ctx) {
+            reject(new Error("Canvas context unavailable"));
+            return;
+          }
+
+          // Fill with white background
+          ctx.fillStyle = "#FFFFFF";
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+          // Draw the square image on the RIGHT half (where it should end up centered)
+          const rightHalfX = squareSize;
+          ctx.drawImage(img, rightHalfX, 0, squareSize, squareSize);
+
+          console.log(`Expanded square ${img.width}x${img.height} to 2:1 ${canvas.width}x${canvas.height}`);
+          resolve(canvas.toDataURL("image/jpeg", 0.95));
+        };
+        img.onerror = () => reject(new Error("Failed to load image for expansion"));
+        img.src = imageUrl;
+      });
+    };
 
     if (isFullSpread) {
-      // Full-spread: crop at 2:1, optionally stylize, then split into left/right halves
-      console.log("Full-spread detected! Processing 2:1 image...");
+      // Full-spread: crop at 2:1 (or 1:1 for cover), optionally stylize, then split into left/right halves
+      console.log(`Full-spread detected! Processing ${isCover ? '1:1 (cover)' : '2:1'} image...`);
       try {
         // Step 1: Apply crop to originalUrl (it's the uncropped original file)
         const croppedOriginal = result.cropArea
@@ -827,6 +911,13 @@ export default function EditorPage() {
 
         let previewToSplit = result.previewUrl;
         let originalToSplit = croppedOriginal;
+
+        // Step 1b: For cover, expand square 1:1 to 2:1 by adding white space on left
+        if (isCover) {
+          console.log("Cover detected - expanding square to 2:1...");
+          previewToSplit = await expandSquareTo2x1(previewToSplit);
+          originalToSplit = await expandSquareTo2x1(originalToSplit);
+        }
 
         // Step 2: If stylization requested, stylize the 2:1 image BEFORE splitting
         if (result.isStylizing && result.modelId) {
@@ -846,40 +937,32 @@ export default function EditorPage() {
           const { leftUrl: tempLeftUrl, rightUrl: tempRightUrl } = await splitImageInHalf(previewToSplit);
           const { leftUrl: tempLeftOriginal, rightUrl: tempRightOriginal } = await splitImageInHalf(originalToSplit);
 
-          setAlbum((prev) => ({
-            ...prev,
-            spreads: prev.spreads.map((spread) =>
-              spread.id === spreadId
+          updateSpread(spreadId, (spread) => ({
+            ...spread,
+            leftPhotos: spread.leftPhotos.map((photo, idx) =>
+              idx === 0
                 ? {
-                    ...spread,
-                    leftPhotos: spread.leftPhotos.map((photo, idx) =>
-                      idx === 0
-                        ? {
-                            ...photo,
-                            url: tempLeftUrl,
-                            originalUrl: tempLeftOriginal,
-                            cropArea: undefined,
-                            isStylizing: true, // Show loading state
-                            file: null,
-                          }
-                        : photo
-                    ),
-                    rightPhotos: spread.rightPhotos.map((photo, idx) =>
-                      idx === 0
-                        ? {
-                            ...photo,
-                            url: tempRightUrl,
-                            originalUrl: tempRightOriginal,
-                            cropArea: undefined,
-                            isStylizing: true, // Show loading state
-                            file: null,
-                          }
-                        : photo
-                    ),
+                    ...photo,
+                    url: tempLeftUrl,
+                    originalUrl: tempLeftOriginal,
+                    cropArea: undefined,
+                    isStylizing: true, // Show loading state
+                    file: null,
                   }
-                : spread
+                : photo
             ),
-            updatedAt: new Date(),
+            rightPhotos: spread.rightPhotos.map((photo, idx) =>
+              idx === 0
+                ? {
+                    ...photo,
+                    url: tempRightUrl,
+                    originalUrl: tempRightOriginal,
+                    cropArea: undefined,
+                    isStylizing: true, // Show loading state
+                    file: null,
+                  }
+                : photo
+            ),
           }));
           setCropModal(null);
 
@@ -890,7 +973,8 @@ export default function EditorPage() {
             body: JSON.stringify({
               imageBase64: previewToSplit,
               modelId: result.modelId,
-              prompt: getAssembledPrompt(album.stylizeSettings)
+              prompt: getAssembledPrompt(album.stylizeSettings),
+              isCover: isCover // Special handling for book cover
             })
           });
 
@@ -954,56 +1038,41 @@ export default function EditorPage() {
             const { leftUrl: stylizedLeftUrl, rightUrl: stylizedRightUrl } = await splitImageInHalf(cropped2x1);
 
             // Update both slots with stylized halves
-            setAlbum((prev) => ({
-              ...prev,
-              spreads: prev.spreads.map((spread) =>
-                spread.id === spreadId
+            updateSpread(spreadId, (spread) => ({
+              ...spread,
+              leftPhotos: spread.leftPhotos.map((photo, idx) =>
+                idx === 0
                   ? {
-                      ...spread,
-                      leftPhotos: spread.leftPhotos.map((photo, idx) =>
-                        idx === 0
-                          ? {
-                              ...photo,
-                              url: stylizedLeftUrl,
-                              originalUrl: stylizedLeftUrl,
-                              tokens: stylizeResult.tokens,
-                              isStylizing: false,
-                            }
-                          : photo
-                      ),
-                      rightPhotos: spread.rightPhotos.map((photo, idx) =>
-                        idx === 0
-                          ? {
-                              ...photo,
-                              url: stylizedRightUrl,
-                              originalUrl: stylizedRightUrl,
-                              tokens: undefined, // Токены считаются только на левой половине
-                              isStylizing: false,
-                            }
-                          : photo
-                      ),
+                      ...photo,
+                      url: stylizedLeftUrl,
+                      originalUrl: stylizedLeftUrl,
+                      tokens: stylizeResult.tokens,
+                      isStylizing: false,
                     }
-                  : spread
+                  : photo
               ),
-              updatedAt: new Date(),
+              rightPhotos: spread.rightPhotos.map((photo, idx) =>
+                idx === 0
+                  ? {
+                      ...photo,
+                      url: stylizedRightUrl,
+                      originalUrl: stylizedRightUrl,
+                      tokens: undefined, // Токены считаются только на левой половине
+                      isStylizing: false,
+                    }
+                  : photo
+              ),
             }));
           } else {
             console.error("Stylization failed:", stylizeResult.error);
             // Keep the unstyled split images, just remove loading state
-            setAlbum((prev) => ({
-              ...prev,
-              spreads: prev.spreads.map((spread) =>
-                spread.id === spreadId
-                  ? {
-                      ...spread,
-                      leftPhotos: spread.leftPhotos.map((photo, idx) =>
-                        idx === 0 ? { ...photo, isStylizing: false } : photo
-                      ),
-                      rightPhotos: spread.rightPhotos.map((photo, idx) =>
-                        idx === 0 ? { ...photo, isStylizing: false } : photo
-                      ),
-                    }
-                  : spread
+            updateSpread(spreadId, (spread) => ({
+              ...spread,
+              leftPhotos: spread.leftPhotos.map((photo, idx) =>
+                idx === 0 ? { ...photo, isStylizing: false } : photo
+              ),
+              rightPhotos: spread.rightPhotos.map((photo, idx) =>
+                idx === 0 ? { ...photo, isStylizing: false } : photo
               ),
             }));
           }
@@ -1012,38 +1081,30 @@ export default function EditorPage() {
           const { leftUrl, rightUrl } = await splitImageInHalf(previewToSplit);
           const { leftUrl: leftOriginal, rightUrl: rightOriginal } = await splitImageInHalf(originalToSplit);
 
-          setAlbum((prev) => ({
-            ...prev,
-            spreads: prev.spreads.map((spread) =>
-              spread.id === spreadId
+          updateSpread(spreadId, (spread) => ({
+            ...spread,
+            leftPhotos: spread.leftPhotos.map((photo, idx) =>
+              idx === 0
                 ? {
-                    ...spread,
-                    leftPhotos: spread.leftPhotos.map((photo, idx) =>
-                      idx === 0
-                        ? {
-                            ...photo,
-                            url: leftUrl,
-                            originalUrl: leftOriginal,
-                            cropArea: undefined,
-                            file: null,
-                          }
-                        : photo
-                    ),
-                    rightPhotos: spread.rightPhotos.map((photo, idx) =>
-                      idx === 0
-                        ? {
-                            ...photo,
-                            url: rightUrl,
-                            originalUrl: rightOriginal,
-                            cropArea: undefined,
-                            file: null,
-                          }
-                        : photo
-                    ),
+                    ...photo,
+                    url: leftUrl,
+                    originalUrl: leftOriginal,
+                    cropArea: undefined,
+                    file: null,
                   }
-                : spread
+                : photo
             ),
-            updatedAt: new Date(),
+            rightPhotos: spread.rightPhotos.map((photo, idx) =>
+              idx === 0
+                ? {
+                    ...photo,
+                    url: rightUrl,
+                    originalUrl: rightOriginal,
+                    cropArea: undefined,
+                    file: null,
+                  }
+                : photo
+            ),
           }));
           setCropModal(null);
           console.log("Image split successfully!");
@@ -1051,11 +1112,8 @@ export default function EditorPage() {
       } catch (error) {
         console.error("Error processing full-spread image:", error);
         // Убираем spinner на обоих слотах panoramic
-        setAlbum((prev) => ({
-          ...prev,
-          spreads: prev.spreads.map((s) =>
-            s.id === spreadId
-              ? {
+        updateSpread(spreadId, (s) => ({
+          ...s,
                   ...s,
                   leftPhotos: s.leftPhotos.map((photo, idx) =>
                     idx === 0 ? { ...photo, isStylizing: false } : photo
@@ -1063,9 +1121,6 @@ export default function EditorPage() {
                   rightPhotos: s.rightPhotos.map((photo, idx) =>
                     idx === 0 ? { ...photo, isStylizing: false } : photo
                   ),
-                }
-              : s
-          ),
         }));
         alert("Не удалось обработать изображение. Попробуйте еще раз.");
         setCropModal(null);
@@ -1074,32 +1129,51 @@ export default function EditorPage() {
     }
 
     // Сначала сохраняем обычное фото (быстро закрываем modal)
-    setAlbum((prev) => ({
-      ...prev,
-      spreads: prev.spreads.map((spread) =>
-        spread.id === spreadId
-          ? {
-              ...spread,
-              [side === "left" ? "leftPhotos" : "rightPhotos"]: (
-                side === "left" ? spread.leftPhotos : spread.rightPhotos
-              ).map((photo, idx) =>
-                idx === photoIndex
-                  ? {
-                      ...photo,
-                      url: result.previewUrl,        // Low-res preview for editor
-                      originalUrl: result.originalUrl, // High-res for PDF
-                      cropArea: result.cropArea,      // Crop coordinates
-                      tokens: result.tokens,          // AI tokens if stylized
-                      isStylizing: result.isStylizing || false, // Show progress if stylizing
-                      file: null
-                    }
-                  : photo
-              ),
-            }
-          : spread
-      ),
-      updatedAt: new Date(),
-    }));
+    setAlbum((prev) => {
+      const isCover = prev.cover?.id === spreadId;
+      const updatePhotos = (photos: Photo[]) =>
+        photos.map((photo, idx) =>
+          idx === photoIndex
+            ? {
+                ...photo,
+                url: result.previewUrl,        // Low-res preview for editor
+                originalUrl: result.originalUrl, // High-res for PDF
+                cropArea: result.cropArea,      // Crop coordinates
+                tokens: result.tokens,          // AI tokens if stylized
+                isStylizing: result.isStylizing || false, // Show progress if stylizing
+                file: null
+              }
+            : photo
+        );
+
+      if (isCover && prev.cover) {
+        return {
+          ...prev,
+          cover: {
+            ...prev.cover,
+            [side === "left" ? "leftPhotos" : "rightPhotos"]: updatePhotos(
+              side === "left" ? prev.cover.leftPhotos : prev.cover.rightPhotos
+            ),
+          },
+          updatedAt: new Date(),
+        };
+      }
+
+      return {
+        ...prev,
+        spreads: prev.spreads.map((spread) =>
+          spread.id === spreadId
+            ? {
+                ...spread,
+                [side === "left" ? "leftPhotos" : "rightPhotos"]: updatePhotos(
+                  side === "left" ? spread.leftPhotos : spread.rightPhotos
+                ),
+              }
+            : spread
+        ),
+        updatedAt: new Date(),
+      };
+    });
 
     setCropModal(null);
 
@@ -1122,67 +1196,45 @@ export default function EditorPage() {
 
         if (stylizeResult.success) {
           // Обновляем фото стилизованной версией
-          setAlbum((prev) => ({
-            ...prev,
-            spreads: prev.spreads.map((spread) =>
-              spread.id === spreadId
+          updateSpread(spreadId, (spread) => ({
+            ...spread,
+            [side === "left" ? "leftPhotos" : "rightPhotos"]: (
+              side === "left" ? spread.leftPhotos : spread.rightPhotos
+            ).map((photo, idx) =>
+              idx === photoIndex
                 ? {
-                    ...spread,
-                    [side === "left" ? "leftPhotos" : "rightPhotos"]: (
-                      side === "left" ? spread.leftPhotos : spread.rightPhotos
-                    ).map((photo, idx) =>
-                      idx === photoIndex
-                        ? {
-                            ...photo,
-                            url: stylizeResult.stylizedUrl,
-                            originalUrl: stylizeResult.stylizedUrl,
-                            tokens: stylizeResult.tokens,
-                            isStylizing: false
-                          }
-                        : photo
-                    ),
+                    ...photo,
+                    url: stylizeResult.stylizedUrl,
+                    originalUrl: stylizeResult.stylizedUrl,
+                    tokens: stylizeResult.tokens,
+                    isStylizing: false
                   }
-                : spread
+                : photo
             ),
-            updatedAt: new Date(),
           }));
 
           console.log("Stylization complete!");
         } else {
           console.error("Stylization failed:", stylizeResult.error);
           // Убираем spinner, оставляем оригинальное фото
-          setAlbum((prev) => ({
-            ...prev,
-            spreads: prev.spreads.map((spread) =>
-              spread.id === spreadId
-                ? {
-                    ...spread,
-                    [side === "left" ? "leftPhotos" : "rightPhotos"]: (
-                      side === "left" ? spread.leftPhotos : spread.rightPhotos
-                    ).map((photo, idx) =>
-                      idx === photoIndex ? { ...photo, isStylizing: false } : photo
-                    ),
-                  }
-                : spread
+          updateSpread(spreadId, (spread) => ({
+            ...spread,
+            [side === "left" ? "leftPhotos" : "rightPhotos"]: (
+              side === "left" ? spread.leftPhotos : spread.rightPhotos
+            ).map((photo, idx) =>
+              idx === photoIndex ? { ...photo, isStylizing: false } : photo
             ),
           }));
         }
       } catch (error: any) {
         console.error("Background stylization error:", error);
         // Убираем spinner, оставляем оригинальное фото
-        setAlbum((prev) => ({
-          ...prev,
-          spreads: prev.spreads.map((spread) =>
-            spread.id === spreadId
-              ? {
-                  ...spread,
-                  [side === "left" ? "leftPhotos" : "rightPhotos"]: (
-                    side === "left" ? spread.leftPhotos : spread.rightPhotos
-                  ).map((photo, idx) =>
-                    idx === photoIndex ? { ...photo, isStylizing: false } : photo
-                  ),
-                }
-              : spread
+        updateSpread(spreadId, (spread) => ({
+          ...spread,
+          [side === "left" ? "leftPhotos" : "rightPhotos"]: (
+            side === "left" ? spread.leftPhotos : spread.rightPhotos
+          ).map((photo, idx) =>
+            idx === photoIndex ? { ...photo, isStylizing: false } : photo
           ),
         }));
       }
@@ -1253,7 +1305,7 @@ export default function EditorPage() {
   };
 
   const handleEditBubble = (spreadId: string, bubbleId: string) => {
-    const spread = album.spreads.find(s => s.id === spreadId);
+    const spread = findSpread(spreadId);
     const bubble = spread?.bubbles?.find(b => b.id === bubbleId);
     if (bubble) {
       setSpeechBubbleModal({
@@ -1264,97 +1316,76 @@ export default function EditorPage() {
         initialText: bubble.text,
         initialType: bubble.type || 'speech',
         initialTailDirection: bubble.tailDirection || 'bottom-left',
+        initialTitleStyle: bubble.titleStyle || 'ice-age',
       });
     }
   };
 
   const handleDeleteBubble = (spreadId: string, bubbleId: string) => {
-    setAlbum((prev) => ({
-      ...prev,
-      spreads: prev.spreads.map((spread) =>
-        spread.id === spreadId
-          ? { ...spread, bubbles: (spread.bubbles || []).filter(b => b.id !== bubbleId) }
-          : spread
-      ),
-      updatedAt: new Date(),
+    updateSpread(spreadId, (spread) => ({
+      ...spread,
+      bubbles: (spread.bubbles || []).filter(b => b.id !== bubbleId),
     }));
   };
 
   const handleMoveBubble = (spreadId: string, bubbleId: string, x: number, y: number) => {
-    setAlbum((prev) => ({
-      ...prev,
-      spreads: prev.spreads.map((spread) =>
-        spread.id === spreadId
-          ? { ...spread, bubbles: (spread.bubbles || []).map(b => b.id === bubbleId ? { ...b, x, y } : b) }
-          : spread
-      ),
-      updatedAt: new Date(),
+    updateSpread(spreadId, (spread) => ({
+      ...spread,
+      bubbles: (spread.bubbles || []).map(b => b.id === bubbleId ? { ...b, x, y } : b),
     }));
   };
 
   const handleResizeBubble = (spreadId: string, bubbleId: string, width: number, height: number) => {
-    setAlbum((prev) => ({
-      ...prev,
-      spreads: prev.spreads.map((spread) =>
-        spread.id === spreadId
-          ? { ...spread, bubbles: (spread.bubbles || []).map(b => b.id === bubbleId ? { ...b, width, height } : b) }
-          : spread
-      ),
-      updatedAt: new Date(),
+    updateSpread(spreadId, (spread) => ({
+      ...spread,
+      bubbles: (spread.bubbles || []).map(b => b.id === bubbleId ? { ...b, width, height } : b),
     }));
   };
 
   const handleScaleBubble = (spreadId: string, bubbleId: string, scale: number) => {
-    setAlbum((prev) => ({
-      ...prev,
-      spreads: prev.spreads.map((spread) =>
-        spread.id === spreadId
-          ? { ...spread, bubbles: (spread.bubbles || []).map(b => b.id === bubbleId ? { ...b, scale } : b) }
-          : spread
-      ),
-      updatedAt: new Date(),
+    updateSpread(spreadId, (spread) => ({
+      ...spread,
+      bubbles: (spread.bubbles || []).map(b => b.id === bubbleId ? { ...b, scale } : b),
     }));
   };
 
   const handleFontSizeBubble = (spreadId: string, bubbleId: string, fontSize: number) => {
-    setAlbum((prev) => ({
-      ...prev,
-      spreads: prev.spreads.map((spread) =>
-        spread.id === spreadId
-          ? { ...spread, bubbles: (spread.bubbles || []).map(b => b.id === bubbleId ? { ...b, fontSize } : b) }
-          : spread
-      ),
-      updatedAt: new Date(),
+    updateSpread(spreadId, (spread) => ({
+      ...spread,
+      bubbles: (spread.bubbles || []).map(b => b.id === bubbleId ? { ...b, fontSize } : b),
+    }));
+  };
+
+  const handleRotateBubble = (spreadId: string, bubbleId: string, rotation: number) => {
+    updateSpread(spreadId, (spread) => ({
+      ...spread,
+      bubbles: (spread.bubbles || []).map(b => b.id === bubbleId ? { ...b, rotation } : b),
     }));
   };
 
   // Save speech bubble (add or edit) — spread-level
   const saveSpeechBubble = (
     text: string,
-    type: 'speech' | 'thought' | 'annotation' | 'text-block',
-    tailDirection: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'
+    type: 'speech' | 'thought' | 'annotation' | 'text-block' | 'cover-title',
+    tailDirection: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right',
+    titleStyle?: 'ice-age' | 'fk-alako'
   ) => {
     if (!speechBubbleModal) return;
     const { spreadId, x, y, bubbleId } = speechBubbleModal;
 
-    setAlbum((prev) => ({
-      ...prev,
-      spreads: prev.spreads.map((spread) =>
-        spread.id === spreadId
-          ? {
-              ...spread,
-              bubbles: bubbleId
-                ? (spread.bubbles || []).map(b =>
-                    b.id === bubbleId ? { ...b, text, type, tailDirection } : b
-                  )
-                : [
-                    ...(spread.bubbles || []),
-                    { id: generateId(), x, y, text, type, tailDirection },
-                  ],
-            }
-          : spread
-      ),
-      updatedAt: new Date(),
+    // For cover-title, set default fontSize if not set
+    const fontSize = type === 'cover-title' && !bubbleId ? 64 : undefined;
+
+    updateSpread(spreadId, (spread) => ({
+      ...spread,
+      bubbles: bubbleId
+        ? (spread.bubbles || []).map(b =>
+            b.id === bubbleId ? { ...b, text, type, tailDirection, titleStyle } : b
+          )
+        : [
+            ...(spread.bubbles || []),
+            { id: generateId(), x, y, text, type, tailDirection, fontSize, titleStyle },
+          ],
     }));
 
     setSpeechBubbleModal(null);
@@ -1504,9 +1535,46 @@ export default function EditorPage() {
                 </div>
 
 
+                {/* Cover section */}
+                <div className="mb-4">
+                  <h4 className="text-xs font-semibold text-gray-500 uppercase mb-2">Обложка</h4>
+                  {!album.cover ? (
+                    <button
+                      onClick={addCover}
+                      className="w-full px-3 py-2 bg-brand-olive text-white rounded-lg text-sm transition hover:bg-opacity-90 text-left flex items-center gap-3"
+                    >
+                      <div className="w-9 h-9 bg-white/20 rounded flex items-center justify-center text-xl">+</div>
+                      <div className="flex-1">
+                        <div className="font-medium">Создать обложку</div>
+                        <div className="text-xs opacity-90">
+                          С панорамным фоном
+                        </div>
+                      </div>
+                    </button>
+                  ) : (
+                    <div className="p-3 rounded-lg border-2 border-brand-olive bg-brand-olive/5">
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-sm font-medium text-brand-olive">
+                          Обложка
+                        </span>
+                        <button
+                          onClick={deleteCover}
+                          className="text-red-500 hover:text-red-700 text-xs"
+                        >
+                          Удалить
+                        </button>
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        Обложка альбома
+                      </div>
+                    </div>
+                  )}
+                </div>
+
                 {/* Add spread buttons */}
+                <h4 className="text-xs font-semibold text-gray-500 uppercase mb-2">Развороты</h4>
                 <div className="space-y-2 mb-4">
-                  {orderedTemplates.map((template) => {
+                  {orderedTemplates.filter(t => t.id !== 'cover').map((template) => {
                     const isDisabled = disabledTemplates.includes(template.id);
                     return (
                       <button
@@ -1595,9 +1663,46 @@ export default function EditorPage() {
               </button>
             </div>
 
+            {/* Cover section */}
+            <div className="mb-4">
+              <h4 className="text-xs font-semibold text-gray-500 uppercase mb-2">Обложка</h4>
+              {!album.cover ? (
+                <button
+                  onClick={addCover}
+                  className="w-full px-3 py-2 bg-brand-olive text-white rounded-lg text-sm transition hover:bg-opacity-90 text-left flex items-center gap-3"
+                >
+                  <div className="w-9 h-9 bg-white/20 rounded flex items-center justify-center text-xl">+</div>
+                  <div className="flex-1">
+                    <div className="font-medium">Создать обложку</div>
+                    <div className="text-xs opacity-90">
+                      С панорамным фоном
+                    </div>
+                  </div>
+                </button>
+              ) : (
+                <div className="p-3 rounded-lg border-2 border-brand-olive bg-brand-olive/5">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-sm font-medium text-brand-olive">
+                      Обложка
+                    </span>
+                    <button
+                      onClick={deleteCover}
+                      className="text-red-500 hover:text-red-700 text-xs"
+                    >
+                      Удалить
+                    </button>
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    Обложка альбома
+                  </div>
+                </div>
+              )}
+            </div>
+
             {/* Add spread buttons */}
+            <h4 className="text-xs font-semibold text-gray-500 uppercase mb-2">Развороты</h4>
             <div className="space-y-2 mb-4">
-              {orderedTemplates.map((template) => {
+              {orderedTemplates.filter(t => t.id !== 'cover').map((template) => {
                 const isDisabled = disabledTemplates.includes(template.id);
                 return (
                   <button
@@ -1656,20 +1761,73 @@ export default function EditorPage() {
 
         {/* Main Editor Area */}
         <div className="flex-1 p-4 md:p-6">
-          {album.spreads.length === 0 ? (
+          {!album.cover && album.spreads.length === 0 ? (
             <div className="bg-white rounded-xl shadow-sm p-8 md:p-12 text-center">
               <p className="text-gray-500 mb-4">
-                {mode === 'comics' ? "Комикс пустой. Добавьте первый разворот!" : "Альбом пустой. Добавьте первый разворот!"}
+                {mode === 'comics' ? "Комикс пустой. Создайте обложку или добавьте разворот!" : "Альбом пустой. Создайте обложку или добавьте разворот!"}
               </p>
               <button
                 onClick={() => setSidebarOpen(true)}
                 className="btn-gradient px-8 py-3 text-white font-semibold"
               >
-                Добавить разворот
+                Открыть меню
               </button>
             </div>
           ) : (
             <div className="space-y-6">
+              {/* Cover (if exists) */}
+              {album.cover && (
+                <div key={album.cover.id}>
+                  <div className="mb-2 flex items-center gap-2">
+                    <span className="text-sm font-semibold text-brand-olive">ОБЛОЖКА</span>
+                  </div>
+                  <SpreadEditor
+                    spread={album.cover}
+                    withGaps={album.withGaps}
+                    onPhotoClick={(side, idx) =>
+                      handlePhotoClick(album.cover!.id, side, idx)
+                    }
+                    onDeletePhoto={(side, idx) =>
+                      handleDeletePhoto(album.cover!.id, side, idx)
+                    }
+                    onEditPhoto={(side, idx) =>
+                      handleEditPhoto(album.cover!.id, side, idx)
+                    }
+                    onToggleSlot={(side, idx) =>
+                      handleToggleSlot(album.cover!.id, side, idx)
+                    }
+                    onGenerateScene={(side, idx) =>
+                      handleGenerateScene(album.cover!.id, side, idx)
+                    }
+                    onAddBubble={mode === 'comics' ? (x, y) =>
+                      handleAddBubble(album.cover!.id, x, y) : undefined
+                    }
+                    onEditBubble={mode === 'comics' ? (bubbleId) =>
+                      handleEditBubble(album.cover!.id, bubbleId) : undefined
+                    }
+                    onDeleteBubble={mode === 'comics' ? (bubbleId) =>
+                      handleDeleteBubble(album.cover!.id, bubbleId) : undefined
+                    }
+                    onMoveBubble={mode === 'comics' ? (bubbleId, x, y) =>
+                      handleMoveBubble(album.cover!.id, bubbleId, x, y) : undefined
+                    }
+                    onResizeBubble={mode === 'comics' ? (bubbleId, width, height) =>
+                      handleResizeBubble(album.cover!.id, bubbleId, width, height) : undefined
+                    }
+                    onScaleBubble={mode === 'comics' ? (bubbleId, scale) =>
+                      handleScaleBubble(album.cover!.id, bubbleId, scale) : undefined
+                    }
+                    onFontSizeBubble={mode === 'comics' ? (bubbleId, fontSize) =>
+                      handleFontSizeBubble(album.cover!.id, bubbleId, fontSize) : undefined
+                    }
+                    onRotateBubble={mode === 'comics' ? (bubbleId, rotation) =>
+                      handleRotateBubble(album.cover!.id, bubbleId, rotation) : undefined
+                    }
+                  />
+                </div>
+              )}
+
+              {/* Regular spreads */}
               {album.spreads.map((spread) => (
                 <div key={spread.id}>
                   <SpreadEditor
@@ -1710,6 +1868,9 @@ export default function EditorPage() {
                     }
                     onFontSizeBubble={mode === 'comics' ? (bubbleId, fontSize) =>
                       handleFontSizeBubble(spread.id, bubbleId, fontSize) : undefined
+                    }
+                    onRotateBubble={mode === 'comics' ? (bubbleId, rotation) =>
+                      handleRotateBubble(spread.id, bubbleId, rotation) : undefined
                     }
                   />
                   {mode === 'comics' && (
@@ -1782,6 +1943,7 @@ export default function EditorPage() {
           initialText={speechBubbleModal.initialText}
           initialType={speechBubbleModal.initialType}
           initialTailDirection={speechBubbleModal.initialTailDirection}
+          initialTitleStyle={speechBubbleModal.initialTitleStyle}
           onSave={saveSpeechBubble}
           onCancel={() => setSpeechBubbleModal(null)}
         />

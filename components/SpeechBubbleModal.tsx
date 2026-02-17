@@ -7,7 +7,13 @@ interface SpeechBubbleModalProps {
   initialText?: string;
   initialType?: BubbleType;
   initialTailDirection?: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
-  onSave: (text: string, type: BubbleType, tailDirection: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right') => void;
+  initialTitleStyle?: 'ice-age' | 'fk-alako';
+  onSave: (
+    text: string,
+    type: BubbleType,
+    tailDirection: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right',
+    titleStyle?: 'ice-age' | 'fk-alako'
+  ) => void;
   onCancel: () => void;
 }
 
@@ -15,22 +21,25 @@ export default function SpeechBubbleModal({
   initialText = "",
   initialType = 'speech',
   initialTailDirection = 'bottom-left',
+  initialTitleStyle = 'ice-age',
   onSave,
   onCancel,
 }: SpeechBubbleModalProps) {
   const [text, setText] = useState(initialText);
   const [bubbleType, setBubbleType] = useState<BubbleType>(initialType);
   const [tailDirection, setTailDirection] = useState<'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'>(initialTailDirection);
+  const [titleStyle, setTitleStyle] = useState<'ice-age' | 'fk-alako'>(initialTitleStyle);
 
   useEffect(() => {
     setText(initialText);
     setBubbleType(initialType);
     setTailDirection(initialTailDirection);
-  }, [initialText, initialType, initialTailDirection]);
+    setTitleStyle(initialTitleStyle);
+  }, [initialText, initialType, initialTailDirection, initialTitleStyle]);
 
   const handleSave = () => {
     if (text.trim()) {
-      onSave(text.trim(), bubbleType, tailDirection);
+      onSave(text.trim(), bubbleType, tailDirection, titleStyle);
     }
   };
 
@@ -39,9 +48,11 @@ export default function SpeechBubbleModal({
     { value: 'thought', label: '💭 Мысли', description: 'Воздушное облачко с пузырьками' },
     { value: 'annotation', label: '📝 Аннотация', description: 'Прямоугольник без хвостика' },
     { value: 'text-block', label: '📄 Текстовый блок', description: 'Для большого текста' },
+    { value: 'cover-title', label: '✨ Заголовок обложки', description: 'Стилизованный заголовок' },
   ];
 
   const showTailDirection = bubbleType === 'speech' || bubbleType === 'thought';
+  const isCoverTitle = bubbleType === 'cover-title';
   const modalTitle = bubbleTypeOptions.find(opt => opt.value === bubbleType)?.label || '💬 Добавить элемент';
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -125,6 +136,38 @@ export default function SpeechBubbleModal({
                   {option.label}
                 </button>
               ))}
+            </div>
+          </div>
+        )}
+
+        {isCoverTitle && (
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Стиль заголовка
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={() => setTitleStyle('ice-age')}
+                className={`px-3 py-2 rounded-lg text-sm font-medium transition text-left ${
+                  titleStyle === 'ice-age'
+                    ? 'bg-purple-600 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                <div>🧊 ice aGE rUSS</div>
+                <div className="text-xs opacity-75">Жирный, прямой</div>
+              </button>
+              <button
+                onClick={() => setTitleStyle('fk-alako')}
+                className={`px-3 py-2 rounded-lg text-sm font-medium transition text-left ${
+                  titleStyle === 'fk-alako'
+                    ? 'bg-purple-600 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                <div>✍️ FK Alako.kz</div>
+                <div className="text-xs opacity-75">Рукописный</div>
+              </button>
             </div>
           </div>
         )}

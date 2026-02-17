@@ -20,6 +20,7 @@ interface SpreadEditorProps {
   onResizeBubble?: (bubbleId: string, width: number, height: number) => void;
   onScaleBubble?: (bubbleId: string, scale: number) => void;
   onFontSizeBubble?: (bubbleId: string, fontSize: number) => void;
+  onRotateBubble?: (bubbleId: string, rotation: number) => void;
 }
 
 export default function SpreadEditor({
@@ -37,6 +38,7 @@ export default function SpreadEditor({
   onResizeBubble,
   onScaleBubble,
   onFontSizeBubble,
+  onRotateBubble,
 }: SpreadEditorProps) {
   const spreadRef = useRef<HTMLDivElement>(null);
   const [slotChoice, setSlotChoice] = useState<{ side: "left" | "right"; index: number } | null>(null);
@@ -221,10 +223,14 @@ export default function SpreadEditor({
         {/* Page labels */}
         <div className="flex">
           <div className="w-1/2">
-            <p className="text-xs text-gray-500 mb-2">Левая страница</p>
+            <p className="text-xs text-gray-500 mb-2">
+              {spread.templateId === 'cover' ? 'Задняя обложка' : 'Левая страница'}
+            </p>
           </div>
           <div className="w-1/2">
-            <p className="text-xs text-gray-500 mb-2">Правая страница</p>
+            <p className="text-xs text-gray-500 mb-2">
+              {spread.templateId === 'cover' ? 'Лицевая обложка' : 'Правая страница'}
+            </p>
           </div>
         </div>
 
@@ -244,15 +250,62 @@ export default function SpreadEditor({
                 containerRef={spreadRef}
                 containerScale={containerScale}
                 isTouch={isTouch}
+                isCover={spread.templateId === 'cover'}
                 onEdit={() => onEditBubble?.(bubble.id)}
                 onDelete={() => onDeleteBubble?.(bubble.id)}
                 onMove={(x, y) => onMoveBubble?.(bubble.id, x, y)}
                 onResize={(width, height) => onResizeBubble?.(bubble.id, width, height)}
                 onScale={(scale) => onScaleBubble?.(bubble.id, scale)}
                 onFontSizeChange={(fontSize) => onFontSizeBubble?.(bubble.id, fontSize)}
+                onRotate={(rotation) => onRotateBubble?.(bubble.id, rotation)}
               />
             ))}
           </div>
+
+          {/* Cover trim/bleed guide overlay (only for cover) */}
+          {spread.templateId === 'cover' && (
+            <div className="absolute inset-0 pointer-events-none">
+              <svg className="w-full h-full">
+                {/* Red rectangle showing final cover boundaries (18mm bleed on all sides) */}
+                {/* Cover dimensions: 458×242mm, bleed: 18mm */}
+                {/* Bleed percentage: horizontal (18/458)*100 ≈ 3.93%, vertical (18/242)*100 ≈ 7.44% */}
+                <rect
+                  x="3.93%"
+                  y="7.44%"
+                  width="92.14%"
+                  height="85.12%"
+                  fill="none"
+                  stroke="red"
+                  strokeWidth="2"
+                  strokeDasharray="1.5,8"
+                  strokeLinecap="round"
+                />
+                {/* Spine lines (10mm width in center) */}
+                {/* Spine: center ± 5mm = (229-5)mm to (229+5)mm = 224mm to 234mm */}
+                {/* In percentage: 224/458 ≈ 48.91%, 234/458 ≈ 51.09% */}
+                <line
+                  x1="48.91%"
+                  y1="7.44%"
+                  x2="48.91%"
+                  y2="92.56%"
+                  stroke="red"
+                  strokeWidth="2"
+                  strokeDasharray="1.5,8"
+                  strokeLinecap="round"
+                />
+                <line
+                  x1="51.09%"
+                  y1="7.44%"
+                  x2="51.09%"
+                  y2="92.56%"
+                  stroke="red"
+                  strokeWidth="2"
+                  strokeDasharray="1.5,8"
+                  strokeLinecap="round"
+                />
+              </svg>
+            </div>
+          )}
         </div>
       </div>
 

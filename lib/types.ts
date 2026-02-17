@@ -15,7 +15,7 @@ export interface TokenUsage {
   costUsd?: number; // Fixed price for fal.ai models (no token-based billing)
 }
 
-export type BubbleType = 'speech' | 'thought' | 'annotation' | 'text-block';
+export type BubbleType = 'speech' | 'thought' | 'annotation' | 'text-block' | 'cover-title';
 
 export interface SpeechBubble {
   id: string;
@@ -26,8 +26,10 @@ export interface SpeechBubble {
   tailDirection?: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
   width?: number; // Custom width in pixels (for text-block type)
   height?: number; // Custom height in pixels (for text-block type)
-  fontSize?: number; // Font size in pixels (default: 14)
+  fontSize?: number; // Font size in pixels (default: 14 for bubbles, 64 for cover-title)
   scale?: number; // Uniform scale factor (default: 1.0)
+  rotation?: number; // Rotation angle in degrees (default: 0)
+  titleStyle?: 'ice-age' | 'fk-alako'; // For cover-title type
 }
 
 export interface Photo {
@@ -49,11 +51,9 @@ export interface Spread {
   bubbles?: SpeechBubble[]; // Spread-level bubbles (float freely over all slots)
 }
 
-export interface Cover {
-  frontImage: Photo | null;
-  backImage: Photo | null;
-  title?: string;
-}
+// Cover is now a Spread with templateId = 'cover'
+// Kept as a type alias for backward compatibility
+export type Cover = Spread | null;
 
 export interface StylizeSettings {
   activePreset: string;
