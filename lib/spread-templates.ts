@@ -1305,66 +1305,40 @@ export const TEMPLATE_COMIC_ASYMMETRIC: SpreadTemplate = {
   },
 };
 
-// Template 15: Book Cover - panoramic background (16:9 → 458×242mm) + 2 photo slots
+// Template 15: Book Cover - panoramic background only (16:9 → 458×242mm)
 // Full spread: 458mm×242mm (with 18mm bleed on all sides)
-// Left page (back cover): 206mm×206mm + 18mm bleed
+// Left page (back cover): 206mm × 206mm + 18mm bleed
 // Spine: 10mm
-// Right page (front cover): 206mm×206mm + 18mm bleed
-// Coordinate system: 0-100% of 458mm×242mm
+// Right page (front cover): 206mm × 206mm + 18mm bleed
+// Coordinate system: 0-100% of each half-page (229×242mm)
 export const TEMPLATE_COVER: SpreadTemplate = {
   id: "cover",
   name: "Обложка",
   description: "Обложка альбома",
-  // Panoramic background spans entire spread (458×242mm)
-  // Photo slots: bottom-right (right page), top-left (left page)
-  // Safe zone: 18mm from all edges (already accounted for in positioning)
   leftPage: {
     slots: [
-      // Background: full left page
       {
         id: "left-bg",
-        aspectRatio: 1, // Square page
+        aspectRatio: 1, // Square half-page (229×242 ≈ 1:1 after bleed)
         width: 1.0,
         height: 1.0,
         x: 0,
         y: 0,
-      },
-      // Photo slot: top-left corner (4:3, ~1/5 of page)
-      // Size: 64×48mm = 27.9% width, 19.8% height of page (229×242mm)
-      {
-        id: "left-photo",
-        aspectRatio: 4 / 3,
-        width: 0.279, // 64mm / 229mm
-        height: 0.198, // 48mm / 242mm
-        x: 0.079,  // 18mm from left edge (bleed)
-        y: 0.074,  // 18mm from top (bleed)
       },
     ],
   },
   rightPage: {
     slots: [
-      // Background: full right page
       {
         id: "right-bg",
-        aspectRatio: 1, // Square page
+        aspectRatio: 1,
         width: 1.0,
         height: 1.0,
         x: 0,
         y: 0,
       },
-      // Photo slot: bottom-right corner (4:3, ~1/5 of page)
-      // Size: 64×48mm = 27.9% width, 19.8% height of page (229×242mm)
-      {
-        id: "right-photo",
-        aspectRatio: 4 / 3,
-        width: 0.279, // 64mm / 229mm
-        height: 0.198, // 48mm / 242mm
-        x: 0.642,  // (229 - 18 - 64) / 229 = 147/229 from left
-        y: 0.727,  // (242 - 18 - 48) / 242 = 176/242 from top
-      },
     ],
   },
-  // No-gaps version is the same (cover always uses this layout)
   leftPageNoGaps: {
     slots: [
       {
@@ -1374,14 +1348,6 @@ export const TEMPLATE_COVER: SpreadTemplate = {
         height: 1.0,
         x: 0,
         y: 0,
-      },
-      {
-        id: "left-photo",
-        aspectRatio: 4 / 3,
-        width: 0.279, // 64mm / 229mm
-        height: 0.198, // 48mm / 242mm
-        x: 0.079,  // 18mm from left edge (bleed)
-        y: 0.074,  // 18mm from top (bleed)
       },
     ],
   },
@@ -1394,14 +1360,6 @@ export const TEMPLATE_COVER: SpreadTemplate = {
         height: 1.0,
         x: 0,
         y: 0,
-      },
-      {
-        id: "right-photo",
-        aspectRatio: 4 / 3,
-        width: 0.279, // 64mm / 229mm
-        height: 0.198, // 48mm / 242mm
-        x: 0.642,  // (229 - 18 - 64) / 229 = 147/229 from left
-        y: 0.727,  // (242 - 18 - 48) / 242 = 176/242 from top
       },
     ],
   },

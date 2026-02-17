@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { Album, Spread, Photo, StylizeSettings } from "@/lib/types";
 import { SPREAD_TEMPLATES, PANORAMIC_BG_TEMPLATE_IDS, getPageSlots } from "@/lib/spread-templates";
-import { generateAlbumPDF, downloadPDF } from "@/lib/pdf-generator-spreads";
+import { generateCombinedPDF, generateCoverPDF, generateSpreadsPDF, downloadPDF } from "@/lib/pdf-generator-spreads";
 import ImageCropModal from "@/components/ImageCropModal";
 import ImageEditModal from "@/components/ImageEditModal";
 import SceneGenerationModal, { SceneResult } from "@/components/SceneGenerationModal";
@@ -123,6 +123,7 @@ export default function EditorPage() {
   };
 
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const [pdfMenuOpen, setPdfMenuOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Derived stylization settings (defaults for albums without saved settings)
@@ -1392,30 +1393,49 @@ export default function EditorPage() {
   };
 
   // Generate PDF and download
-  const handleGeneratePDF = async () => {
-    if (album.spreads.length === 0) {
-      alert("Добавьте хотя бы один разворот!");
-      return;
-    }
+  const baseName = album.title.replace(/[^a-zA-Zа-яА-Я0-9]/g, "_");
 
-    // Check if at least one photo exists in any spread
-    const hasPhotos = album.spreads.some(spread =>
-      [...spread.leftPhotos, ...spread.rightPhotos].some(photo => photo?.url)
-    );
-
-    if (!hasPhotos) {
-      alert("Прежде чем скачать альбом, загрузите свои фотографии в ячейки разворотов");
-      return;
-    }
-
+  const handleDownloadAll = async () => {
+    const hasSpreads = album.spreads.length > 0 || !!album.cover;
+    if (!hasSpreads) { alert("Добавьте обложку или разворот!"); return; }
+    setPdfMenuOpen(false);
     setIsGeneratingPDF(true);
     try {
-      const pdfBlob = await generateAlbumPDF(album);
-      const filename = `${album.title.replace(/[^a-zA-Zа-яА-Я0-9]/g, "_")}_${Date.now()}.pdf`;
-      downloadPDF(pdfBlob, filename);
-    } catch (error) {
-      console.error("Error generating PDF:", error);
+      const blob = await generateCombinedPDF(album);
+      downloadPDF(blob, `${baseName}_полный_${Date.now()}.pdf`);
+    } catch (e) {
+      console.error(e);
       alert("Ошибка при создании PDF. Проверьте консоль.");
+    } finally {
+      setIsGeneratingPDF(false);
+    }
+  };
+
+  const handleDownloadCover = async () => {
+    if (!album.cover) { alert("Сначала создайте обложку!"); return; }
+    setPdfMenuOpen(false);
+    setIsGeneratingPDF(true);
+    try {
+      const blob = await generateCoverPDF(album);
+      downloadPDF(blob, `${baseName}_обложка_${Date.now()}.pdf`);
+    } catch (e) {
+      console.error(e);
+      alert("Ошибка при создании PDF обложки. Проверьте консоль.");
+    } finally {
+      setIsGeneratingPDF(false);
+    }
+  };
+
+  const handleDownloadSpreads = async () => {
+    if (album.spreads.length === 0) { alert("Добавьте хотя бы один разворот!"); return; }
+    setPdfMenuOpen(false);
+    setIsGeneratingPDF(true);
+    try {
+      const blob = await generateSpreadsPDF(album);
+      downloadPDF(blob, `${baseName}_развороты_${Date.now()}.pdf`);
+    } catch (e) {
+      console.error(e);
+      alert("Ошибка при создании PDF разворотов. Проверьте консоль.");
     } finally {
       setIsGeneratingPDF(false);
     }
@@ -1461,13 +1481,60 @@ export default function EditorPage() {
             {savedStatus === 'saved' && (
               <span className="text-green-300 text-xs font-medium">✓ Сохранено</span>
             )}
-            <button
-              onClick={handleGeneratePDF}
-              disabled={isGeneratingPDF}
-              className="btn-gradient px-4 md:px-6 py-2 text-white text-sm md:text-base font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isGeneratingPDF ? "PDF..." : "Скачать"}
-            </button>
+            {/* PDF download button / dropdown */}
+            <div className="relative">
+              {album.cover ? (
+                // With cover: show dropdown
+                <>
+                  <button
+                    onClick={() => setPdfMenuOpen(v => !v)}
+                    disabled={isGeneratingPDF}
+                    className="btn-gradient px-4 md:px-6 py-2 text-white text-sm md:text-base font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+                  >
+                    {isGeneratingPDF ? "PDF..." : "Скачать"}
+                    <span className="text-xs opacity-75">▾</span>
+                  </button>
+                  {pdfMenuOpen && !isGeneratingPDF && (
+                    <>
+                      {/* backdrop to close */}
+                      <div className="fixed inset-0 z-40" onClick={() => setPdfMenuOpen(false)} />
+                      <div className="absolute right-0 top-full mt-1 z-50 bg-white rounded-lg shadow-xl border border-gray-200 min-w-[200px] overflow-hidden">
+                        <button
+                          onClick={handleDownloadAll}
+                          className="w-full px-4 py-3 text-left text-sm hover:bg-gray-50 text-gray-800 border-b border-gray-100"
+                        >
+                          <div className="font-medium">Всё вместе</div>
+                          <div className="text-xs text-gray-500">Обложка + все развороты</div>
+                        </button>
+                        <button
+                          onClick={handleDownloadCover}
+                          className="w-full px-4 py-3 text-left text-sm hover:bg-gray-50 text-gray-800 border-b border-gray-100"
+                        >
+                          <div className="font-medium">Только обложка</div>
+                          <div className="text-xs text-gray-500">458×242мм, PDF для печати</div>
+                        </button>
+                        <button
+                          onClick={handleDownloadSpreads}
+                          className="w-full px-4 py-3 text-left text-sm hover:bg-gray-50 text-gray-800"
+                        >
+                          <div className="font-medium">Только развороты</div>
+                          <div className="text-xs text-gray-500">Внутренний блок без обложки</div>
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </>
+              ) : (
+                // Without cover: single button
+                <button
+                  onClick={handleDownloadAll}
+                  disabled={isGeneratingPDF}
+                  className="btn-gradient px-4 md:px-6 py-2 text-white text-sm md:text-base font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isGeneratingPDF ? "PDF..." : "Скачать"}
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </header>
