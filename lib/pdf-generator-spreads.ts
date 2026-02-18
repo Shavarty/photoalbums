@@ -6,7 +6,11 @@ import { SPREAD_TEMPLATES, PhotoSlot, getPageSlots, PANORAMIC_BG_TEMPLATE_IDS } 
 // Print specs from typography
 const PAGE_SIZE = 206; // mm — square page
 const COVER_WIDTH = 458; // mm — full spread including bleed
-const COVER_HEIGHT = 242; // mm — full spread including bleed
+// Cover PDF height = COVER_WIDTH / 2 = 229mm (2:1 ratio, same as editor display).
+// The editor shows the cover as two square pages side-by-side (2:1).
+// Using this ratio ensures bubble positions and fonts match 1:1 between editor and PDF.
+// The final print bleed area (242mm) is handled by the print shop.
+const COVER_PDF_HEIGHT = COVER_WIDTH / 2; // 229mm — 2:1 to match editor
 const COVER_HALF = COVER_WIDTH / 2; // 229mm per half-page
 
 const loadImage = (url: string): Promise<HTMLImageElement> => {
@@ -57,8 +61,10 @@ const cropImageAtFullQuality = async (
   return canvas.toDataURL("image/jpeg", 0.92);
 };
 
-// Capture bubbles overlay via html2canvas — pixel-perfect match with editor
-// Returns a PNG dataUrl (with transparency) or null if the element isn't found / has no bubbles
+// Capture bubbles overlay via html2canvas — pixel-perfect match with editor.
+// IMPORTANT: do NOT override scrollX/scrollY/x/y/width/height —
+// html2canvas handles the page scroll automatically using window.scrollX/Y.
+// Overriding them with 0 was the root cause of position mismatches.
 const captureBubblesLayer = async (
   spreadId: string,
   spreadWidthMm: number,
@@ -68,53 +74,30 @@ const captureBubblesLayer = async (
   offsetY: number = 0
 ): Promise<void> => {
   const el = document.getElementById(`bubbles-layer-${spreadId}`);
-  if (!el) return;
+  if (!el || !el.children.length) return;
 
-  // Check if there are any visible bubble elements inside
-  if (!el.children.length) return;
-
-  // Measure the actual container to calculate the correct scale
   const container = document.getElementById(`spread-container-${spreadId}`);
-  const containerRect = container
-    ? container.getBoundingClientRect()
-    : el.getBoundingClientRect();
+  if (!container) return;
 
-  const containerWidthPx = containerRect.width;
-  const containerHeightPx = containerRect.height;
+  const containerWidthPx = container.getBoundingClientRect().width;
 
-  // Aim for ~200 DPI in the PDF output (good quality for text & graphics)
-  // scale = (spreadWidthMm / 25.4 * 200) / containerWidthPx
+  // Scale factor to reach ~200 DPI at the PDF dimensions
   const targetDpi = 200;
   const targetWidthPx = (spreadWidthMm / 25.4) * targetDpi;
   const captureScale = Math.min(Math.max(targetWidthPx / containerWidthPx, 2), 6);
 
+  // Let html2canvas manage scroll/position automatically — no overrides
   const canvas = await html2canvas(el, {
-    backgroundColor: null,       // transparent background (PNG)
+    backgroundColor: null, // transparent PNG
     scale: captureScale,
     useCORS: true,
     allowTaint: false,
     logging: false,
-    // Tell html2canvas the exact viewport so it doesn't clip anything
-    width: containerWidthPx,
-    height: containerHeightPx,
-    x: 0,
-    y: 0,
-    scrollX: 0,
-    scrollY: 0,
   });
 
-  // The captured image represents the EDITOR's viewport (containerWidthPx × containerHeightPx).
-  // We map it to the PDF spread dimensions, preserving proportions.
-  // For regular spreads (2:1 editor = 2:1 PDF) this is perfect.
-  // For cover (2:1 editor → 1.89:1 PDF) there's a ~6% vertical stretch — acceptable.
   const imageData = canvas.toDataURL("image/png");
   if (imageData && imageData.length > 1000) {
-    pdf.addImage(
-      imageData, "PNG",
-      offsetX, offsetY,
-      spreadWidthMm, spreadHeightMm,
-      undefined, "FAST"
-    );
+    pdf.addImage(imageData, "PNG", offsetX, offsetY, spreadWidthMm, spreadHeightMm, undefined, "FAST");
   }
 };
 
@@ -192,26 +175,28 @@ const generatePageWithSlots = async (
   }
 };
 
-// Generate cover spread page (458×242mm)
+// Generate cover spread page.
+// PDF page = 458×229mm (2:1) — exactly matches the editor's 2:1 display
+// (two square pages side-by-side). No aspect ratio conversion needed,
+// so bubbles captured from the editor overlay map 1:1 to the PDF.
+// Print bleed is handled by the print shop separately.
 const generateCoverSpreadPage = async (pdf: jsPDF, cover: Spread): Promise<void> => {
   const template = SPREAD_TEMPLATES.find(t => t.id === 'cover');
   if (!template) return;
 
-  pdf.addPage([COVER_WIDTH, COVER_HEIGHT], "landscape");
+  // 2:1 page: COVER_WIDTH × COVER_PDF_HEIGHT = 458 × 229mm
+  pdf.addPage([COVER_WIDTH, COVER_PDF_HEIGHT], "landscape");
 
-  // Left half (back cover): 0 to COVER_HALF, full height
+  // Each half is a square: COVER_HALF × COVER_HALF = 229×229mm
   const leftSlots = getPageSlots(template, 'left', true);
-  await generatePageWithSlots(pdf, cover.leftPhotos, leftSlots, 'cover', COVER_HALF, COVER_HEIGHT, 0);
+  await generatePageWithSlots(pdf, cover.leftPhotos, leftSlots, 'cover', COVER_HALF, COVER_PDF_HEIGHT, 0);
 
-  // Right half (front cover): COVER_HALF to COVER_WIDTH, full height
   const rightSlots = getPageSlots(template, 'right', true);
-  await generatePageWithSlots(pdf, cover.rightPhotos, rightSlots, 'cover', COVER_HALF, COVER_HEIGHT, COVER_HALF);
+  await generatePageWithSlots(pdf, cover.rightPhotos, rightSlots, 'cover', COVER_HALF, COVER_PDF_HEIGHT, COVER_HALF);
 
-  // Bubbles overlay — html2canvas capture of the editor DOM
-  // The editor shows cover as 2:1 (two square pages), PDF is 1.89:1 (458:242).
-  // We map the full editor overlay to the full PDF page (tiny ~6% vertical stretch — imperceptible).
+  // Bubbles overlay: editor is 2:1, PDF is 2:1 → pixel-perfect alignment
   if (cover.bubbles && cover.bubbles.length > 0) {
-    await captureBubblesLayer(cover.id, COVER_WIDTH, COVER_HEIGHT, pdf, 0, 0);
+    await captureBubblesLayer(cover.id, COVER_WIDTH, COVER_PDF_HEIGHT, pdf, 0, 0);
   }
 };
 
@@ -253,9 +238,9 @@ export async function generateCombinedPDF(album: Album): Promise<Blob> {
   return pdf.output("blob");
 }
 
-// Cover-only PDF (458×242mm)
+// Cover-only PDF (458×229mm, 2:1 — matches editor display)
 export async function generateCoverPDF(album: Album): Promise<Blob> {
-  const pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: [COVER_WIDTH, COVER_HEIGHT], compress: true });
+  const pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: [COVER_WIDTH, COVER_PDF_HEIGHT], compress: true });
   pdf.deletePage(1);
 
   if (album.cover) {
