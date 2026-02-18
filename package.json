@@ -12,6 +12,7 @@
     "@google/generative-ai": "^0.24.1",
     "global-agent": "^3.0.0",
     "heic2any": "^0.0.4",
+    "html2canvas": "^1.4.1",
     "https-proxy-agent": "^7.0.6",
     "jspdf": "^4.0.0",
     "next": "16.1.6",

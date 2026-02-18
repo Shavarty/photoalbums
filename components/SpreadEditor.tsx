@@ -235,14 +235,14 @@ export default function SpreadEditor({
         </div>
 
         {/* Pages + spread-level bubble overlay */}
-        <div className="relative" ref={spreadRef}>
+        <div className="relative" ref={spreadRef} id={`spread-container-${spread.id}`}>
           <div className="grid grid-cols-2 gap-0">
             {renderPage(spread.leftPhotos, "left")}
             {renderPage(spread.rightPhotos, "right")}
           </div>
 
           {/* Bubble overlay — floats over entire spread */}
-          <div className="absolute inset-0 pointer-events-none">
+          <div id={`bubbles-layer-${spread.id}`} className="absolute inset-0 pointer-events-none">
             {(spread.bubbles || []).map((bubble) => (
               <SpeechBubble
                 key={bubble.id}
