@@ -6,12 +6,12 @@ import { SPREAD_TEMPLATES, PhotoSlot, getPageSlots, PANORAMIC_BG_TEMPLATE_IDS } 
 // Print specs from typography
 const PAGE_SIZE = 206; // mm — square page
 const COVER_WIDTH = 458; // mm — full spread including bleed
-// Cover PDF height = COVER_WIDTH / 2 = 229mm (2:1 ratio, same as editor display).
-// The editor shows the cover as two square pages side-by-side (2:1).
-// Using this ratio ensures bubble positions and fonts match 1:1 between editor and PDF.
-// The final print bleed area (242mm) is handled by the print shop.
-const COVER_PDF_HEIGHT = COVER_WIDTH / 2; // 229mm — 2:1 to match editor
-const COVER_HALF = COVER_WIDTH / 2; // 229mm per half-page
+const COVER_PDF_HEIGHT = 242; // mm — 18mm bleed + 206mm + 18mm bleed
+const COVER_HALF = COVER_WIDTH / 2; // 229mm per half-page (= 18 bleed + 206 page + 5 half-spine)
+// Trimmed cover (no bleed): back 206mm + spine 10mm + front 206mm = 422mm wide, 206mm tall
+const COVER_TRIM_WIDTH = 422;
+const COVER_TRIM_HEIGHT = 206;
+const COVER_BLEED = 18; // mm bleed on each side
 
 const loadImage = (url: string): Promise<HTMLImageElement> => {
   return new Promise((resolve, reject) => {
@@ -109,7 +109,8 @@ const generatePageWithSlots = async (
   templateId: string,
   pageWidthMm: number,
   pageHeightMm: number,
-  offsetX: number = 0
+  offsetX: number = 0,
+  offsetY: number = 0
 ): Promise<void> => {
   for (let i = 0; i < slots.length; i++) {
     const photo = photos[i];
@@ -122,10 +123,13 @@ const generatePageWithSlots = async (
       const cropArea = photo.cropArea;
 
       const slotX = slot.x * pageWidthMm + offsetX;
-      const slotY = slot.y * pageHeightMm;
+      const slotY = slot.y * pageHeightMm + offsetY;
       const slotWidth = slot.width * pageWidthMm;
       const slotHeight = slot.height * pageHeightMm;
       const slotAspect = slotWidth / slotHeight;
+
+      const isFullPage = slot.width >= 1.0 && slot.height >= 1.0;
+      const isBackground = PANORAMIC_BG_TEMPLATE_IDS.includes(templateId) && i === 0;
 
       let finalImageUrl: string;
 
@@ -139,9 +143,29 @@ const generatePageWithSlots = async (
       const imageAspect = image.width / image.height;
       const aspectDiff = Math.abs(imageAspect - slotAspect);
 
+      // Background images: "cover" behavior — crop to fill slot, no letterboxing
+      if (isBackground && aspectDiff >= 0.01) {
+        let cropX = 0, cropY = 0, cropW = image.width, cropH = image.height;
+        if (imageAspect > slotAspect) {
+          cropW = Math.round(image.height * slotAspect);
+          cropX = Math.round((image.width - cropW) / 2);
+        } else {
+          cropH = Math.round(image.width / slotAspect);
+          cropY = Math.round((image.height - cropH) / 2);
+        }
+        const bgCanvas = document.createElement('canvas');
+        bgCanvas.width = cropW;
+        bgCanvas.height = cropH;
+        const bgCtx = bgCanvas.getContext('2d', { alpha: false })!;
+        bgCtx.imageSmoothingEnabled = true;
+        bgCtx.imageSmoothingQuality = 'high';
+        bgCtx.drawImage(image, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
+        finalImageUrl = bgCanvas.toDataURL('image/jpeg', 0.92);
+      }
+
       let photoWidth: number, photoHeight: number, photoX: number, photoY: number;
 
-      if (aspectDiff < 0.02) {
+      if (isBackground || aspectDiff < 0.02) {
         photoWidth = slotWidth;
         photoHeight = slotHeight;
         photoX = slotX;
@@ -162,8 +186,6 @@ const generatePageWithSlots = async (
 
       pdf.addImage(finalImageUrl, "JPEG", photoX, photoY, photoWidth, photoHeight, undefined, "FAST");
 
-      const isFullPage = slot.width >= 1.0 && slot.height >= 1.0;
-      const isBackground = PANORAMIC_BG_TEMPLATE_IDS.includes(templateId) && i === 0;
       if (!isFullPage && !isBackground) {
         pdf.setDrawColor(0, 0, 0);
         pdf.setLineWidth(0.75);
@@ -175,28 +197,44 @@ const generatePageWithSlots = async (
   }
 };
 
-// Generate cover spread page.
-// PDF page = 458×229mm (2:1) — exactly matches the editor's 2:1 display
-// (two square pages side-by-side). No aspect ratio conversion needed,
-// so bubbles captured from the editor overlay map 1:1 to the PDF.
-// Print bleed is handled by the print shop separately.
+// Generate cover spread page — full bleed for print shop.
+// PDF page = 458×242mm. Each half (229×242mm) is placed separately.
+// After the cropTo458x242+split fix, each half image has aspect 229:242 → fills slot exactly.
 const generateCoverSpreadPage = async (pdf: jsPDF, cover: Spread): Promise<void> => {
   const template = SPREAD_TEMPLATES.find(t => t.id === 'cover');
   if (!template) return;
 
-  // 2:1 page: COVER_WIDTH × COVER_PDF_HEIGHT = 458 × 229mm
   pdf.addPage([COVER_WIDTH, COVER_PDF_HEIGHT], "landscape");
 
-  // Each half is a square: COVER_HALF × COVER_HALF = 229×229mm
   const leftSlots = getPageSlots(template, 'left', true);
   await generatePageWithSlots(pdf, cover.leftPhotos, leftSlots, 'cover', COVER_HALF, COVER_PDF_HEIGHT, 0);
 
   const rightSlots = getPageSlots(template, 'right', true);
   await generatePageWithSlots(pdf, cover.rightPhotos, rightSlots, 'cover', COVER_HALF, COVER_PDF_HEIGHT, COVER_HALF);
 
-  // Bubbles overlay: editor is 2:1, PDF is 2:1 → pixel-perfect alignment
   if (cover.bubbles && cover.bubbles.length > 0) {
     await captureBubblesLayer(cover.id, COVER_WIDTH, COVER_PDF_HEIGHT, pdf, 0, 0);
+  }
+};
+
+// Generate trimmed cover for the combined PDF.
+// Page = 422×206mm: back cover (206) + spine (10) + front cover (206), no bleed.
+// Each half placed at -COVER_BLEED offset so bleed falls outside the page boundary.
+const generateCoverSpreadPageTrimmed = async (pdf: jsPDF, cover: Spread): Promise<void> => {
+  const template = SPREAD_TEMPLATES.find(t => t.id === 'cover');
+  if (!template) return;
+
+  pdf.addPage([COVER_TRIM_WIDTH, COVER_TRIM_HEIGHT], "landscape");
+
+  const leftSlots = getPageSlots(template, 'left', true);
+  await generatePageWithSlots(pdf, cover.leftPhotos, leftSlots, 'cover', COVER_HALF, COVER_PDF_HEIGHT, -COVER_BLEED, -COVER_BLEED);
+
+  const rightSlots = getPageSlots(template, 'right', true);
+  await generatePageWithSlots(pdf, cover.rightPhotos, rightSlots, 'cover', COVER_HALF, COVER_PDF_HEIGHT, COVER_HALF - COVER_BLEED, -COVER_BLEED);
+
+  // Bubbles: full 458×242mm capture at (-18, -18) — bleed clips outside page
+  if (cover.bubbles && cover.bubbles.length > 0) {
+    await captureBubblesLayer(cover.id, COVER_WIDTH, COVER_PDF_HEIGHT, pdf, -COVER_BLEED, -COVER_BLEED);
   }
 };
 
@@ -231,14 +269,14 @@ export async function generateCombinedPDF(album: Album): Promise<Blob> {
   pdf.deletePage(1);
 
   if (album.cover) {
-    await generateCoverSpreadPage(pdf, album.cover);
+    await generateCoverSpreadPageTrimmed(pdf, album.cover);
   }
   await generateSpreadsPages(pdf, album);
 
   return pdf.output("blob");
 }
 
-// Cover-only PDF (458×229mm, 2:1 — matches editor display)
+// Cover-only PDF (458×242mm — full bleed for print shop)
 export async function generateCoverPDF(album: Album): Promise<Blob> {
   const pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: [COVER_WIDTH, COVER_PDF_HEIGHT], compress: true });
   pdf.deletePage(1);

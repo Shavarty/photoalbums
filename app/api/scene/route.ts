@@ -39,7 +39,7 @@ CRITICAL RULES:
 
 export async function POST(request: Request) {
   try {
-    const { imageBase64, imageBase64s, sceneDescription, stylePreset, aspectRatio } = await request.json();
+    const { imageBase64, imageBase64s, sceneDescription, stylePreset, aspectRatio, isCover = false } = await request.json();
 
     // Support both single imageBase64 (legacy) and imageBase64s array
     const images: string[] = imageBase64s?.length ? imageBase64s : (imageBase64 ? [imageBase64] : []);
@@ -63,7 +63,18 @@ export async function POST(request: Request) {
       sceneDescription.trim()
     );
 
-    const prompt = (stylePreset?.trim() ? stylePreset.trim() + "\n\n" : "") + processInstructions;
+    const coverInstructions = isCover ? `
+
+BOOK COVER COMPOSITION (CRITICAL):
+- Generate ONE single continuous panoramic illustration — do NOT create split panels, diptychs, or two separate scenes joined together
+- The entire canvas must be ONE unified image that flows seamlessly from left edge to right edge with no visible division, seam, or break
+- Place ALL main characters, faces, and key story elements in the RIGHT PORTION of the panoramic image (approximately the right 50% of the canvas), centered within that area
+- The LEFT PORTION of the canvas (approximately the left 50%) should be atmospheric background scenery only — sky, landscape, environment — with no main characters or key objects
+- The visual focal point and all narrative elements must be naturally positioned in the CENTER-RIGHT area of the single panoramic scene
+- Leave clear space in the upper-right area for the book title
+- Maintain at least 15% safe margin from all edges for any important content` : '';
+
+    const prompt = (stylePreset?.trim() ? stylePreset.trim() + "\n\n" : "") + processInstructions + coverInstructions;
 
     // Build parts: one inlineData per reference image, then the text prompt
     const imageParts = images.map((img) => {

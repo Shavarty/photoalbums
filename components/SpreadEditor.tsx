@@ -74,8 +74,12 @@ export default function SpreadEditor({
     const slots = getPageSlots(template, side, withGaps);
     const roundedClass = side === "left" ? "rounded-l-lg" : "rounded-r-lg";
     const borderClass = side === "left" ? "border-2 border-r-0" : "border-2 border-l";
+    const isCover = template.id === 'cover';
     return (
-      <div className={`relative w-full aspect-square bg-gray-100 border-gray-300 ${borderClass} ${roundedClass} overflow-hidden`}>
+      <div
+        className={`relative w-full bg-gray-100 border-gray-300 ${borderClass} ${roundedClass} overflow-hidden${!isCover ? ' aspect-square' : ''}`}
+        style={isCover ? { aspectRatio: '229 / 242' } : {}}
+      >
         {slots.map((slot, index) => {
           const photo = photos[index];
           const isBackground = PANORAMIC_BG_TEMPLATE_IDS.includes(template.id) && index === 0;

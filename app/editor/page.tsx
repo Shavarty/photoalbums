@@ -571,8 +571,8 @@ export default function EditorPage() {
     const slots = template ? getPageSlots(template, side, album.withGaps) : [];
     // Панорамный фон охватывает оба листа (2:1), хотя per-page слот 1:1
     const isPanoramicBg = template ? PANORAMIC_BG_TEMPLATE_IDS.includes(template.id) && photoIndex === 0 : false;
-    // Панорамный фон: запрашиваем 21:9 (обрезаются края слева/справа, а не важные фрагменты сверху/снизу)
-    const slotAspectRatio = isPanoramicBg ? 21/9 : (slots[photoIndex]?.aspectRatio || 1);
+    // Панорамный фон: запрашиваем 16:9 — Gemini возвращает 16:9, потом cropTo458x242 обрезает сверху/снизу (не по ширине)
+    const slotAspectRatio = isPanoramicBg ? 16/9 : (slots[photoIndex]?.aspectRatio || 1);
     setSceneModal({ spreadId, side, photoIndex, slotAspectRatio });
   };
 
@@ -612,7 +612,7 @@ export default function EditorPage() {
         img.crossOrigin = "anonymous";
         img.onload = () => {
           const currentAspect = img.width / img.height;
-          const targetAspect = 2;
+          const targetAspect = 458 / 242; // cover: 458mm wide × 242mm tall
           let cropX = 0, cropY = 0, cropWidth = img.width, cropHeight = img.height;
           if (currentAspect > targetAspect) {
             cropWidth = Math.round(img.height * targetAspect);
@@ -640,6 +640,7 @@ export default function EditorPage() {
     const spread = findSpread(spreadId);
     const template = spread ? SPREAD_TEMPLATES.find(t => t.id === spread.templateId) : null;
     const isPanoramicBg = template ? PANORAMIC_BG_TEMPLATE_IDS.includes(template.id) && photoIndex === 0 : false;
+    const isCoverScene = isPanoramicBg && template?.id === 'cover';
 
     try {
       const apiResponse = await fetch("/api/scene", {
@@ -650,6 +651,7 @@ export default function EditorPage() {
           sceneDescription: result.sceneDescription,
           stylePreset: result.stylePreset,
           aspectRatio: slotAspectRatio,
+          isCover: isCoverScene,
         }),
       });
 
@@ -868,6 +870,9 @@ export default function EditorPage() {
     const isFullSpread = isFullSpreadTemplate && isBackgroundSlot;
     const isCover = template?.id === 'cover' && isBackgroundSlot;
 
+    // DEBUG: trace cover detection
+    console.log('[completePhotoUpload] side:', side, '| photoIndex:', photoIndex, '| templateId:', template?.id, '| isFullSpread:', isFullSpread, '| isCover:', isCover);
+
     // Helper: Expand square (1:1) image to 2:1 by adding white canvas on the left
     const expandSquareTo2x1 = async (imageUrl: string): Promise<string> => {
       return new Promise((resolve, reject) => {
@@ -889,11 +894,18 @@ export default function EditorPage() {
           ctx.fillStyle = "#FFFFFF";
           ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-          // Draw the square image on the RIGHT half (where it should end up centered)
-          const rightHalfX = squareSize;
-          ctx.drawImage(img, rightHalfX, 0, squareSize, squareSize);
+          // Draw the square image on the RIGHT half with 9% margins (safe area guide)
+          const MARGIN_PERCENT = 0.09; // 9% margin on all sides (~20mm bleed guide)
+          const margin = squareSize * MARGIN_PERCENT;
+          const photoSize = squareSize * (1 - MARGIN_PERCENT * 2); // 84% of square size
 
-          console.log(`Expanded square ${img.width}x${img.height} to 2:1 ${canvas.width}x${canvas.height}`);
+          const rightHalfX = squareSize; // Start of right half
+          const photoX = rightHalfX + margin;
+          const photoY = margin;
+
+          ctx.drawImage(img, photoX, photoY, photoSize, photoSize);
+
+          console.log(`Expanded square ${img.width}x${img.height} to 2:1 ${canvas.width}x${canvas.height} with 8% safe margins`);
           resolve(canvas.toDataURL("image/jpeg", 0.95));
         };
         img.onerror = () => reject(new Error("Failed to load image for expansion"));
@@ -996,18 +1008,19 @@ export default function EditorPage() {
                   // Calculate 2:1 crop from center
                   let cropWidth, cropHeight, cropX, cropY;
 
-                  if (currentAspect > 2) {
-                    // Image is wider than 2:1 - crop width
+                  const coverAspect = 458 / 242; // cover: 458mm wide × 242mm tall
+                  if (currentAspect > coverAspect) {
+                    // Image is wider than cover ratio - crop width
                     cropHeight = img.height;
-                    cropWidth = cropHeight * 2; // 2:1 aspect
-                    cropX = (img.width - cropWidth) / 2; // Center horizontally
+                    cropWidth = Math.round(cropHeight * coverAspect);
+                    cropX = (img.width - cropWidth) / 2;
                     cropY = 0;
                   } else {
-                    // Image is taller than 2:1 - crop height
+                    // Image is taller than cover ratio - crop height
                     cropWidth = img.width;
-                    cropHeight = cropWidth / 2; // 2:1 aspect
+                    cropHeight = Math.round(cropWidth / coverAspect);
                     cropX = 0;
-                    cropY = (img.height - cropHeight) / 2; // Center vertically
+                    cropY = (img.height - cropHeight) / 2;
                   }
 
                   console.log(`Cropping to 2:1: from ${cropX},${cropY} size ${cropWidth}x${cropHeight}`);

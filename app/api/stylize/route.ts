@@ -33,15 +33,14 @@ export async function POST(request: Request) {
 
 BOOK COVER COMPOSITION (CRITICAL):
 - This is a 2:1 panoramic book cover spread (LEFT page = back cover, RIGHT page = front cover)
-- The main characters/subjects are currently positioned on the RIGHT HALF of the image
-- KEEP all main characters, faces, and key elements CENTERED on the RIGHT HALF (front cover area)
-- The LEFT HALF should have NEUTRAL, MINIMAL background scenery only (sky, landscape, blurred environment)
-- DO NOT place any important characters, faces, or key details on the left half
-- Ensure 18-20% SAFE MARGINS from all edges (top, bottom, left, right) - no important content near edges
-- The top of the RIGHT page needs extra clear space for the book title
-- The right and bottom edges of the RIGHT page need safe space for trim/bleed (18mm minimum)
-- Fill the left half with atmospheric background that complements the scene but stays neutral and unimportant
-- The visual focus and all story elements must be in the CENTER of the RIGHT HALF only
+- The main characters are currently positioned in the RIGHT HALF of the image
+- KEEP all main characters, faces, and key story elements CENTERED in the RIGHT HALF (front cover area)
+- IMPORTANT: The photo on the right has WHITE MARGINS around its edges — these white areas are guides for safe printing margins, NOT empty space to preserve. FILL these white areas completely by extending the background scenery to the very edges of the canvas.
+- The LEFT HALF is for EXTENDING the background environment with rich visual detail: if it's an interior, continue the room design with varied furniture, architectural features, décor elements, and ambient details; if it's an exterior, show diverse landscape with natural features, buildings, terrain variety — maintain the same atmosphere and artistic style but with environmental richness and variety, not simple repetition of one element
+- EXTEND the environmental design leftward with visual diversity — the characters remain only in their current position on the right, while the left side shows the extended setting around them filled with cohesive but varied background elements
+- Fill the entire canvas edge-to-edge with the extended scenery — no white spaces, no blank areas at any edge
+- Maintain the understanding that important character content stays within safe margins (roughly 15-20% from edges), while background scenery extends all the way to the canvas boundaries
+- Reserve clear vertical space at the top-center of the RIGHT HALF for the book title placement
 ` : '';
 
     const prompt = promptFromClient || `Transform this entire image into vibrant comic book style with bold black outlines, cel shading, and saturated flat colors.
@@ -86,7 +85,10 @@ Transform and extend seamlessly in comic book art style. The result must look li
         }
       ],
       generationConfig: {
-        temperature: 0.8  // Компромисс: сохраняет reasoning, снижает вариативность (меньше рамок/композитов)
+        temperature: 0.8,  // Компромисс: сохраняет reasoning, снижает вариативность (меньше рамок/композитов)
+        imageConfig: {
+          aspectRatio: "16:9"  // Принудительно просим 16:9 для правильного центрирования
+        }
       }
     };
 
