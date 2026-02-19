@@ -227,12 +227,12 @@ export default function SpreadEditor({
         {/* Page labels */}
         <div className="flex">
           <div className="w-1/2">
-            <p className="text-xs text-gray-500 mb-2">
+            <p className="text-xs text-gray-500 mb-2 text-center">
               {spread.templateId === 'cover' ? 'Задняя обложка' : 'Левая страница'}
             </p>
           </div>
           <div className="w-1/2">
-            <p className="text-xs text-gray-500 mb-2">
+            <p className="text-xs text-gray-500 mb-2 text-center">
               {spread.templateId === 'cover' ? 'Лицевая обложка' : 'Правая страница'}
             </p>
           </div>

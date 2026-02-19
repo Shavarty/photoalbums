@@ -68,11 +68,12 @@ export async function POST(request: Request) {
 BOOK COVER COMPOSITION (CRITICAL):
 - Generate ONE single continuous panoramic illustration — do NOT create split panels, diptychs, or two separate scenes joined together
 - The entire canvas must be ONE unified image that flows seamlessly from left edge to right edge with no visible division, seam, or break
-- Place ALL main characters, faces, and key story elements in the RIGHT PORTION of the panoramic image (approximately the right 50% of the canvas), centered within that area
+- SHOT TYPE: LONG SHOT — the camera is far from the scene. Characters appear as relatively small figures within a large environment. The scenery and background dominate the frame. Do NOT use close-up, medium shot, or full-frame character framing.
+- PRINT TRIM WARNING (CRITICAL): This image will be physically trimmed by 18mm on every side during book production. Characters positioned near any canvas edge WILL BE CUT OFF in the final printed book. To survive the trim, ALL characters and every body part (head, raised hands, feet) must be placed strictly inside the inner safe zone — at least 25% away from every canvas edge (top, bottom, left, right).
+- Characters must occupy NO MORE than 45% of the canvas height total, centered vertically — leaving substantial empty background above their heads and below their feet
+- Place ALL main characters and key story elements in the RIGHT PORTION of the panoramic image (approximately the right 50% of the canvas), horizontally centered within that right half, with clear empty space to the right of the rightmost character
 - The LEFT PORTION of the canvas (approximately the left 50%) should be atmospheric background scenery only — sky, landscape, environment — with no main characters or key objects
-- The visual focal point and all narrative elements must be naturally positioned in the CENTER-RIGHT area of the single panoramic scene
-- Leave clear space in the upper-right area for the book title
-- Maintain at least 15% safe margin from all edges for any important content` : '';
+- Leave clear space in the upper-right area for the book title` : '';
 
     const prompt = (stylePreset?.trim() ? stylePreset.trim() + "\n\n" : "") + processInstructions + coverInstructions;
 
