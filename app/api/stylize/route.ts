@@ -1,6 +1,27 @@
 import { NextResponse } from "next/server";
 import { DEFAULT_MODEL, GEMINI_MODELS } from "@/lib/geminiModels";
 
+// Parse pixel dimensions from JPEG/PNG binary header (no dependencies needed)
+function getImageDimensions(buf: Buffer): { width: number; height: number } | null {
+  // JPEG: find SOF marker (0xFF 0xC0..0xCF except 0xC4/0xC8)
+  if (buf[0] === 0xFF && buf[1] === 0xD8) {
+    let i = 2;
+    while (i < buf.length - 8) {
+      if (buf[i] !== 0xFF) break;
+      const marker = buf[i + 1];
+      if (marker >= 0xC0 && marker <= 0xCF && marker !== 0xC4 && marker !== 0xC8) {
+        return { height: buf.readUInt16BE(i + 5), width: buf.readUInt16BE(i + 7) };
+      }
+      i += 2 + buf.readUInt16BE(i + 2);
+    }
+  }
+  // PNG: dimensions at bytes 16–24
+  if (buf[1] === 0x50 && buf[2] === 0x4E && buf[3] === 0x47) {
+    return { width: buf.readUInt32BE(16), height: buf.readUInt32BE(20) };
+  }
+  return null;
+}
+
 // Gemini берёт 20-60 сек, Seedream через fal.ai ~60 сек
 export const maxDuration = 120;
 
@@ -140,7 +161,9 @@ Transform and extend seamlessly in comic book art style. The result must look li
       modelId: modelId
     };
 
-    console.log("Stylization successful! Tokens used:", tokenInfo);
+    const imgBuf = Buffer.from(imageData.data, 'base64');
+    const dims = getImageDimensions(imgBuf);
+    console.log(`Stylization successful! Image: ${dims ? `${dims.width}x${dims.height}px` : 'dimensions unknown'} | Size: ${(imgBuf.length / 1024).toFixed(0)}KB | Tokens:`, tokenInfo);
 
     return NextResponse.json({
       success: true,
