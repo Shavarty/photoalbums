@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { Album, Spread, Photo, StylizeSettings } from "@/lib/types";
+import { Album, Spread, Photo, StylizeSettings, BubbleType } from "@/lib/types";
 import { SPREAD_TEMPLATES, PANORAMIC_BG_TEMPLATE_IDS, getPageSlots } from "@/lib/spread-templates";
 import { generateCombinedPDF, generateCoverPDF, generateSpreadsPDF, downloadPDF } from "@/lib/pdf-generator-spreads";
 import ImageCropModal from "@/components/ImageCropModal";
@@ -189,7 +189,7 @@ export default function EditorPage() {
     bubbleId?: string; // If editing existing bubble
     initialText?: string;
     initialTitleStyle?: 'ice-age' | 'fk-alako';
-    initialType?: 'speech' | 'thought' | 'annotation' | 'text-block';
+    initialType?: BubbleType;
     initialTailDirection?: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
   } | null>(null);
 
